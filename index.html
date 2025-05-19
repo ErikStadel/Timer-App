@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>Intervall Popup</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#01161E',
+            background: '#124559',
+            primary: '#598392',
+            secondary: '#AEC3B0',
+            light: '#EFF6E0',
+            accent: '#83c5be',
+            rest: '#94d1be',
+            interval: '#e76f51',
+            warning: '#fc814a',
+          },
+          fontFamily: {
+            karla: ['Karla', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* General Tab Design */
+    .tab-btn {
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      flex: 1; /* Makes buttons equal width */
+      text-align: center;
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0); /* Remove tap highlight on iOS */
+    }
+
+    .tab-btn.active {
+      background-color: #83c5be;
+      color: #124559;
+      font-weight: 700;
+      transform: scale(1.1);
+    }
+
+    .tab-btn.inactive {
+      background-color: #01161E;
+      border: 2px solid #83c5be;
+      color: #83c5be;
+      font-weight: 600;
+    }
+
+    .tab-btn.inactive:hover {
+      background-color: rgba(131, 197, 190, 0.15);
+    }
+
+    /* Wheel styling: updated for 3 visible items and highlighting */
+    .wheel-container {
+      position: relative;
+      width: 100%;
+      z-index: 30; /* Ensure wheel container is above overlay and popup */
+      overflow: hidden; /* Wichtig, um überstehende Items zu verbergen */
+      display: flex;
+      justify-content: center; /* Zentriert das Wheel horizontal */
+    }
+
+    .wheel {
+      height: 120px; /* Zeigt 3 Items an (40px * 3) */
+      overflow-y: auto; /* Ermöglicht Scrollen */
+      -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
+      scroll-snap-type: y mandatory;
+      scroll-padding: 40px 0; /* Fügt oben und unten Padding hinzu, um das mittlere Item der Snap-Punkt ist */
+      scrollbar-width: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 0; /* Fügt oben und unten Padding hinzu, um das mittlere Item in der Mitte zu positionieren */
+    }
+
+    .wheel::-webkit-scrollbar {
+      display: none;
+    }
+
+    .wheel-item {
+      scroll-snap-align: center;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+      user-select: none;
+      transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s;
+      color: #83c5be;
+      -webkit-touch-callout: none; /* Prevent callout on long press */
+      opacity: 0.6; /* Standardmäßige, leicht transparente Darstellung */
+      transform: scale(0.9); /* Standardmäßige, leicht verkleinerte Darstellung */
+    }
+
+    .wheel-item.selected {
+      color: #EFF6E0; /* Hervorgehobene Textfarbe */
+      opacity: 1; /* Volle Deckkraft für das ausgewählte Item */
+      transform: scale(1.1); /* Leicht vergrößerte Darstellung des ausgewählten Items */
+      font-size: 1.5rem; /* Größere Schrift für das ausgewählte Item */
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Ensure body is not scrollable */
+    body {
+      overflow: hidden;
+    }
+
+    /* Ensure overlay and popup do not overlap wheel container */
+    .overlay {
+      z-index: 10;
+    }
+
+    .popup {
+      z-index: 20;
+    }
+  </style>
+</head>
+
+<body
+  class="bg-dark text-light font-karla p-4 flex items-center justify-center min-h-screen"
+>
+  <div class="bg-black/60 backdrop-blur-md fixed inset-0 z-10 overlay"></div>
+
+  <div
+    class="relative z-20 bg-background rounded-3xl p-8 w-full max-w-md shadow-2xl shadow-black/40 popup"
+  >
+    <div class="flex justify-center items-center mb-6">
+      <input
+        type="text"
+        value="Intervall"
+        class="bg-transparent text-2xl font-bold text-accent border-b border-accent focus:outline-none text-center w-full"
+        onclick="this.select()"
+      />
+    </div>
+
+    <div class="flex justify-center space-x-4 mb-6">
+      <button id="tab-interval" class="tab-btn active px-5 py-2 rounded-full">
+        Interval
+      </button>
+      <button id="tab-rest" class="tab-btn inactive px-5 py-2 rounded-full">
+        Rest
+      </button>
+    </div>
+
+    <div id="content-interval" class="tab-content active">
+      <div class="flex justify-between space-x-4 mb-8">
+        <div class="flex flex-col items-center flex-1">
+          <span class="text-sm text-accent mb-1">Min</span>
+          <div class="wheel-container">
+            <div class="wheel" id="minutes-wheel">
+              <div class="wheel-item">00</div>
+              <div class="wheel-item">01</div>
+              <div class="wheel-item">02</div>
+              <div class="wheel-item">03</div>
+              <div class="wheel-item">04</div>
+              <div class="wheel-item">05</div>
+              <div class="wheel-item">06</div>
+              <div class="wheel-item">07</div>
+              <div class="wheel-item">08</div>
+              <div class="wheel-item">09</div>
+              <div class="wheel-item">10</div>
+              <div class="wheel-item">11</div>
+              <div class="wheel-item">12</div>
+              <div class="wheel-item">13</div>
+              <div class="wheel-item">14</div>
+              <div class="wheel-item">15</div>
+              <div class="wheel-item">16</div>
+              <div class="wheel-item">17</div>
+              <div class="wheel-item">18</div>
+              <div class="wheel-item">19</div>
+              <div class="wheel-item">20</div>
+              <div class="wheel-item">21</div>
+              <div class="wheel-item">22</div>
+              <div class="wheel-item">23</div>
+              <div class="wheel-item">24</div>
+              <div class="wheel-item">25</div>
+              <div class="wheel-item">26</div>
+              <div class="wheel-item">27</div>
+              <div class="wheel-item">28</div>
+              <div class="wheel-item">29</div>
+              <div class="wheel-item">30</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center flex-1">
+          <span class="text-sm text-accent mb-1">Sek</span>
+          <div class="wheel-container">
+            <div class="wheel" id="seconds-wheel">
+              <div class="wheel-item">00</div>
+              <div class="wheel-item">05</div>
+              <div class="wheel-item">10</div>
+              <div class="wheel-item">15</div>
+              <div class="wheel-item">20</div>
+              <div class="wheel-item">25</div>
+              <div class="wheel-item">30</div>
+              <div class="wheel-item">35</div>
+              <div class="wheel-item">40</div>
+              <div class="wheel-item">45</div>
+              <div class="wheel-item">50</div>
+              <div class="wheel-item">55</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="content-rest" class="tab-content">
+      <div class="flex justify-between space-x-4 mb-8">
+        <div class="flex flex-col items-center flex-1">
+          <span class="text-sm text-accent mb-1">Min</span>
+          <div class="wheel-container">
+            <div class="wheel" id="minutes-wheel-rest">
+              <div class="wheel-item">00</div>
+              <div class="wheel-item">01</div>
+              <div class="wheel-item">02</div>
+              <div class="wheel-item">03</div>
+              <div class="wheel-item">04</div>
+              <div class="wheel-item">05</div>
+              <div class="wheel-item">06</div>
+              <div class="wheel-item">07</div>
+              <div class="wheel-item">08</div>
+              <div class="wheel-item">09</div>
+              <div class="wheel-item">10</div>
+              <div class="wheel-item">11</div>
+              <div class="wheel-item">12</div>
+              <div class="wheel-item">13</div>
+              <div class="wheel-item">14</div>
+              <div class="wheel-item">15</div>
+              <div class="wheel-item">16</div>
+              <div class="wheel-item">17</div>
+              <div class="wheel-item">18</div>
+              <div class="wheel-item">19</div>
+              <div class="wheel-item">20</div>
+              <div class="wheel-item">21</div>
+              <div class="wheel-item">22</div>
+              <div class="wheel-item">23</div>
+              <div class="wheel-item">24</div>
+              <div class="wheel-item">25</div>
+              <div class="wheel-item">26</div>
+              <div class="wheel-item">27</div>
+              <div class="wheel-item">28</div>
+              <div class="wheel-item">29</div>
+              <div class="wheel-item">30</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center flex-1">
+          <span class="text-sm text-accent mb-1">Sek</span>
+          <div class="wheel-container">
+            <div class="wheel" id="seconds-wheel-rest">
+              <div class="wheel-item">00</div>
+              <div class="wheel-item">05</div>
+              <div class="wheel-item">10</div>
+              <div class="wheel-item">15</div>
+              <div class="wheel-item">20</div>
+              <div class="wheel-item">25</div>
+              <div class="wheel-item">30</div>
+              <div class="wheel-item">35</div>
+              <div class="wheel-item">40</div>
+              <div class="wheel-item">45</div>
+              <div class="wheel-item">50</div>
+              <div class="wheel-item">55</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button
+      class="w-full bg-accent text-dark py-3 rounded-xl font-bold hover:bg-accent/90 transition-all"
+    >
+      Save
+    </button>
+  </div>
+
+  <script>
+    const wheels = document.querySelectorAll('.wheel');
+
+    wheels.forEach((wheel) => {
+      wheel.addEventListener('scroll', () => updateWheel(wheel));
+    });
+
+    // Update styles of wheel items with a delay
+    function updateWheel(wheel) {
+      const items = wheel.getElementsByClassName('wheel-item');
+      clearTimeout(wheel.scrollTimeout); // Clear any previous timeout
+
+      wheel.scrollTimeout = setTimeout(() => {
+        const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
+        Array.from(items).forEach((item) => {
+          const rect = item.getBoundingClientRect();
+          const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
+
+          if (distance < 10) {
+            item.classList.add('selected');
+          } else {
+            item.classList.remove('selected');
+          }
+        });
+      }, 100); // A small delay (100ms)
+    }
+
+    // Tab navigation
+    document.getElementById('tab-interval').addEventListener('click', function() {
+      document.getElementById('tab-interval').classList.add('active');
+      document.getElementById('tab-interval').classList.remove('inactive');
+      document.getElementById('tab-rest').classList.add('inactive');
+      document.getElementById('tab-rest').classList.remove('active');
+
+      document.getElementById('content-interval').classList.add('active');
+      document.getElementById('content-rest').classList.remove('active');
+    });
+
+    document.getElementById('tab-rest').addEventListener('click', function() {
+      document.getElementById('tab-rest').classList.add('active');
+      document.getElementById('tab-rest').classList.remove('inactive');
+      document.getElementById('tab-interval').classList.add('inactive');
+      document.getElementById('tab-interval').classList.remove('active');
+
+      document.getElementById('content-rest').classList.add('active');
+      document.getElementById('content-interval').classList.remove('active');
+    });
+  </script>
+</body>
+</html>
