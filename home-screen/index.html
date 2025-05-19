@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#01161E" />
+    <title>Martial Arts Timer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              dark: '#01161E',
+              background: '#124559',
+              primary: '#598392',
+              secondary: '#AEC3B0',
+              light: '#EFF6E0',
+              accent: '#83c5be',
+              rest: '#94d1be',
+              interval: '#e76f51',
+              warning: '#fc814a',
+            },
+            fontFamily: {
+              karla: ['Karla', 'sans-serif'],
+            }
+          },
+        },
+      };
+    </script>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        padding-top: env(safe-area-inset-top);
+        background-color: #01161E;
+        font-family: 'Karla', sans-serif;
+        overscroll-behavior: none;
+        scroll-padding-top: 4rem;
+        scroll-behavior: smooth; /* Glattes Scrollverhalten */
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        padding: 1rem;
+        background-color: #01161E;
+        transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+      }
+
+      header::before {
+        content: "";
+        position: absolute;
+        top: -100vh;
+        left: 0;
+        right: 0;
+        height: 100vh;
+        background-color: #01161E;
+        z-index: -1;
+      }
+
+      header.scrolled {
+        background-color: rgba(1, 22, 30, 0.7);
+        backdrop-filter: blur(6px);
+      }
+
+      .timer-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        overflow-y: auto;
+        scroll-behavior: smooth; /* Glattes Scrollverhalten */
+      }
+
+      .timer-item {
+        background-color: #124559;
+        border-bottom: 1px solid #EFF6E0;
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        position: relative;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
+      .timer-item > div.absolute {
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+        top: 0;
+        left: 0;
+        bottom: 0;
+      }
+
+      .timer-item > div.absolute.slide-in {
+        transform: translateX(0%);
+      }
+
+      .timer-item > div.absolute.slide-out {
+        transform: translateX(100%);
+      }
+
+      .timer-item > div.absolute span {
+        padding: 0.5rem 0.75rem;
+      }
+
+      .timer-item.options-active .timer-name,
+      .timer-item.options-active .timer-duration {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .timer-name {
+        font-size: 1.1rem;
+        color: #edede9;
+        margin-left: 0.5rem;
+        flex-grow: 1;
+      }
+
+      .timer-duration {
+        font-size: 0.9rem;
+        color: #83c5be;
+      }
+
+      .sortable-chosen {
+        background-color: #AEC3B0 !important;
+      }
+
+      .sort-icon {
+        margin-right: 0.5rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .timer-item.sortable-mode .sort-icon {
+        opacity: 1;
+      }
+    </style>
+  </head>
+
+  <body class="text-light">
+    <header id="header" class="text-light shadow-md">
+      <div class="w-full flex justify-between items-center">
+        <button class="text-accent font-semibold hover:underline">
+          Options
+        </button>
+        <h1 class="text-xl font-bold text-accent tracking-wide">Timer</h1>
+        <button
+          id="saveButton"
+          class="text-accent font-semibold hover:underline"
+          style="display: none;"
+        >
+          Save Order
+        </button>
+        <button
+          id="addButton"
+          class="text-accent font-bold text-2xl leading-none hover:scale-110 transition-transform duration-150"
+        >
+          +
+        </button>
+      </div>
+    </header>
+
+    <ul class="timer-list"></ul>
+
+    <script>
+      const header = document.getElementById('header');
+      const timerList = document.querySelector('.timer-list');
+      const addButton = document.getElementById('addButton');
+      const saveButton = document.getElementById('saveButton');
+      let activeOptionsItem = null;
+      let sortable = null;
+      let longPressTimer = null;
+      let longPressThreshold = 1000;
+      let isSortableMode = false;
+
+      let timers = [
+        { name: "Aufwärmen", duration: "05:00" },
+        { name: "Sparring", duration: "3x3 Min" },
+        { name: "Sandsack", duration: "10:00" },
+        { name: "Dehnen", duration: "05:00" },
+        { name: "Cool Down", duration: "05:00" },
+        { name: "Workout", duration: "05:00" },
+        { name: "Laufen", duration: "05:00" },
+        { name: "Springseil", duration: "05:00" },
+        { name: "Schattenboxen", duration: "05:00" },
+        { name: "Partnerübung", duration: "05:00" },
+        { name: "Techniktraining", duration: "05:00" },
+        { name: "Wettkampfsimulation", duration: "05:00" },
+      ];
+
+      renderTimerList();
+
+      function handleSwipe(listItem, endX, startX) {
+        const deltaX = endX - startX;
+        const swipeThreshold = 50;
+
+        if (deltaX < -swipeThreshold) {
+          showOptions(listItem);
+        } else if (deltaX > swipeThreshold) {
+          closeOptions(listItem);
+        }
+      }
+
+      function showOptions(listItem) {
+        if (activeOptionsItem && activeOptionsItem !== listItem) {
+          closeOptions(activeOptionsItem);
+        }
+        activeOptionsItem = listItem;
+
+        const optionsElement = document.createElement('div');
+        optionsElement.classList.add('bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute');
+        optionsElement.style.padding = '1rem';
+
+        const options = ['Review', 'Modify', 'Clone', 'Delete'];
+        options.forEach(optionText => {
+          const optionSpan = document.createElement('span');
+          optionSpan.classList.add('text-light', 'cursor-pointer');
+          optionSpan.textContent = optionText;
+          optionSpan.addEventListener('click', () => {
+            closeOptions(listItem);
+
+            const timerIndex = Array.from(timerList.children).indexOf(listItem);
+            const timerToDelete = timers[timerIndex];
+
+            if (optionText === 'Clone') {
+              cloneTimer(timerIndex);
+            } else if (optionText === 'Delete') {
+              deleteTimer(timerToDelete, timerIndex);
+            }
+          });
+          optionsElement.appendChild(optionSpan);
+        });
+
+        listItem.style.position = 'relative';
+        listItem.appendChild(optionsElement);
+
+        setTimeout(() => {
+          optionsElement.classList.add('slide-in');
+          listItem.classList.add('options-active');
+        }, 0);
+      }
+
+      function closeOptions(listItem) {
+        const existingOptions = listItem.querySelector('.bg-dark.absolute');
+        if (existingOptions) {
+          existingOptions.classList.add('slide-out');
+          existingOptions.classList.remove('slide-in');
+          listItem.classList.remove('options-active');
+          setTimeout(() => {
+            listItem.style.position = '';
+            existingOptions.remove();
+            activeOptionsItem = null;
+          }, 300);
+        }
+      }
+
+      function cloneTimer(indexToClone) {
+        const timerToClone = { ...timers[indexToClone] };
+        timers.splice(indexToClone + 1, 0, timerToClone);
+        renderTimerList();
+      }
+
+      function deleteTimer(timerToDelete, indexToDelete) {
+        if (confirm(`Möchtest du den Timer "${timerToDelete.name}" wirklich löschen?`)) {
+          timers.splice(indexToDelete, 1);
+          renderTimerList();
+        }
+      }
+
+      function renderTimerList() {
+        timerList.innerHTML = '';
+        timers.forEach(timer => {
+          const li = document.createElement('li');
+          li.classList.add('timer-item');
+          if (isSortableMode) {
+            li.classList.add('sortable-mode');
+          }
+
+          const sortIcon = document.createElement('span');
+          sortIcon.classList.add('sort-icon');
+          sortIcon.textContent = '=';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.classList.add('timer-name');
+          nameSpan.textContent = timer.name;
+
+          const durationSpan = document.createElement('span');
+          durationSpan.classList.add('timer-duration');
+          durationSpan.textContent = timer.duration;
+
+          li.appendChild(sortIcon);
+          li.appendChild(nameSpan);
+          li.appendChild(durationSpan);
+
+          let touchStartX = 0;
+          let touchEndX = 0;
+
+          li.addEventListener('touchstart', (e) => {
+            if (!isSortableMode) {
+              touchStartX = e.changedTouches[0].screenX;
+              longPressTimer = setTimeout(() => {
+                enableSortableMode();
+              }, longPressThreshold);
+            }
+          });
+
+          li.addEventListener('touchend', (e) => {
+            if (!isSortableMode) {
+              touchEndX = e.changedTouches[0].screenX;
+              clearTimeout(longPressTimer);
+              handleSwipe(li, touchEndX, touchStartX);
+              touchStartX = 0;
+              touchEndX = 0;
+            }
+          });
+
+          li.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+          });
+
+          timerList.appendChild(li);
+        });
+
+        if (isSortableMode) {
+          enableSortable();
+        }
+      }
+
+      function enableSortableMode() {
+        isSortableMode = true;
+        addButton.style.display = 'none';
+        saveButton.style.display = 'block';
+        renderTimerList();
+      }
+
+      function disableSortableMode() {
+        isSortableMode = false;
+        addButton.style.display = 'block';
+        saveButton.style.display = 'none';
+        if (sortable) {
+          sortable.option("disabled", true);
+          sortable = null;
+        }
+        renderTimerList();
+      }
+
+      function enableSortable() {
+        if (!sortable) {
+          sortable = new Sortable(timerList, {
+            animation: 150,
+          });
+        }
+      }
+
+      saveButton.addEventListener('click', disableSortableMode);
+
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 0) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+      });
+
+      document.addEventListener('click', (event) => {
+        const openOptions = document.querySelector('.timer-item.options-active > div.absolute');
+        const targetElement = event.target;
+
+        if (openOptions && !openOptions.contains(targetElement) && !targetElement.classList.contains('timer-item') && !targetElement.closest('.timer-item')) {
+          const activeListItem = document.querySelector('.timer-item.options-active');
+          if (activeListItem) {
+            closeOptions(activeListItem);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
