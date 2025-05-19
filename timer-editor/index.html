@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#01161E" />
+    <title>Add Timer</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              dark: '#01161E',
+              background: '#124559',
+              primary: '#598392',
+              secondary: '#AEC3B0',
+              light: '#EFF6E0',
+              accent: '#83c5be',
+              rest: '#94d1be',
+              interval: '#e76f51',
+              warning: '#fc814a',
+            },
+            fontFamily: {
+              karla: ['Karla', 'sans-serif'],
+            }
+          }
+        }
+      };
+    </script>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        padding-top: env(safe-area-inset-top);
+        background-color: #01161E;
+        font-family: 'Karla', sans-serif;
+        overscroll-behavior: none;
+        scroll-padding-top: 4rem;
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        padding: 1rem;
+        background-color: #01161E;
+        transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+      }
+
+      header::before {
+        content: "";
+        position: absolute;
+        top: -100vh;
+        left: 0;
+        right: 0;
+        height: 100vh;
+        background-color: #01161E;
+        z-index: -1;
+      }
+
+      header.scrolled {
+        background-color: rgba(1, 22, 30, 0.7);
+        backdrop-filter: blur(6px);
+      }
+
+      .editor-content {
+        padding-top: 0rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-bottom: 1rem;
+        space-y-4;
+      }
+
+      .interval-list {
+        margin-top: 1rem;
+        space-y-3;
+      }
+
+      .interval-item {
+        margin-bottom: 1rem;
+      }
+
+      .interval-item > div:first-child {
+        background-color: #124559;
+        border: 1px solid #light/10;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: opacity 0.3s ease;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
+      .interval-item.options-active > div:first-child {
+        opacity: 0.5;
+      }
+
+      .interval-item > div.absolute {
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        background-color: #01161E;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+      }
+
+      .interval-item > div.absolute.slide-in {
+        transform: translateX(0%);
+      }
+
+      .interval-item > div.absolute.slide-out {
+        transform: translateX(100%);
+      }
+
+      .interval-item > div.absolute span {
+        color: #EFF6E0;
+        cursor: pointer;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+      }
+
+      .interval-item > div.absolute span:hover {
+        opacity: 0.8;
+      }
+
+      .interval-item > div.absolute span.delete {
+        color: #fc814a;
+      }
+
+      .sortable-chosen > div:first-child {
+        background-color: #AEC3B0 !important;
+      }
+
+      .sort-icon-placeholder {
+        width: 1rem;
+        margin-right: 0.5rem;
+        opacity: 0;
+      }
+
+      .interval-item.sortable-mode > div:first-child > span:first-child::before {
+        content: '=';
+        color: #AEC3B0;
+        margin-right: 0.5rem;
+        display: inline-block;
+        width: 1rem;
+        opacity: 1;
+      }
+    </style>
+  </head>
+
+  <body class="text-light">
+    <header id="header" class="text-light shadow-md">
+      <div class="w-full flex justify-between items-center">
+        <button class="text-accent font-semibold hover:underline">Back</button>
+        <h1 class="text-xl font-bold text-accent tracking-wide">Add Timer</h1>
+        <button
+          id="saveButton"
+          class="text-accent font-semibold hover:underline"
+        >
+          Save
+        </button>
+      </div>
+    </header>
+
+    <div class="editor-content pt-4">
+      <div>
+        <label class="block text-accent font-semibold mb-1">Timer Name</label>
+        <input
+          type="text"
+          placeholder="z.B. Boxrunde"
+          class="w-full px-4 py-2 rounded-xl bg-light text-dark placeholder:text-dark/50 focus:outline-none focus:ring-2 focus:ring-accent"
+        />
+      </div>
+
+      <div class="mt-6">
+        <label class="block text-accent font-semibold mb-1">Repeat</label>
+        <input
+          type="number"
+          id="repeat"
+          min="1"
+          value="1"
+          class="w-full px-4 py-2 rounded-xl bg-light text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+        />
+      </div>
+
+      <div class="interval-list mt-6">
+        <h2 class="text-accent font-semibold text-lg">Intervals</h2>
+        <div id="intervalContainer"></div>
+      </div>
+
+      <button
+        id="addIntervalButton"
+        class="w-full bg-secondary text-dark rounded-xl py-2 font-semibold hover:bg-secondary/80 transition-all mt-6"
+      >
+        + Add Interval
+      </button>
+    </div>
+
+    <script>
+      const header = document.getElementById('header');
+        const saveButton = document.getElementById('saveButton');
+        const intervalContainer = document.getElementById('intervalContainer');
+        const addIntervalButton = document.getElementById('addIntervalButton');
+        let activeOptionsItem = null;
+        let sortableInstance = null;
+        let longPressTimer = null;
+        const longPressThreshold = 500; // Angepasste Schwelle für Longpress
+        let isSortableMode = false;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const swipeThreshold = 50;
+        let currentListItem = null; // Speichert das aktuelle Listenelement für Touch-Operationen
+
+        let intervals = [
+            { id: 1, name: "Get Ready", duration: "00:10 | –" },
+            { id: 2, name: "New Interval", duration: "01:00 | 00:30" },
+            { id: 3, name: "Interval 3", duration: "01:30 | 00:45" },
+            { id: 4, name: "Interval 4", duration: "00:45 | 00:15" },
+            { id: 5, name: "Interval 5", duration: "02:00 | 00:30" },
+            { id: 6, name: "Interval 6", duration: "00:30 | 00:10" },
+            { id: 7, name: "Interval 7", duration: "01:15 | 00:20" },
+            { id: 8, name: "Interval 8", duration: "00:50 | 00:10" },
+            { id: 9, name: "Interval 9", duration: "01:40 | 00:30" },
+            { id: 10, name: "Interval 10", duration: "00:25 | 00:05" },
+            { id: 11, name: "Interval 11", duration: "01:00 | 00:20" },
+            { id: 12, name: "Interval 12", duration: "00:35 | 00:10" },
+        ];
+
+        renderIntervalList();
+
+        function handleSwipe(listItem, deltaX) {
+            if (deltaX < -swipeThreshold) {
+                showOptions(listItem);
+            } else if (deltaX > swipeThreshold) {
+                closeOptions(listItem);
+            }
+        }
+
+        function showOptions(listItem) {
+            if (activeOptionsItem && activeOptionsItem !== listItem) {
+                closeOptions(activeOptionsItem);
+            }
+            activeOptionsItem = listItem;
+
+            let optionsElement = listItem.querySelector('.absolute');
+            if (!optionsElement) {
+                optionsElement = document.createElement('div');
+                optionsElement.classList.add('absolute', 'top-0', 'left-0', 'bottom-0', 'bg-dark', 'flex', 'items-center', 'justify-center', 'transform', 'translate-x-full', 'transition-transform', 'duration-300', 'w-full');
+                optionsElement.innerHTML = `
+                    <span class="text-light cursor-pointer clone-button">Clone</span>
+                    <span class="text-warning cursor-pointer delete-button ml-4">Delete</span>
+                `;
+                listItem.appendChild(optionsElement);
+
+                const cloneButton = optionsElement.querySelector('.clone-button');
+                const deleteButton = optionsElement.querySelector('.delete-button');
+
+                cloneButton.addEventListener('click', () => {
+                    const itemId = parseInt(listItem.dataset.intervalId);
+                    cloneInterval(itemId);
+                    closeOptions(listItem);
+                });
+
+                deleteButton.addEventListener('click', () => {
+                    const itemId = parseInt(listItem.dataset.intervalId);
+                    deleteInterval(itemId);
+                });
+            }
+
+            setTimeout(() => {
+                optionsElement.classList.add('slide-in');
+                optionsElement.classList.remove('translate-x-full');
+                listItem.classList.add('options-active');
+            }, 0);
+        }
+
+        function closeOptions(listItem) {
+            const optionsElement = listItem.querySelector('.absolute');
+            if (optionsElement) {
+                optionsElement.classList.remove('slide-in');
+                optionsElement.classList.add('slide-out');
+                listItem.classList.remove('options-active');
+                setTimeout(() => {
+                    if (optionsElement && optionsElement.parentNode === listItem) {
+                        optionsElement.remove();
+                    }
+                    activeOptionsItem = null;
+                }, 300);
+            }
+        }
+
+        function cloneInterval(itemId) {
+            const indexToClone = intervals.findIndex(item => item.id === itemId);
+            if (indexToClone !== -1) {
+                const clonedInterval = { ...intervals[indexToClone], id: Date.now() };
+                intervals.splice(indexToClone + 1, 0, clonedInterval);
+                renderIntervalList();
+            }
+        }
+
+        function deleteInterval(itemId) {
+            const indexToDelete = intervals.findIndex(item => item.id === itemId);
+            if (indexToDelete !== -1 && confirm(`Möchtest du dieses Intervall wirklich löschen?`)) {
+                intervals.splice(indexToDelete, 1);
+                renderIntervalList();
+            }
+        }
+
+        function renderIntervalList() {
+            intervalContainer.innerHTML = '';
+            intervals.forEach(interval => {
+                const listItem = document.createElement('div');
+                listItem.classList.add('interval-item', 'relative', 'overflow-hidden', 'user-select-none');
+                listItem.dataset.intervalId = interval.id;
+
+                listItem.innerHTML = `
+                    <div class="bg-background border border-light/10 rounded-xl px-4 py-3 flex justify-between items-center transition-opacity duration-300">
+                        <span><span class="sort-icon-placeholder"></span>${interval.name}</span>
+                        <span class="text-sm text-accent">${interval.duration}</span>
+                    </div>
+                `;
+
+                let startX = 0;
+                let startY = 0;
+                let isSwiping = false;
+                let isLongPress = false;
+                let longPressTimeout;
+
+                listItem.addEventListener('touchstart', (e) => {
+                    if (!isSortableMode) {
+                        currentListItem = listItem;
+                        startX = e.touches[0].clientX;
+                        startY = e.touches[0].clientY;
+                        isSwiping = false;
+                        isLongPress = false;
+                        longPressTimeout = setTimeout(() => {
+                            isLongPress = true;
+                            enableSortableMode();
+                        }, longPressThreshold);
+                    }
+                });
+
+                listItem.addEventListener('touchmove', (e) => {
+                    if (!isSortableMode && currentListItem === listItem) {
+                        const currentX = e.touches[0].clientX;
+                        const currentY = e.touches[0].clientY;
+                        const deltaX = Math.abs(currentX - startX);
+                        const deltaY = Math.abs(currentY - startY);
+
+                        // Wenn die Bewegung signifikant ist, betrachten wir es als Swipe und beenden Longpress
+                        if (deltaX > 10 || deltaY > 10) {
+                            isSwiping = true;
+                            clearTimeout(longPressTimeout);
+                        }
+                    }
+                });
+
+                listItem.addEventListener('touchend', (e) => {
+                    if (!isSortableMode && currentListItem === listItem) {
+                        clearTimeout(longPressTimeout);
+                        if (!isLongPress && isSwiping) {
+                            const endX = e.changedTouches[0].clientX;
+                            const deltaX = endX - startX;
+                            handleSwipe(listItem, deltaX);
+                        }
+                        startX = 0;
+                        startY = 0;
+                        isSwiping = false;
+                        isLongPress = false;
+                        currentListItem = null;
+                    }
+                });
+
+                // Verhindern des Kontextmenüs bei langem Drücken (optional)
+                listItem.addEventListener('contextmenu', (e) => {
+                    if (!isSortableMode) {
+                        e.preventDefault();
+                    }
+                });
+
+                intervalContainer.appendChild(listItem);
+            });
+
+            if (isSortableMode) {
+                enableSortable();
+            } else if (sortableInstance) {
+                sortableInstance.destroy();
+                sortableInstance = null;
+            }
+        }
+
+        function enableSortableMode() {
+            isSortableMode = true;
+            saveButton.textContent = 'Save Order';
+            const listItems = intervalContainer.querySelectorAll('.interval-item');
+            listItems.forEach(item => item.classList.add('sortable-mode'));
+            enableSortable();
+        }
+
+        function disableSortableMode() {
+            isSortableMode = false;
+            saveButton.textContent = 'Save';
+            const listItems = intervalContainer.querySelectorAll('.interval-item');
+            listItems.forEach(item => item.classList.remove('sortable-mode'));
+            if (sortableInstance) {
+                sortableInstance.destroy();
+                sortableInstance = null;
+            }
+            console.log("Neue Reihenfolge der Intervalle:", intervals.map(i => i.id));
+        }
+
+        function enableSortable() {
+            if (!sortableInstance) {
+                sortableInstance = new Sortable(intervalContainer, {
+                    animation: 150,
+                    handle: ':first-child',
+                    onEnd: function (evt) {
+                        const newIntervals = [];
+                        Array.from(intervalContainer.children).forEach(item => {
+                            const id = parseInt(item.dataset.intervalId);
+                            const foundInterval = intervals.find(interval => interval.id === id);
+                            if (foundInterval) {
+                                newIntervals.push(foundInterval);
+                            }
+                        });
+                        intervals = newIntervals;
+                    },
+                });
+            }
+        }
+
+        saveButton.addEventListener('click', () => {
+            if (isSortableMode) {
+                disableSortableMode();
+            } else {
+                console.log("Timer gespeichert mit aktuellen Einstellungen:", /* Deine Timer-Daten */);
+            }
+        });
+
+        addIntervalButton.addEventListener('click', () => {
+            const newId = Date.now();
+            intervals.push({ id: newId, name: `Interval ${intervals.length + 1}`, duration: "00:00 | 00:00" });
+            renderIntervalList();
+        });
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 0) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            const openOptions = document.querySelector('.interval-item.options-active .absolute');
+            if (openOptions && !event.target.closest('.interval-item')) {
+                const activeListItem = document.querySelector('.interval-item.options-active');
+                if (activeListItem) {
+                    closeOptions(activeListItem);
+                }
+            }
+        });
+    </script>
+  </body>
+</html>
