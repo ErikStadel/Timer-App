@@ -40,9 +40,9 @@
     .tab-btn {
       cursor: pointer;
       transition: background-color 0.3s ease, transform 0.2s ease;
-      flex: 1; /* Makes buttons equal width */
+      flex: 1;
       text-align: center;
-      -webkit-tap-highlight-color: rgba(0, 0, 0, 0); /* Remove tap highlight on iOS */
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     }
 
     .tab-btn.active {
@@ -66,30 +66,28 @@
     /* Wheel styling: updated for 3 visible items and highlighting */
     .wheel-container {
       position: relative;
-      width: 100%; /* Behält 100% Breite des Elternelements bei */
-      z-index: 30; /* Ensure wheel container is above overlay and popup */
-      overflow: hidden; /* Wichtig, um überstehende Items zu verbergen (wird durch Padding in .wheel-item gemindert) */
+      width: 100%;
+      z-index: 30;
+      overflow: hidden;
       display: flex;
-      justify-content: center; /* Zentriert das Wheel horizontal */
-      /* width: 120px; --> DIESE STARKE BREITE ENTFERNEN */
+      justify-content: center;
     }
 
     .wheel {
-      height: 120px; /* Zeigt 3 Items an (40px * 3) */
-      overflow-y: auto; /* Ermöglicht Scrollen */
-      overflow-x: hidden; /* Verhindert horizontales Scrollen */
-      -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
+      height: 120px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
       scroll-snap-type: y mandatory;
-      scroll-padding: 40px 0; /* Fügt oben und unten Padding hinzu, um das mittlere Item der Snap-Punkt ist */
+      scroll-padding: 40px 0;
       scrollbar-width: none;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 0; /* Padding oben/unten. Horizontaler Platz kommt von wheel-item padding */
-      
-      /* NEU: WICHTIG FÜR HORIZONTALES SCROLLEN AUF IOS */
+      padding: 40px 0;
       overscroll-behavior-x: none;
       touch-action: pan-y;
+      width: 100%;
     }
 
     .wheel::-webkit-scrollbar {
@@ -107,21 +105,19 @@
       user-select: none;
       transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s;
       color: #83c5be;
-      -webkit-touch-callout: none; /* Prevent callout on long press */
-      opacity: 0.6; /* Standardmäßige, leicht transparente Darstellung */
-      transform: scale(0.9); /* Standardmäßige, leicht verkleinerte Darstellung */
-      
-      /* NEU: MEHR PLATZ FÜR SKALIERTE ITEMS */
-      min-width: 40px; /* Stellt sicher, dass es nicht kleiner als 40px wird */
-      padding: 0 15px; /* Horizontales Padding für Pufferraum. Skaliert mit transform! */
-      white-space: nowrap; /* Verhindert Zeilenumbruch der Zahlen */
+      -webkit-touch-callout: none;
+      opacity: 0.6;
+      transform: scale(0.9);
+      min-width: 60px;
+      padding: 0 20px;
+      white-space: nowrap;
     }
 
     .wheel-item.selected {
-      color: #EFF6E0; /* Hervorgehobene Textfarbe */
-      opacity: 1; /* Volle Deckkraft für das ausgewählte Item */
-      transform: scale(1.1); /* Leicht vergrößerte Darstellung des ausgewählten Items */
-      font-size: 1.5rem; /* Größere Schrift für das ausgewählte Item */
+      color: #EFF6E0;
+      opacity: 1;
+      transform: scale(1.1);
+      font-size: 1.5rem;
     }
 
     .tab-content {
@@ -132,12 +128,10 @@
       display: block;
     }
 
-    /* Ensure body is not scrollable */
     body {
       overflow: hidden;
     }
 
-    /* Ensure overlay and popup do not overlap wheel container */
     .overlay {
       z-index: 10;
     }
@@ -310,18 +304,14 @@
   <script>
     const wheels = document.querySelectorAll('.wheel');
 
-    // Initialisiert alle Wheels beim Laden der Seite
     wheels.forEach((wheel) => {
-        // Verzögert die erste Initialisierung leicht, um sicherzustellen, dass alles gerendert ist
         setTimeout(() => updateWheel(wheel), 10);
         wheel.addEventListener('scroll', () => updateWheel(wheel));
     });
 
-
-    // Update styles of wheel items with a delay
     function updateWheel(wheel) {
       const items = wheel.getElementsByClassName('wheel-item');
-      clearTimeout(wheel.scrollTimeout); // Clear any previous timeout
+      clearTimeout(wheel.scrollTimeout);
 
       wheel.scrollTimeout = setTimeout(() => {
         const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
@@ -329,17 +319,15 @@
           const rect = item.getBoundingClientRect();
           const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
 
-          // Schwellenwert für die Auswahl ggf. anpassen, wenn 10px zu groß/klein ist
-          if (distance < 10) { 
+          if (distance < 10) {
             item.classList.add('selected');
           } else {
             item.classList.remove('selected');
           }
         });
-      }, 5); // Delay weiter verkürzt auf 20ms für schnellere Reaktion
+      }, 5);
     }
 
-    // Tab navigation
     document.getElementById('tab-interval').addEventListener('click', function() {
       document.getElementById('tab-interval').classList.add('active');
       document.getElementById('tab-interval').classList.remove('inactive');
@@ -349,7 +337,6 @@
       document.getElementById('content-interval').classList.add('active');
       document.getElementById('content-rest').classList.remove('active');
 
-      // Nach dem Tab-Wechsel Wheels aktualisieren, falls sie sich neu positionieren
       setTimeout(() => {
           document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
       }, 0);
@@ -364,13 +351,11 @@
       document.getElementById('content-rest').classList.add('active');
       document.getElementById('content-interval').classList.remove('active');
 
-      // Nach dem Tab-Wechsel Wheels aktualisieren, falls sie sich neu positionieren
       setTimeout(() => {
           document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
       }, 0);
     });
 
-    // Initialisiere die Auswahl für alle Wheels beim Laden der Seite
     document.addEventListener('DOMContentLoaded', () => {
         wheels.forEach((wheel) => {
             updateWheel(wheel);
