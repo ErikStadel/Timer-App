@@ -163,7 +163,10 @@
 <body>
 
     <header class="sticky-header" id="signal-select-header">
-        <a href="signals.html" class="header-link" id="back-link">Back</a> <h1 class="header-title" id="signal-name-display">Signalname</h1> <div class="header-placeholder"></div> </header>
+        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signal-screen.html" class="header-link" id="back-link">Back</a> 
+        <h1 class="header-title" id="signal-name-display">Signalname</h1>
+        <div class="header-placeholder"></div>
+    </header>
 
     <ul class="sound-list" id="sound-list">
         <li class="sound-item" data-sound-id="bell" data-file="bell.mp3">
@@ -187,14 +190,13 @@
         <li class="sound-item" data-sound-id="whoosh" data-file="whoosh.mp3">
             <span class="sound-name">Whoosh</span>
         </li>
-        </ul>
+    </ul>
 
     <script>
         const soundList = document.getElementById('sound-list');
         const signalNameDisplay = document.getElementById('signal-name-display');
-        const backLink = document.getElementById('back-link'); // Referenz auf den Back-Link
+        const backLink = document.getElementById('back-link');
 
-        // Dummy-Liste der verfügbaren Sounds (später können das echte Audio-Objekte sein)
         const availableSounds = [
             { id: 'bell', name: 'Bell', file: 'bell.mp3' },
             { id: 'horn', name: 'Horn', file: 'horn.mp3' },
@@ -205,42 +207,28 @@
             { id: 'whoosh', name: 'Whoosh', file: 'whoosh.mp3' },
         ];
 
-        let currentSelectedSoundId = null; // Speichert die ID des aktuell ausgewählten Sounds
-        let currentSignalType = null; // Speichert den Signaltyp, der vom vorherigen Screen kam
+        let currentSelectedSoundId = null;
+        let currentSignalType = null;
 
-        // Funktion zum Abspielen eines Sounds
         function playSound(filePath) {
             console.log(`Spiele Sound ab: ${filePath}`);
-            // Hier würde der tatsächliche Audio-Code stehen.
-            // Beispiel: const audio = new Audio(filePath); audio.play();
         }
 
-        // Funktion zum Hervorheben der ausgewählten Zeile
         function selectSoundItem(soundId) {
-            // Alle Hervorhebungen entfernen
             document.querySelectorAll('.sound-item').forEach(item => {
                 item.classList.remove('selected');
             });
-
-            // Die neue Zeile hervorheben
             const selectedItem = document.querySelector(`.sound-item[data-sound-id="${soundId}"]`);
             if (selectedItem) {
                 selectedItem.classList.add('selected');
-                currentSelectedSoundId = soundId; // Aktualisiere den globalen Zustand
+                currentSelectedSoundId = soundId;
             }
         }
 
-        // Funktion zum Speichern des ausgewählten Sounds für den aktuellen Signaltyp
         function saveSelectedSound() {
             if (currentSignalType && currentSelectedSoundId) {
-                // localStorage ist einfach für kleine Datenmengen
-                // Wir speichern ein Objekt, das alle Signal-Sounds enthält
                 let savedSignals = JSON.parse(localStorage.getItem('savedSignalsSounds')) || {};
-                
-                // Aktualisiere den Sound für den aktuellen Signaltyp
                 savedSignals[currentSignalType] = currentSelectedSoundId;
-                
-                // Speichere das aktualisierte Objekt zurück in localStorage
                 localStorage.setItem('savedSignalsSounds', JSON.stringify(savedSignals));
                 console.log(`Sound '${currentSelectedSoundId}' für Signal '${currentSignalType}' gespeichert.`);
             } else {
@@ -248,23 +236,19 @@
             }
         }
 
-        // Event Listener für Klicks auf die Sound-Items
         soundList.addEventListener('click', (event) => {
             const clickedItem = event.target.closest('.sound-item');
             if (clickedItem) {
                 const soundId = clickedItem.dataset.soundId;
                 const soundFile = clickedItem.dataset.file;
-
-                selectSoundItem(soundId); // Zeile hervorheben und currentSelectedSoundId aktualisieren
-                playSound(soundFile); // Sound abspielen
+                selectSoundItem(soundId);
+                playSound(soundFile);
             }
         });
 
-        // Initialisierung beim Laden der Seite
         document.addEventListener('DOMContentLoaded', () => {
-            // Den Signalnamen aus der URL abrufen
             const urlParams = new URLSearchParams(window.location.search);
-            currentSignalType = urlParams.get('type'); // z.B. 'timer-start'
+            currentSignalType = urlParams.get('type');
 
             if (currentSignalType) {
                 const formattedSignalName = currentSignalType
@@ -273,24 +257,23 @@
                     .join(' ');
                 signalNameDisplay.textContent = formattedSignalName;
 
-                // Versuche, den zuvor gespeicherten Sound für diesen Signaltyp zu laden
                 let savedSignals = JSON.parse(localStorage.getItem('savedSignalsSounds')) || {};
                 const savedSoundId = savedSignals[currentSignalType];
                 
                 if (savedSoundId) {
-                    selectSoundItem(savedSoundId); // Hervorheben, falls ein Sound gespeichert ist
+                    selectSoundItem(savedSoundId);
                 }
             } else {
-                signalNameDisplay.textContent = "Sound auswählen"; // Standardtitel, falls kein Typ übergeben
+                signalNameDisplay.textContent = "Sound auswählen";
             }
         });
 
         // Event Listener für den "Back"-Link im Header
         backLink.addEventListener('click', (event) => {
-            event.preventDefault(); // Verhindere die Standard-Navigation, um erst zu speichern
+            event.preventDefault(); // Verhindere die Standard-Navigation
             saveSelectedSound(); // Speichere den ausgewählten Sound
             console.log('Zurück zu Signals navigieren...');
-            window.location.href = backLink.href; // Jetzt navigieren
+            window.location.href = backLink.href; // Jetzt navigieren zur absoluten URL
         });
     </script>
 </body>
