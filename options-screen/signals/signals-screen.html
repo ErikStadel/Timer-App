@@ -174,8 +174,10 @@
 <body>
 
     <header class="sticky-header" id="signals-header">
-        <a href="options.html" class="header-link">Back</a> <h1 class="header-title">Signals</h1>
-        <div class="header-placeholder"></div> </header>
+        <a href="https://erikstadel.github.io/Timer-App/options-screen/options.html" class="header-link">Back</a> 
+        <h1 class="header-title">Signals</h1>
+        <div class="header-placeholder"></div>
+    </header>
 
     <div class="main-content">
         <div class="signal-group">
@@ -215,8 +217,8 @@
         // Dummy-Funktion, die auf den Klick eines Signal-Buttons reagiert
         function handleSignalClick(signalType) {
             console.log(`Signal '${signalType}' geklickt!`);
-            // Hier würde die Navigation zum signal-select.html Screen stattfinden
-            window.location.href = `signal-select.html?type=${signalType}`; // Beispiel mit Query-Parameter
+            // Angepasster Link für die Navigation zum signal-select.html Screen
+            window.location.href = `https://erikstadel.github.io/Timer-App/options-screen/signals/signal-select.html?type=${signalType}`;
         }
 
         // Event Listener für die Signal-Buttons
@@ -226,10 +228,23 @@
         document.getElementById('five-second-signal').addEventListener('click', () => handleSignalClick('five-second'));
 
         // Event Listener für den "Back"-Link im Header
-        document.querySelector('.header-link[href="options.html"]').addEventListener('click', (event) => {
-            console.log('Zurück zu Options navigieren...');
-            // Im echten Einsatz: window.location.href = 'options.html';
-        });
+        // Hier ist der href bereits in HTML angepasst, daher muss das JS nicht mehr überschrieben werden
+        // document.querySelector('.header-link[href="options.html"]').addEventListener('click', (event) => {
+        //     console.log('Zurück zu Options navigieren...');
+        // });
+
+        // Funktion zum Laden und Anzeigen der Sounds
+        function loadAndDisplaySignals() {
+            let savedSignals = JSON.parse(localStorage.getItem('savedSignalsSounds')) || {};
+
+            document.getElementById('timer-start-sound').textContent = savedSignals['timer-start'] || 'bell';
+            document.getElementById('timer-end-sound').textContent = savedSignals['timer-end'] || 'horn';
+            document.getElementById('halfway-sound').textContent = savedSignals['halfway'] || 'beep';
+            document.getElementById('five-second-sound').textContent = savedSignals['five-second'] || 'applause';
+        }
+
+        // Laden der Sounds beim Initialisieren der Seite
+        document.addEventListener('DOMContentLoaded', loadAndDisplaySignals);
     </script>
 </body>
 </html>
