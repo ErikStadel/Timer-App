@@ -71,11 +71,15 @@
       overflow: hidden; /* Wichtig, um überstehende Items zu verbergen */
       display: flex;
       justify-content: center; /* Zentriert das Wheel horizontal */
+      /* NEU: Erhöhe die Breite, um abgeschnittene Inhalte zu vermeiden */
+      width: 120px; /* Erhöht die Breite des Containers, da 40px * 1.1 = 44px, 44px * 2 (links/rechts) = 88px, also mehr als 40px. 120px gibt genug Raum. */
     }
 
     .wheel {
       height: 120px; /* Zeigt 3 Items an (40px * 3) */
       overflow-y: auto; /* Ermöglicht Scrollen */
+      /* NEU: Verhindert horizontales Scrollen */
+      overflow-x: hidden;
       -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
       scroll-snap-type: y mandatory;
       scroll-padding: 40px 0; /* Fügt oben und unten Padding hinzu, um das mittlere Item der Snap-Punkt ist */
@@ -83,7 +87,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 0; /* Fügt oben und unten Padding hinzu, um das mittlere Item in der Mitte zu positionieren */
+      /* NEU: Fügt horizontales Padding hinzu, um dem skalierten Item mehr Platz zu geben */
+      padding: 40px 20px; /* Oben/Unten 40px, Links/Rechts 20px */
     }
 
     .wheel::-webkit-scrollbar {
@@ -104,6 +109,8 @@
       -webkit-touch-callout: none; /* Prevent callout on long press */
       opacity: 0.6; /* Standardmäßige, leicht transparente Darstellung */
       transform: scale(0.9); /* Standardmäßige, leicht verkleinerte Darstellung */
+      /* NEU: Setze eine explizite Breite für Items, damit sie beim Skalieren nicht zu breit werden */
+      width: 40px;
     }
 
     .wheel-item.selected {
@@ -320,7 +327,7 @@
             item.classList.remove('selected');
           }
         });
-      }, 100); // A small delay (100ms)
+      }, 50); // Delay verkürzt auf 50ms
     }
 
     // Tab navigation
