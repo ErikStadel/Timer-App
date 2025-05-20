@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Martial Arts Timer</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#01161E',
+            background: '#124559',
+            primary: '#598392',
+            secondary: '#AEC3B0',
+            light: '#EFF6E0',
+            accent: '#83c5be',
+            rest: '#94d1be',
+            interval: '#e76f51',
+            warning: '#fc814a',
+          },
+          fontFamily: {
+            karla: ['Karla', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body class="bg-background font-karla text-light min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-dark/90 backdrop-blur-md text-light px-5 py-3 flex justify-between items-center shadow-md">
+    <button id="exitBtn" class="text-accent font-semibold hover:underline">Exit</button>
+    <h1 class="text-xl font-bold text-accent tracking-wide">Timer Name</h1>
+    <div class="w-12"></div> <!-- Platzhalter rechts -->
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow flex flex-col items-center justify-center px-5">
+
+    <!-- Timer Circle -->
+    <div id="timerCircle" class="w-60 h-60 rounded-full border-8 border-accent flex flex-col justify-center items-center mb-6 relative select-none">
+      <div id="timerName" class="text-2xl font-bold text-accent mb-2">Timer Name</div>
+      <hr class="border-t border-accent w-24 mb-2" />
+      <button id="startPauseBtn" class="text-accent font-semibold text-xl hover:underline">
+        Start
+      </button>
+    </div>
+
+    <!-- Countdown Displays -->
+    <div class="w-full max-w-md flex justify-between mb-4 px-2 text-lg font-semibold">
+      <div>
+        Intervall <span id="currentInterval">01</span>
+      </div>
+      <div>
+        Gesamtzeit <span id="totalTime">00:00</span>
+      </div>
+    </div>
+
+    <!-- Interval List -->
+    <div id="intervalList" class="w-full max-w-md overflow-y-auto rounded-xl px-4 py-2" style="max-height: 200px;">
+      <!-- Intervall Items werden per JS reingeladen -->
+    </div>
+
+  </main>
+
+  <!-- Footer mit Pause und End Buttons -->
+  <footer class="sticky bottom-0 left-0 w-full bg-dark/90 backdrop-blur-md flex justify-around py-3 shadow-inner">
+    <button id="pauseBtn" class="bg-primary text-light font-semibold rounded-2xl px-6 py-2 shadow-md hover:shadow-lg transition duration-200">
+      Pause
+    </button>
+    <button id="endBtn" class="bg-warning text-light font-semibold rounded-2xl px-6 py-2 shadow-md hover:shadow-lg transition duration-200">
+      End
+    </button>
+  </footer>
+
+<script>
+  // Beispiel-Daten
+  const intervals = [
+    { name: 'Aufwärmen', duration: 10, type: 'rest' },  // Sekunden
+    { name: 'Kampf 1', duration: 30, type: 'interval' },
+    { name: 'Pause 1', duration: 20, type: 'rest' },
+    { name: 'Kampf 2', duration: 30, type: 'interval' },
+    { name: 'Cooldown', duration: 15, type: 'rest' },
+  ];
+
+  let currentIndex = 0;
+  let timeLeft = intervals[0].duration;
+  let timerRunning = false;
+  let timerInterval = null;
+
+  // Hilfsfunktion für mm:ss Format
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  // Update Anzeige
+  function updateDisplay() {
+    const current = intervals[currentIndex];
+    const totalSeconds = intervals.reduce((sum, iv) => sum + iv.duration, 0);
+    const totalLeft = intervals.slice(currentIndex).reduce((sum, iv, idx) => {
+      if(idx === 0) return sum + timeLeft;
+      return sum + iv.duration;
+    }, 0);
+
+    // Timer Name
+    document.getElementById('timerName').textContent = current.name;
+
+    // Start/Pause Button Text
+    document.getElementById('startPauseBtn').textContent = timerRunning ? 'Pause' : (timeLeft === current.duration ? 'Start' : 'Start');
+
+    // Current Interval Number
+    document.getElementById('currentInterval').textContent = (currentIndex + 1).toString().padStart(2, '0');
+
+    // Total Time Left
+    document.getElementById('totalTime').textContent = formatTime(totalLeft);
+
+    // Highlight Interval List
+    const list = document.getElementById('intervalList');
+    list.innerHTML = '';
+    intervals.forEach((iv, i) => {
+      const div = document.createElement('div');
+      div.textContent = `${iv.name} - ${formatTime(iv.duration)}`;
+      div.className = 'flex justify-between px-4 py-2 rounded-xl mb-2 cursor-default select-none';
+
+      // Hintergrundfarben
+      if(i === currentIndex){
+        if(timeLeft <= 5 && iv.type === 'interval'){
+          div.classList.add('bg-warning', 'text-dark');
+        } else if(iv.type === 'interval'){
+          div.classList.add('bg-interval', 'text-light');
+        } else {
+          div.classList.add('bg-rest', 'text-dark');
+        }
+      } else {
+        div.classList.add('bg-dark/60', 'text-light');
+      }
+
+      list.appendChild(div);
+    });
+
+    // Timer Circle Background Farbe
+    const timerCircle = document.getElementById('timerCircle');
+    if(intervals[currentIndex].type === 'interval'){
+      if(timeLeft <= 5){
+        timerCircle.classList.remove('bg-interval');
+        timerCircle.classList.remove('bg-rest');
+        timerCircle.classList.add('bg-warning');
+      } else {
+        timerCircle.classList.remove('bg-warning');
+        timerCircle.classList.remove('bg-rest');
+        timerCircle.classList.add('bg-interval');
+      }
+    } else {
+      timerCircle.classList.remove('bg-interval');
+      timerCircle.classList.remove('bg-warning');
+      timerCircle.classList.add('bg-rest');
+    }
+  }
+
+  // Timer Funktion
+  function tick(){
+    if(timeLeft > 0){
+      timeLeft--;
+      updateDisplay();
+    } else {
+      if(currentIndex < intervals.length -1){
+        currentIndex++;
+        timeLeft = intervals[currentIndex].duration;
+        updateDisplay();
+      } else {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        updateDisplay();
+        alert('Timer fertig!');
+      }
+    }
+  }
+
+  // Start/Pause Handler
+  document.getElementById('startPauseBtn').addEventListener('click', () => {
+    if(timerRunning){
+      clearInterval(timerInterval);
+      timerRunning = false;
+    } else {
+      timerInterval = setInterval(tick, 1000);
+      timerRunning = true;
+    }
+    updateDisplay();
+  });
+
+  // Pause Button unten - tut das gleiche wie Start/Pause oben
+  document.getElementById('pauseBtn').addEventListener('click', () => {
+    if(timerRunning){
+      clearInterval(timerInterval);
+      timerRunning = false;
+    }
+    updateDisplay();
+  });
+
+  // End Button mit Confirm
+  document.getElementById('endBtn').addEventListener('click', () => {
+    if(confirm('Timer wirklich beenden?')){
+      clearInterval(timerInterval);
+      timerRunning = false;
+      currentIndex = 0;
+      timeLeft = intervals[0].duration;
+      updateDisplay();
+    }
+  });
+
+  // Initial Anzeige
+  updateDisplay();
+</script>
+
+</body>
+</html>
+
+
