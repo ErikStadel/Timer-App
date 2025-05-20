@@ -20,9 +20,8 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
-                        // --- NEUE FARBDEFINITIONEN ---
-                        rest: '#629471',      /* NEU: Satteres Grün für Rest-Zustand */
-                        interval: '#fd5c34',  /* NEU: Kräftiges Orange-Rot für Intervall-Zustand */
+                        rest: '#629471',      /* Satteres Grün für Rest-Zustand */
+                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand */
                         warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
                     },
                     fontFamily: {
@@ -77,7 +76,8 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0; /* Verhindert, dass dieser Bereich schrumpft */
-            padding-bottom: 2rem; /* Platz zwischen oberer und unterer Hälfte */
+            padding-bottom: 2rem;
+            padding-top: 2rem; /* NEU: Zusätzliches Padding oben für den Schatten */
         }
 
         .start-circle {
@@ -192,15 +192,15 @@
         }
 
         /* Utility classes for background colors (controlled by JS) */
-        .bg-interval { background-color: #fd5c34; } /* NEU */
-        .bg-rest { background-color: #629471; }    /* NEU */
-        .bg-warning { background-color: #fc814a; } /* Bleibt */
+        .bg-interval { background-color: #fd5c34; }
+        .bg-rest { background-color: #629471; }
+        .bg-warning { background-color: #fc814a; }
         .bg-initial { background-color: #124559; } /* Home-Screen Hintergrundfarbe */
 
         /* Utility classes for circle background colors (controlled by JS) */
-        .circle-interval { background-color: #fd5c34; } /* NEU */
-        .circle-rest { background-color: #629471; }    /* NEU */
-        .circle-warning { background-color: #fc814a; } /* Bleibt */
+        .circle-interval { background-color: #fd5c34; }
+        .circle-rest { background-color: #629471; }
+        .circle-warning { background-color: #fc814a; }
         .circle-initial { background-color: #598392; } /* Eine neutrale Farbe, wenn Timer gestoppt ist */
 
 
@@ -341,10 +341,10 @@
         // Dauer in Sekunden (wie im Input gewünscht, nicht 5s für Test)
         const timerIntervalsData = [
             { type: 'interval', name: 'Warm-up', duration: 15 },
-            { type: 'rest', name: 'Rest', duration: 15 },
-            { type: 'interval', name: 'Set 1', duration: 15 }, // 3 Minuten
             { type: 'rest', name: 'Rest', duration: 20 },
-            { type: 'interval', name: 'Set 2', duration: 25 }, // 2 Minuten
+            { type: 'interval', name: 'Set 1', duration: 180 }, // 3 Minuten
+            { type: 'rest', name: 'Rest', duration: 20 },
+            { type: 'interval', name: 'Set 2', duration: 120 }, // 2 Minuten
             { type: 'rest', name: 'Rest', duration: 20 },
             { type: 'interval', name: 'Cool-down', duration: 60 }, // 1 Minute
         ];
@@ -567,7 +567,7 @@
             });
 
             // Wichtig: intervalItems muss NACH dem (Neu-)Rendern der Liste aktualisiert werden
-            intervalItems = Array.from(document.querySelectorAll('.interval-item')); // NEU: Direkt neu zuweisen
+            intervalItems = Array.from(document.querySelectorAll('.interval-item'));
 
             // Setzt den initialen Hintergrund auf die Startfarbe des Home-Screens
             updateBackgroundAndCircleColor('initial');
