@@ -1,1 +1,283 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Sound auswählen</title>
 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Tailwind CSS Konfiguration - identisch zu den anderen Screens
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#01161E',
+                        background: '#124559',
+                        primary: '#598392',
+                        secondary: '#AEC3B0',
+                        light: '#EFF6E0',
+                        accent: '#83c5be',
+                        rest: '#629471',      /* Satteres Grün für Rest-Zustand */
+                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand */
+                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
+                    },
+                    fontFamily: {
+                        karla: ['Karla', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
+        rel="stylesheet"
+    />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            /* padding-top: env(safe-area-inset-top); // Füge dies hinzu, wenn du es für mobile Safe-Areas brauchst */
+            background-color: #01161E; /* Hintergrundfarbe wie Home-Screen Body */
+            font-family: 'Karla', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior: none; /* Von Home-Screen übernommen */
+            scroll-padding-top: 4rem; /* Von Home-Screen übernommen */
+            scroll-behavior: smooth; /* Glattes Scrollverhalten, von Home-Screen übernommen */
+            color: #EFF6E0; /* Helle Textfarbe */
+            display: flex;
+            flex-direction: column; /* Für Header und scrollbare Liste */
+        }
+
+        /* --- Sticky Header --- */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            background-color: #01161E; /* Header Hintergrund wie Home-Screen Header */
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+            flex-shrink: 0;
+        }
+        
+        /* Pseudo-Element für den Bereich über dem Header, wie auf dem Home-Screen */
+        .sticky-header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #83c5be;
+            text-align: center;
+            letter-spacing: 0.025em;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .header-link {
+            color: #83c5be;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+            padding: 0.5rem 0.75rem;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        }
+
+        .header-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Platzhalter für die rechte Seite, da hier kein Button ist */
+        .header-placeholder {
+            width: 90px; /* Ca. Breite des "Back"-Links */
+        }
+
+        /* --- Sound Liste --- */
+        .sound-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1; /* Nimmt den verbleibenden Platz ein */
+            overflow-y: auto; /* Macht die Liste scrollbar */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE 10+ */
+        }
+        .sound-list::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        /* Touch action for scroll area to prevent unwanted horizontal scrolling or page refresh */
+        .sound-list {
+            touch-action: pan-y;
+        }
+
+        .sound-item {
+            background-color: #124559; /* Hintergrundfarbe wie timer-item */
+            border-bottom: 1px solid #EFF6E0; /* Trennlinie wie timer-item */
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        }
+
+        .sound-item:active {
+            background-color: rgba(18, 69, 89, 0.8); /* Leichter Klick-Effekt */
+        }
+
+        .sound-item.selected {
+            background-color: #598392; /* Highlight-Farbe: primary */
+            font-weight: bold;
+            color: #EFF6E0; /* Sicherstellen, dass Text gut sichtbar ist */
+        }
+
+        .sound-name {
+            font-size: 1.1rem;
+            color: inherit; /* Nimmt Farbe vom Elternelement an (für selected state) */
+            flex-grow: 1; /* Nimmt den meisten Platz ein */
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <header class="sticky-header" id="signal-select-header">
+        <a href="signals.html" class="header-link">Back</a> <h1 class="header-title" id="signal-name-display">Signalname</h1> <div class="header-placeholder"></div> </header>
+
+    <ul class="sound-list" id="sound-list">
+        <li class="sound-item" data-sound-id="bell" data-file="bell.mp3">
+            <span class="sound-name">Bell</span>
+        </li>
+        <li class="sound-item" data-sound-id="horn" data-file="horn.mp3">
+            <span class="sound-name">Horn</span>
+        </li>
+        <li class="sound-item" data-sound-id="beep" data-file="beep.mp3">
+            <span class="sound-name">Beep</span>
+        </li>
+        <li class="sound-item" data-sound-id="applause" data-file="applause.mp3">
+            <span class="sound-name">Applause</span>
+        </li>
+        <li class="sound-item" data-sound-id="chime" data-file="chime.mp3">
+            <span class="sound-name">Chime</span>
+        </li>
+        <li class="sound-item" data-sound-id="gong" data-file="gong.mp3">
+            <span class="sound-name">Gong</span>
+        </li>
+        <li class="sound-item" data-sound-id="whoosh" data-file="whoosh.mp3">
+            <span class="sound-name">Whoosh</span>
+        </li>
+        </ul>
+
+    <script>
+        const soundList = document.getElementById('sound-list');
+        const signalNameDisplay = document.getElementById('signal-name-display');
+
+        // Dummy-Liste der verfügbaren Sounds (später können das echte Audio-Objekte sein)
+        const availableSounds = [
+            { id: 'bell', name: 'Bell', file: 'bell.mp3' },
+            { id: 'horn', name: 'Horn', file: 'horn.mp3' },
+            { id: 'beep', name: 'Beep', file: 'beep.mp3' },
+            { id: 'applause', name: 'Applause', file: 'applause.mp3' },
+            { id: 'chime', name: 'Chime', file: 'chime.mp3' },
+            { id: 'gong', name: 'Gong', file: 'gong.mp3' },
+            { id: 'whoosh', name: 'Whoosh', file: 'whoosh.mp3' },
+        ];
+
+        // Funktion zum Abspielen eines Sounds
+        function playSound(filePath) {
+            // Um einen Sound abzuspielen, müsstest du eine Audio-Datei haben
+            // Beispiel: const audio = new Audio(filePath); audio.play();
+            console.log(`Spiele Sound ab: ${filePath}`);
+            // Hier würde der tatsächliche Audio-Code stehen.
+            // Temporärer Alert, da wir keine Audio-Dateien haben:
+            // alert(`Spiele Sound ab: ${filePath}`);
+        }
+
+        // Funktion zum Hervorheben der ausgewählten Zeile
+        let currentSelectedSoundId = null; // Speichert die ID des aktuell ausgewählten Sounds
+
+        function selectSoundItem(soundId) {
+            // Alle Hervorhebungen entfernen
+            document.querySelectorAll('.sound-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            // Die neue Zeile hervorheben
+            const selectedItem = document.querySelector(`.sound-item[data-sound-id="${soundId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+                currentSelectedSoundId = soundId;
+            }
+        }
+
+        // Event Listener für Klicks auf die Sound-Items
+        soundList.addEventListener('click', (event) => {
+            const clickedItem = event.target.closest('.sound-item');
+            if (clickedItem) {
+                const soundId = clickedItem.dataset.soundId;
+                const soundFile = clickedItem.dataset.file; // Die Datei zum Abspielen
+
+                selectSoundItem(soundId); // Zeile hervorheben
+                playSound(soundFile); // Sound abspielen
+
+                // Hier könntest du den ausgewählten Sound in einem Speichermechanismus (z.B. localStorage) speichern
+                // zusammen mit dem Signal-Typ, der vom vorherigen Screen übergeben wurde.
+                console.log(`Sound '${soundId}' ausgewählt.`);
+            }
+        });
+
+        // Initialisierung beim Laden der Seite
+        document.addEventListener('DOMContentLoaded', () => {
+            // Den Signalnamen aus der URL abrufen (falls übergeben)
+            const urlParams = new URLSearchParams(window.location.search);
+            const signalType = urlParams.get('type'); // z.B. 'timer-start'
+
+            if (signalType) {
+                // Den Titel des Headers anpassen (ggf. noch formatiert)
+                // Für eine schönere Anzeige: "timer-start" -> "Timer Start"
+                const formattedSignalName = signalType
+                    .split('-')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+                signalNameDisplay.textContent = formattedSignalName;
+            } else {
+                signalNameDisplay.textContent = "Sound auswählen"; // Standardtitel
+            }
+
+            // Optional: Wenn ein Sound bereits für diesen Signaltyp gespeichert ist, diesen hervorheben
+            // Beispiel: Eine Funktion 'getSavedSoundForSignal(signalType)' würde hier aufgerufen werden
+            const savedSoundId = 'bell'; // Dummy: Aktuell ausgewählter Sound für das Signal
+            if (savedSoundId) {
+                selectSoundItem(savedSoundId);
+            }
+        });
+
+        // Event Listener für den "Back"-Link im Header
+        document.querySelector('.header-link[href="signals.html"]').addEventListener('click', (event) => {
+            console.log('Zurück zu Signals navigieren...');
+            // Im echten Einsatz: window.location.href = 'signals.html';
+        });
+    </script>
+</body>
+</html>
