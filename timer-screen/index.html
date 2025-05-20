@@ -20,9 +20,10 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
-                        rest: '#94d1be', /* Farbe für Rest-Zustand */
-                        interval: '#e76f51', /* Farbe für Intervall-Zustand */
-                        warning: '#fc814a', /* Farbe für letzte 5 Sek. */
+                        // --- NEUE FARBDEFINITIONEN ---
+                        rest: '#629471',      /* NEU: Satteres Grün für Rest-Zustand */
+                        interval: '#fd5c34',  /* NEU: Kräftiges Orange-Rot für Intervall-Zustand */
+                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
                     },
                     fontFamily: {
                         karla: ['Karla', 'sans-serif'],
@@ -102,7 +103,7 @@
             transform: scale(0.95);
         }
 
-        /* NEU: Styles für den Countdown im Kreis */
+        /* Styles für den Countdown im Kreis */
         .start-circle .countdown-time {
             font-size: 3rem; /* Größe des Intervall-Countdowns */
         }
@@ -167,12 +168,11 @@
             flex-shrink: 0; /* Verhindert, dass der Footer schrumpft */
             padding: 1rem;
             display: flex;
-            justify-content: flex-end; /* NEU: "End"-Button rechtsbündig */
+            justify-content: flex-end; /* "End"-Button rechtsbündig */
             gap: 1rem;
         }
 
         footer button {
-            /* flex: 1; */ /* ENTFERNT: Nicht mehr die volle Breite des Footers einnehmen */
             padding: 0.75rem 1.5rem;
             border-radius: 9999px; /* Pill-shape */
             font-weight: bold;
@@ -186,27 +186,21 @@
             transform: scale(0.98);
         }
 
-        /* Pause/Start Button ist jetzt der Kreis, diese Klasse nicht mehr benötigt */
-        /* .btn-pause-start {
-            background-color: #83c5be;
-            color: #01161E;
-        } */
-
         .btn-end {
             background-color: #598392; /* Primary color */
             color: #EFF6E0;
         }
 
         /* Utility classes for background colors (controlled by JS) */
-        .bg-interval { background-color: #e76f51; }
-        .bg-rest { background-color: #94d1be; }
-        .bg-warning { background-color: #fc814a; }
+        .bg-interval { background-color: #fd5c34; } /* NEU */
+        .bg-rest { background-color: #629471; }    /* NEU */
+        .bg-warning { background-color: #fc814a; } /* Bleibt */
         .bg-initial { background-color: #124559; } /* Home-Screen Hintergrundfarbe */
 
         /* Utility classes for circle background colors (controlled by JS) */
-        .circle-interval { background-color: #e76f51; }
-        .circle-rest { background-color: #94d1be; }
-        .circle-warning { background-color: #fc814a; }
+        .circle-interval { background-color: #fd5c34; } /* NEU */
+        .circle-rest { background-color: #629471; }    /* NEU */
+        .circle-warning { background-color: #fc814a; } /* Bleibt */
         .circle-initial { background-color: #598392; } /* Eine neutrale Farbe, wenn Timer gestoppt ist */
 
 
@@ -399,7 +393,7 @@
                 circleText.classList.add('hidden');
                 circleCountdown.textContent = formatTime(currentIntervalTimeRemaining);
                 circleCountdown.classList.remove('hidden');
-                circleTotalCountdown.classList.add('hidden'); // Gesamtzeit im Kreis ausblenden
+                circleTotalCountdown.classList.add('hidden'); // Gesamtzeit im Kreis ausblenden (nicht gewünscht)
             } else if (isTimerPaused) {
                 // Timer pausiert, zeige "START" im Kreis
                 circleText.textContent = 'START';
