@@ -55,7 +55,7 @@
         /* --- Header --- */
         header {
             flex-shrink: 0; /* Verhindert, dass der Header schrumpft */
-            padding: 1rem;
+            padding: 0.75rem; /* ANGEPASST: Kleinerer Padding */
             text-align: center;
         }
 
@@ -77,12 +77,12 @@
             justify-content: center;
             flex-shrink: 0; /* Verhindert, dass dieser Bereich schrumpft */
             padding-bottom: 2rem;
-            padding-top: 2rem; /* NEU: Zusätzliches Padding oben für den Schatten */
+            padding-top: 2rem;
         }
 
         .start-circle {
-            width: 200px;
-            height: 200px;
+            width: 220px; /* ANGEPASST: Größerer Kreis */
+            height: 220px; /* ANGEPASST: Größerer Kreis */
             border-radius: 50%;
             display: flex;
             flex-direction: column;
@@ -280,7 +280,7 @@
 </head>
 
 <body class="bg-initial"> <header>
-        <h1 class="text-3xl font-bold text-light">Mein Timer</h1> </header>
+        <h1 class="text-2xl font-bold text-light">Mein Timer</h1> </header>
 
     <div class="main-content">
         <div class="upper-half" id="timer-display-area">
