@@ -39,12 +39,16 @@
     <style>
         html, body {
             height: 100%;
+            margin: 0;
+            padding: 0;
+            /* padding-top: env(safe-area-inset-top); // Füge dies hinzu, wenn du es für mobile Safe-Areas brauchst */
+            background-color: #01161E; /* ANPASSUNG: Hintergrundfarbe wie Home-Screen Body */
             font-family: 'Karla', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            margin: 0;
-            padding: 0;
-            background-color: #124559; /* Hintergrundfarbe des Home-Screens */
+            overscroll-behavior: none; /* Von Home-Screen übernommen */
+            scroll-padding-top: 4rem; /* Von Home-Screen übernommen */
+            scroll-behavior: smooth; /* Glattes Scrollverhalten, von Home-Screen übernommen */
             color: #EFF6E0; /* Helle Textfarbe */
             display: flex;
             flex-direction: column;
@@ -55,84 +59,98 @@
             position: sticky;
             top: 0;
             width: 100%;
-            background-color: #01161E; /* Dunklerer Hintergrund für den Header */
+            background-color: #01161E; /* ANPASSUNG: Header Hintergrund wie Home-Screen Header */
             padding: 1rem;
             display: flex;
-            justify-content: space-between;
+            justify-content: space-between; /* Elemente auseinanderziehen */
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Leichter Schatten für Tiefe */
-            z-index: 10; /* Stellt sicher, dass der Header über anderen Inhalten liegt */
-            flex-shrink: 0; /* Verhindert, dass der Header schrumpft */
+            /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); // Könnte hinzugefügt werden, wenn gewünscht */
+            z-index: 50; /* ANPASSUNG: z-index wie Home-Screen Header */
+            flex-shrink: 0;
+        }
+        
+        /* Pseudo-Element für den Bereich über dem Header, wie auf dem Home-Screen */
+        .sticky-header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
         }
 
         .header-title {
-            font-size: 1.75rem; /* Etwas größer als die Options-Titel, kleiner als Timer-H1 */
+            font-size: 1.25rem; /* Kleinere Schriftgröße (text-xl in Tailwind) */
             font-weight: bold;
-            color: #EFF6E0;
-            flex-grow: 1; /* Nimmt den meisten Platz ein */
-            text-align: center;
+            color: #83c5be; /* accent Farbe */
+            /* Flex-Grow oder absolute Positionierung könnte hier funktionieren,
+               aber der Platzhalter sorgt für die Zentrierung in flexbox */
+            text-align: center; /* Sicherstellen, dass der Text im Element zentriert ist */
+            letter-spacing: 0.025em; /* tracking-wide, von Home-Screen h1 */
+            position: absolute; /* Macht den Titel unabhängig von Flex-Layout */
+            left: 50%;
+            transform: translateX(-50%); /* Zentriert den Titel exakt */
         }
 
-        .header-button {
-            background-color: #598392; /* Primärfarbe für Buttons */
-            color: #EFF6E0;
-            padding: 0.5rem 1rem;
-            border-radius: 9999px; /* Pill-Shape */
-            font-weight: bold;
-            font-size: 1rem;
-            text-decoration: none; /* Für Link-Styling */
-            transition: background-color 0.3s ease, transform 0.2s ease;
+        .header-link {
+            color: #83c5be; /* accent Farbe */
+            font-weight: 600; /* font-semibold */
+            text-decoration: none;
+            transition: color 0.2s;
+            padding: 0.5rem 0.75rem;
             user-select: none;
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-            min-width: 80px; /* Einheitliche Breite für den Button */
-            text-align: center;
+            /* KEINE feste Breite oder flex-Eigenschaften, damit der Platzhalter den Ausgleich macht */
         }
 
-        .header-button:active {
-            transform: scale(0.95);
+        .header-link:hover {
+            text-decoration: underline;
         }
 
-        /* Linke Platzhalter für Header-Layout (falls kein Button links) */
+        /* Platzhalter auf der linken Seite, um den Titel zu zentrieren */
         .header-placeholder {
-            width: 80px; /* Gleiche Breite wie der Button */
+            width: 90px; /* Ca. Breite des "Timer"-Links */
+            /* Dieser Div bleibt leer und gibt dem Flex-Layout auf der linken Seite die nötige Breite */
         }
 
         /* --- Main Content Area --- */
         .main-content {
-            flex-grow: 1; /* Nimmt den verbleibenden Platz ein */
-            padding: 1.5rem 1rem; /* Padding für den Inhalt */
+            flex-grow: 1;
+            padding: 1.5rem 1rem;
             display: flex;
             flex-direction: column;
-            gap: 1rem; /* Abstand zwischen den Options-Buttons */
+            gap: 1rem;
+            overflow-y: auto;
         }
 
         .option-button {
-            background-color: rgba(255, 255, 255, 0.1); /* Leichter Hintergrund, ähnlich den List-Items des Timer-Screens */
-            padding: 1.25rem 1.5rem;
-            border-radius: 0.75rem; /* Abgerundete Ecken */
-            text-align: left;
-            font-size: 1.3rem; /* Prominente Schriftgröße */
-            font-weight: bold;
-            color: #EFF6E0;
+            background-color: #124559; /* Hintergrund wie timer-item */
+            border-bottom: 1px solid #EFF6E0; /* Border wie timer-item */
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 1rem;
+            text-align: left;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #edede9; /* Farbe wie timer-name */
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            transition: background-color 0.2s, transform 0.1s;
             user-select: none;
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
 
         .option-button:active {
-            transform: scale(0.98);
-            background-color: rgba(255, 255, 255, 0.15);
+            background-color: rgba(18, 69, 89, 0.8);
+            transform: scale(0.99);
         }
 
-        /* Icon-Styling (Placeholder, falls noch keine Icons) */
         .option-button .icon {
             font-size: 1.5rem;
             margin-left: 1rem;
-            /* Hier könnten später SVG oder Icon-Font-Styles hin */
+            color: #83c5be; /* accent Farbe für Icons */
         }
 
     </style>
@@ -140,15 +158,15 @@
 
 <body>
 
-    <header class="sticky-header">
+    <header class="sticky-header" id="options-header">
         <div class="header-placeholder"></div> <h1 class="header-title">Options</h1>
-        <a href="timer.html" class="header-button">Timer</a>
-    </header>
+        <a href="timer.html" class="header-link">Timer</a> </header>
 
     <div class="main-content">
         <div class="option-button" id="signals-option">
             <span>Signals</span>
-            <span class="icon">></span> </div>
+            <span class="icon">></span>
+        </div>
 
         <div class="option-button" id="sound-option">
             <span>Sound</span>
@@ -170,13 +188,10 @@
             alert('Sound Einstellungen öffnen');
         });
 
-        // Event Listener für den "Timer"-Button im Header (Navigiert zurück zum Timer-Screen)
-        document.querySelector('.header-button[href="timer.html"]').addEventListener('click', (event) => {
-            // Im echten Einsatz müsste hier eine Navigation stattfinden, z.B. window.location.href = 'timer.html';
-            // Für diesen einzelnen HTML-File-Fall simulieren wir es nur
+        // Event Listener für den "Timer"-Link im Header (Navigiert zurück zum Timer-Screen)
+        document.querySelector('.header-link[href="timer.html"]').addEventListener('click', (event) => {
             console.log('Zum Timer-Screen navigieren...');
-            // event.preventDefault(); // Falls du die Navigation unterdrücken und JS-Logik ausführen willst
-            // window.location.href = 'timer.html'; // Dies würde die Seite wechseln
+            // Im echten Einsatz: window.location.href = 'timer.html';
         });
     </script>
 </body>
