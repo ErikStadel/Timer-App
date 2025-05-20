@@ -1,1 +1,224 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Signals Screen</title>
 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Tailwind CSS Konfiguration - identisch zum Timer-Screen
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#01161E',
+                        background: '#124559',
+                        primary: '#598392',
+                        secondary: '#AEC3B0',
+                        light: '#EFF6E0',
+                        accent: '#83c5be',
+                        rest: '#629471',      /* Satteres Grün für Rest-Zustand */
+                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand */
+                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
+                    },
+                    fontFamily: {
+                        karla: ['Karla', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
+        rel="stylesheet"
+    />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            /* padding-top: env(safe-area-inset-top); // Füge dies hinzu, wenn du es für mobile Safe-Areas brauchst */
+            background-color: #01161E; /* Hintergrundfarbe wie Home-Screen Body */
+            font-family: 'Karla', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior: none; /* Von Home-Screen übernommen */
+            scroll-padding-top: 4rem; /* Von Home-Screen übernommen */
+            scroll-behavior: smooth; /* Glattes Scrollverhalten, von Home-Screen übernommen */
+            color: #EFF6E0; /* Helle Textfarbe */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Sticky Header --- */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            background-color: #01161E; /* Header Hintergrund wie Home-Screen Header */
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+            flex-shrink: 0;
+        }
+        
+        /* Pseudo-Element für den Bereich über dem Header, wie auf dem Home-Screen */
+        .sticky-header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #83c5be;
+            text-align: center;
+            letter-spacing: 0.025em;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .header-link {
+            color: #83c5be;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+            padding: 0.5rem 0.75rem;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        }
+
+        .header-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Platzhalter für die rechte Seite, damit der Titel mittig bleibt */
+        .header-placeholder {
+            width: 90px; /* Ca. Breite des "Back"-Links */
+        }
+
+        /* --- Main Content Area --- */
+        .main-content {
+            flex-grow: 1;
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto;
+        }
+
+        .signal-button {
+            background-color: #124559; /* Hintergrund wie timer-item */
+            border-radius: 0.75rem; /* Abgerundete Ecken */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            text-align: left;
+            color: #edede9; /* Farbe wie timer-name */
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            flex-direction: column; /* Um Name und Sound untereinander zu legen */
+            align-items: flex-start; /* Inhalt linksbündig */
+        }
+
+        .signal-button:active {
+            background-color: rgba(18, 69, 89, 0.8);
+            transform: scale(0.99);
+        }
+
+        .signal-name {
+            font-size: 1.1rem; /* Größe des Signal-Namens */
+            font-weight: bold;
+            margin-bottom: 0.25rem; /* Abstand zum Sound-Namen */
+        }
+
+        .signal-sound {
+            font-size: 0.9rem; /* Kleinere Größe für den Sound-Namen */
+            color: #AEC3B0; /* Etwas hellere Farbe für den Sound-Namen (secondary) */
+            font-weight: normal;
+        }
+
+        /* Pfeil-Icon auf der rechten Seite */
+        .signal-button .icon {
+            font-size: 1.5rem;
+            color: #83c5be; /* accent Farbe für Icons */
+            position: absolute; /* Absolut positionieren, um es rechts zu halten */
+            right: 1rem; /* Abstand vom rechten Rand */
+            top: 50%; /* Vertikal zentrieren */
+            transform: translateY(-50%);
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <header class="sticky-header" id="signals-header">
+        <a href="options.html" class="header-link">Back</a> <h1 class="header-title">Signals</h1>
+        <div class="header-placeholder"></div> </header>
+
+    <div class="main-content">
+        <div class="signal-button" id="timer-start-signal">
+            <span class="signal-name">Timer Start</span>
+            <span class="signal-sound" id="timer-start-sound">bell</span>
+            <span class="icon">></span>
+        </div>
+
+        <div class="signal-button" id="timer-end-signal">
+            <span class="signal-name">Timer End</span>
+            <span class="signal-sound" id="timer-end-sound">horn</span>
+            <span class="icon">></span>
+        </div>
+
+        <div class="signal-button" id="halfway-signal">
+            <span class="signal-name">Halfway Signal</span>
+            <span class="signal-sound" id="halfway-sound">beep</span>
+            <span class="icon">></span>
+        </div>
+
+        <div class="signal-button" id="five-second-signal">
+            <span class="signal-name">5 Second Signal</span>
+            <span class="signal-sound" id="five-second-sound">applause</span>
+            <span class="icon">></span>
+        </div>
+    </div>
+
+    <script>
+        // Dummy-Funktion, die auf den Klick eines Signal-Buttons reagiert
+        function handleSignalClick(signalType) {
+            console.log(`Signal '${signalType}' geklickt!`);
+            // Hier würde die Navigation zum signal-select.html Screen stattfinden
+            // alert(`Navigiere zu signal-select.html für ${signalType}`);
+            window.location.href = `signal-select.html?type=${signalType}`; // Beispiel mit Query-Parameter
+        }
+
+        // Event Listener für die Signal-Buttons
+        document.getElementById('timer-start-signal').addEventListener('click', () => handleSignalClick('timer-start'));
+        document.getElementById('timer-end-signal').addEventListener('click', () => handleSignalClick('timer-end'));
+        document.getElementById('halfway-signal').addEventListener('click', () => handleSignalClick('halfway'));
+        document.getElementById('five-second-signal').addEventListener('click', () => handleSignalClick('five-second'));
+
+        // Event Listener für den "Back"-Link im Header
+        document.querySelector('.header-link[href="options.html"]').addEventListener('click', (event) => {
+            console.log('Zurück zu Options navigieren...');
+            // Im echten Einsatz: window.location.href = 'options.html';
+        });
+    </script>
+</body>
+</html>
