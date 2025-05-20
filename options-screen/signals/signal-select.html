@@ -211,8 +211,24 @@
         let currentSignalType = null;
 
         function playSound(filePath) {
-            console.log(`Spiele Sound ab: ${filePath}`);
-        }
+    // Der Basispfad zu deinen Sounds
+    const basePath = 'https://erikstadel.github.io/Timer-App/options-screen/signals/sounds/';
+    const fullPath = basePath + filePath; // filePath ist z.B. 'bell.mp3'
+
+    try {
+        const audio = new Audio(fullPath);
+        audio.volume = 0.7; // Optional: Lautstärke anpassen (0.0 bis 1.0)
+        audio.play().catch(error => {
+            console.error("Fehler beim Abspielen des Sounds:", error);
+            // Dies kann passieren, wenn der Browser Autoplay blockiert
+            // oder die Datei nicht geladen werden kann.
+            alert(`Konnte Sound nicht abspielen: ${filePath}. Browser-Autoplay-Regeln?`);
+        });
+        console.log(`Versuche Sound abzuspielen: ${fullPath}`);
+    } catch (e) {
+        console.error("Fehler beim Erstellen des Audio-Objekts:", e);
+    }
+}
 
         function selectSoundItem(soundId) {
             document.querySelectorAll('.sound-item').forEach(item => {
