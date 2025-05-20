@@ -42,7 +42,7 @@
             margin: 0;
             padding: 0;
             /* padding-top: env(safe-area-inset-top); // Füge dies hinzu, wenn du es für mobile Safe-Areas brauchst */
-            background-color: #01161E; /* ANPASSUNG: Hintergrundfarbe wie Home-Screen Body */
+            background-color: #01161E; /* Hintergrundfarbe wie Home-Screen Body */
             font-family: 'Karla', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -59,13 +59,13 @@
             position: sticky;
             top: 0;
             width: 100%;
-            background-color: #01161E; /* ANPASSUNG: Header Hintergrund wie Home-Screen Header */
+            background-color: #01161E; /* Header Hintergrund wie Home-Screen Header */
             padding: 1rem;
             display: flex;
             justify-content: space-between; /* Elemente auseinanderziehen */
             align-items: center;
             /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); // Könnte hinzugefügt werden, wenn gewünscht */
-            z-index: 50; /* ANPASSUNG: z-index wie Home-Screen Header */
+            z-index: 50; /* z-index wie Home-Screen Header */
             flex-shrink: 0;
         }
         
@@ -85,9 +85,7 @@
             font-size: 1.25rem; /* Kleinere Schriftgröße (text-xl in Tailwind) */
             font-weight: bold;
             color: #83c5be; /* accent Farbe */
-            /* Flex-Grow oder absolute Positionierung könnte hier funktionieren,
-               aber der Platzhalter sorgt für die Zentrierung in flexbox */
-            text-align: center; /* Sicherstellen, dass der Text im Element zentriert ist */
+            text-align: center;
             letter-spacing: 0.025em; /* tracking-wide, von Home-Screen h1 */
             position: absolute; /* Macht den Titel unabhängig von Flex-Layout */
             left: 50%;
@@ -102,7 +100,6 @@
             padding: 0.5rem 0.75rem;
             user-select: none;
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-            /* KEINE feste Breite oder flex-Eigenschaften, damit der Platzhalter den Ausgleich macht */
         }
 
         .header-link:hover {
@@ -112,7 +109,6 @@
         /* Platzhalter auf der linken Seite, um den Titel zu zentrieren */
         .header-placeholder {
             width: 90px; /* Ca. Breite des "Timer"-Links */
-            /* Dieser Div bleibt leer und gibt dem Flex-Layout auf der linken Seite die nötige Breite */
         }
 
         /* --- Main Content Area --- */
@@ -127,7 +123,8 @@
 
         .option-button {
             background-color: #124559; /* Hintergrund wie timer-item */
-            border-bottom: 1px solid #EFF6E0; /* Border wie timer-item */
+            /* border-bottom: 1px solid #EFF6E0; */ /* ENTFERNT: Border-Bottom für abgerundete Ecken */
+            border-radius: 0.75rem; /* NEU: Abgerundete Ecken */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -159,8 +156,10 @@
 <body>
 
     <header class="sticky-header" id="options-header">
-        <div class="header-placeholder"></div> <h1 class="header-title">Options</h1>
-        <a href="timer.html" class="header-link">Timer</a> </header>
+        <div class="header-placeholder"></div>
+        <h1 class="header-title">Options</h1>
+        <a href="timer.html" class="header-link">Timer</a>
+    </header>
 
     <div class="main-content">
         <div class="option-button" id="signals-option">
@@ -175,20 +174,16 @@
     </div>
 
     <script>
-        // Event Listener für die Options-Buttons (aktuell nur Konsolenausgabe)
         document.getElementById('signals-option').addEventListener('click', () => {
             console.log('Signals Option geklickt!');
-            // Hier könnte die Logik zum Öffnen eines Signals-Einstellungsbereichs folgen
             alert('Signals Einstellungen öffnen');
         });
 
         document.getElementById('sound-option').addEventListener('click', () => {
             console.log('Sound Option geklickt!');
-            // Hier könnte die Logik zum Öffnen eines Sound-Einstellungsbereichs folgen
             alert('Sound Einstellungen öffnen');
         });
 
-        // Event Listener für den "Timer"-Link im Header (Navigiert zurück zum Timer-Screen)
         document.querySelector('.header-link[href="timer.html"]').addEventListener('click', (event) => {
             console.log('Zum Timer-Screen navigieren...');
             // Im echten Einsatz: window.location.href = 'timer.html';
