@@ -14,8 +14,8 @@
       theme: {
         extend: {
           colors: {
-            dark: '#000000',
-            background: '#FFFFFF',
+            dark: '#01161E',
+            background: '#124559',
             primary: '#598392',
             secondary: '#AEC3B0',
             light: '#EFF6E0',
@@ -66,20 +66,18 @@
     /* Wheel styling: updated for 3 visible items and highlighting */
     .wheel-container {
       position: relative;
-      width: 100%;
+      width: 100%; /* Behält 100% Breite des Elternelements bei */
       z-index: 30; /* Ensure wheel container is above overlay and popup */
-      overflow: hidden; /* Wichtig, um überstehende Items zu verbergen */
+      overflow: hidden; /* Wichtig, um überstehende Items zu verbergen (wird durch Padding in .wheel-item gemindert) */
       display: flex;
       justify-content: center; /* Zentriert das Wheel horizontal */
-      /* NEU: Erhöhe die Breite, um abgeschnittene Inhalte zu vermeiden */
-      width: 120px; /* Erhöht die Breite des Containers, da 40px * 1.1 = 44px, 44px * 2 (links/rechts) = 88px, also mehr als 40px. 120px gibt genug Raum. */
+      /* width: 120px; --> DIESE STARKE BREITE ENTFERNEN */
     }
 
     .wheel {
       height: 120px; /* Zeigt 3 Items an (40px * 3) */
       overflow-y: auto; /* Ermöglicht Scrollen */
-      /* NEU: Verhindert horizontales Scrollen */
-      overflow-x: hidden;
+      overflow-x: hidden; /* Verhindert horizontales Scrollen */
       -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
       scroll-snap-type: y mandatory;
       scroll-padding: 40px 0; /* Fügt oben und unten Padding hinzu, um das mittlere Item der Snap-Punkt ist */
@@ -87,8 +85,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      /* NEU: Fügt horizontales Padding hinzu, um dem skalierten Item mehr Platz zu geben */
-      padding: 40px 20px; /* Oben/Unten 40px, Links/Rechts 20px */
+      padding: 40px 0; /* Padding oben/unten. Horizontaler Platz kommt von wheel-item padding */
+      
+      /* NEU: WICHTIG FÜR HORIZONTALES SCROLLEN AUF IOS */
+      overscroll-behavior-x: none;
+      touch-action: pan-y;
     }
 
     .wheel::-webkit-scrollbar {
@@ -109,8 +110,11 @@
       -webkit-touch-callout: none; /* Prevent callout on long press */
       opacity: 0.6; /* Standardmäßige, leicht transparente Darstellung */
       transform: scale(0.9); /* Standardmäßige, leicht verkleinerte Darstellung */
-      /* NEU: Setze eine explizite Breite für Items, damit sie beim Skalieren nicht zu breit werden */
-      width: 40px;
+      
+      /* NEU: MEHR PLATZ FÜR SKALIERTE ITEMS */
+      min-width: 40px; /* Stellt sicher, dass es nicht kleiner als 40px wird */
+      padding: 0 15px; /* Horizontales Padding für Pufferraum. Skaliert mit transform! */
+      white-space: nowrap; /* Verhindert Zeilenumbruch der Zahlen */
     }
 
     .wheel-item.selected {
@@ -306,9 +310,13 @@
   <script>
     const wheels = document.querySelectorAll('.wheel');
 
+    // Initialisiert alle Wheels beim Laden der Seite
     wheels.forEach((wheel) => {
-      wheel.addEventListener('scroll', () => updateWheel(wheel));
+        // Verzögert die erste Initialisierung leicht, um sicherzustellen, dass alles gerendert ist
+        setTimeout(() => updateWheel(wheel), 10);
+        wheel.addEventListener('scroll', () => updateWheel(wheel));
     });
+
 
     // Update styles of wheel items with a delay
     function updateWheel(wheel) {
@@ -321,13 +329,14 @@
           const rect = item.getBoundingClientRect();
           const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
 
-          if (distance < 10) {
+          // Schwellenwert für die Auswahl ggf. anpassen, wenn 10px zu groß/klein ist
+          if (distance < 10) { 
             item.classList.add('selected');
           } else {
             item.classList.remove('selected');
           }
         });
-      }, 50); // Delay verkürzt auf 50ms
+      }, 20); // Delay weiter verkürzt auf 20ms für schnellere Reaktion
     }
 
     // Tab navigation
@@ -339,6 +348,11 @@
 
       document.getElementById('content-interval').classList.add('active');
       document.getElementById('content-rest').classList.remove('active');
+
+      // Nach dem Tab-Wechsel Wheels aktualisieren, falls sie sich neu positionieren
+      setTimeout(() => {
+          document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
+      }, 0);
     });
 
     document.getElementById('tab-rest').addEventListener('click', function() {
@@ -349,6 +363,18 @@
 
       document.getElementById('content-rest').classList.add('active');
       document.getElementById('content-interval').classList.remove('active');
+
+      // Nach dem Tab-Wechsel Wheels aktualisieren, falls sie sich neu positionieren
+      setTimeout(() => {
+          document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
+      }, 0);
+    });
+
+    // Initialisiere die Auswahl für alle Wheels beim Laden der Seite
+    document.addEventListener('DOMContentLoaded', () => {
+        wheels.forEach((wheel) => {
+            updateWheel(wheel);
+        });
     });
   </script>
 </body>
