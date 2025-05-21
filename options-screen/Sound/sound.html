@@ -1,1 +1,270 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Sound Settings</title>
 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Tailwind CSS Konfiguration - identisch zu den anderen Screens
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#01161E',
+                        background: '#124559',
+                        primary: '#598392',
+                        secondary: '#AEC3B0',
+                        light: '#EFF6E0',
+                        accent: '#83c5be',
+                        rest: '#629471',      /* Satteres Grün für Rest-Zustand */
+                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand */
+                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
+                    },
+                    fontFamily: {
+                        karla: ['Karla', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
+        rel="stylesheet"
+    />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #01161E;
+            font-family: 'Karla', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior: none;
+            scroll-padding-top: 4rem;
+            scroll-behavior: smooth;
+            color: #EFF6E0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Zentriert den Inhalt vertikal */
+            align-items: center; /* Zentriert den Inhalt horizontal */
+        }
+
+        /* --- Sticky Header --- */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            background-color: #01161E;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+            flex-shrink: 0;
+            position: absolute; /* Macht den Header unabhängig vom zentrierten Inhalt */
+            top: 0;
+        }
+        
+        /* Pseudo-Element für den Bereich über dem Header */
+        .sticky-header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #83c5be;
+            text-align: center;
+            letter-spacing: 0.025em;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .header-link {
+            color: #83c5be;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+            padding: 0.5rem 0.75rem;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        }
+
+        .header-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Platzhalter für die rechte Seite */
+        .header-placeholder {
+            width: 90px; /* Ca. Breite des "Back"-Links */
+        }
+
+        /* --- Volume Dial Container --- */
+        .volume-dial-container {
+            position: relative;
+            width: 200px; /* Größe des Zifferblatts */
+            height: 200px;
+            border-radius: 50%;
+            border: 4px solid #EFF6E0; /* Rahmenfarbe */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Wichtig für den Füllstandseffekt */
+            margin-top: 4rem; /* Abstand zum Header */
+            background-color: #01161E; /* Hintergrund des Zifferblatts */
+            cursor: grab;
+            user-select: none;
+            touch-action: none; /* Verhindert Scrollen beim Ziehen */
+        }
+
+        /* Füllstand des Zifferblatts */
+        .volume-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%; /* Start bei 0% Füllung */
+            background-color: #598392; /* Füllfarbe: primary */
+            transition: height 0.05s ease-out; /* Weicher Übergang beim Füllen */
+            transform-origin: bottom;
+        }
+        
+        .volume-value {
+            position: relative; /* Muss über dem Füllstand sein */
+            z-index: 10;
+            font-size: 3.5rem; /* Große Zahl */
+            font-weight: bold;
+            color: #EFF6E0; /* Textfarbe */
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="sticky-header" id="sound-header">
+        <a href="https://erikstadel.github.io/Timer-App/options-screen/options.html" class="header-link">Back</a>
+        <h1 class="header-title">Sound</h1>
+        <div class="header-placeholder"></div>
+    </header>
+
+    <div class="volume-dial-container" id="volumeDial">
+        <div class="volume-fill" id="volumeFill"></div>
+        <span class="volume-value" id="volumeValue">100</span>
+    </div>
+
+    <script>
+        const volumeDial = document.getElementById('volumeDial');
+        const volumeFill = document.getElementById('volumeFill');
+        const volumeValueDisplay = document.getElementById('volumeValue');
+
+        let isDragging = false;
+        let currentVolume = 100; // Startwert für die Anzeige (50-150)
+        let initialMouseY;
+        let initialVolume;
+
+        // Funktion zum Aktualisieren der Anzeige und des Füllstands
+        function updateVolumeDisplay() {
+            volumeValueDisplay.textContent = Math.round(currentVolume);
+
+            // Mapper von 50-150 auf 0-100% Füllung
+            // 50% -> 0% fill, 150% -> 100% fill
+            const fillPercentage = ((currentVolume - 50) / 100) * 100;
+            volumeFill.style.height = `${Math.max(0, Math.min(100, fillPercentage))}%`;
+
+            // Für die tatsächliche Audio-Lautstärke (0.0 bis 1.0)
+            // Hier mappen wir z.B. 50-150 auf 0.0-1.0
+            // const actualAudioVolume = Math.max(0, Math.min(1, (currentVolume - 50) / 100));
+            // console.log("Actual Audio Volume:", actualAudioVolume);
+            // Hier würdest du die Lautstärke an ein globales Audio-Objekt übergeben:
+            // if (window.appAudioContext && window.appGainNode) {
+            //     window.appGainNode.gain.value = actualAudioVolume;
+            // } else if (window.appAudioElement) {
+            //     window.appAudioElement.volume = actualAudioVolume;
+            // }
+        }
+
+        // --- Event Listener für Maus (Desktop) ---
+        volumeDial.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            initialMouseY = e.clientY;
+            initialVolume = currentVolume;
+            volumeDial.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaY = initialMouseY - e.clientY; // Maus nach oben -> deltaY positiv -> Lautstärke rauf
+            
+            // Sensitivität des Reglers anpassen
+            const sensitivity = 0.5; // Kleinere Zahl = weniger sensitiv
+            currentVolume = initialVolume + deltaY * sensitivity;
+
+            // Lautstärke im Bereich 50-150 halten
+            currentVolume = Math.max(50, Math.min(150, currentVolume));
+            updateVolumeDisplay();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                volumeDial.style.cursor = 'grab';
+                // Hier könnte der Wert in localStorage gespeichert werden
+                localStorage.setItem('appVolume', currentVolume);
+                console.log("Lautstärke gespeichert:", currentVolume);
+            }
+        });
+
+        // --- Event Listener für Touch (Mobile) ---
+        volumeDial.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            initialMouseY = e.touches[0].clientY;
+            initialVolume = currentVolume;
+            volumeDial.style.cursor = 'grabbing';
+            e.preventDefault(); // Verhindert Scrollen der Seite beim Ziehen
+        }, { passive: false }); // passive: false, um preventDefault zu erlauben
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const deltaY = initialMouseY - e.touches[0].clientY;
+            const sensitivity = 0.5;
+            currentVolume = initialVolume + deltaY * sensitivity;
+            currentVolume = Math.max(50, Math.min(150, currentVolume));
+            updateVolumeDisplay();
+            e.preventDefault(); // Verhindert Scrollen der Seite beim Ziehen
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            if (isDragging) {
+                isDragging = false;
+                volumeDial.style.cursor = 'grab';
+                localStorage.setItem('appVolume', currentVolume);
+                console.log("Lautstärke gespeichert:", currentVolume);
+            }
+        });
+
+
+        // Initialisierung: Lautstärke beim Laden der Seite laden
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedVolume = localStorage.getItem('appVolume');
+            if (savedVolume !== null) {
+                currentVolume = parseFloat(savedVolume);
+            }
+            updateVolumeDisplay(); // Initialen Wert anzeigen
+        });
+    </script>
+</body>
+</html>
