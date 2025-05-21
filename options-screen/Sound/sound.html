@@ -21,9 +21,9 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
-                        rest: '#629471',      /* Satteres Grün für Rest-Zustand */
-                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand */
-                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
+                        rest: '#629471',      /* Satteres Grün für Rest-Zustand (low) */
+                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand (high) */
+                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. (mid) */
                     },
                     fontFamily: {
                         karla: ['Karla', 'sans-serif'],
@@ -51,8 +51,8 @@
             color: #EFF6E0;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Zentriert den Inhalt vertikal */
-            align-items: center; /* Zentriert den Inhalt horizontal */
+            justify-content: center;
+            align-items: center;
         }
 
         /* --- Sticky Header --- */
@@ -67,7 +67,7 @@
             align-items: center;
             z-index: 50;
             flex-shrink: 0;
-            position: absolute; /* Macht den Header unabhängig vom zentrierten Inhalt */
+            position: absolute;
             top: 0;
         }
         
@@ -110,45 +110,45 @@
 
         /* Platzhalter für die rechte Seite */
         .header-placeholder {
-            width: 90px; /* Ca. Breite des "Back"-Links */
+            width: 90px;
         }
 
         /* --- Volume Dial Container --- */
         .volume-dial-container {
             position: relative;
-            width: 200px; /* Größe des Zifferblatts */
-            height: 200px;
+            width: 280px; /* VERGRÖSSERT: Größe des Zifferblatts */
+            height: 280px; /* VERGRÖSSERT */
             border-radius: 50%;
-            border: 4px solid #EFF6E0; /* Rahmenfarbe */
+            border: 4px solid #EFF6E0;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden; /* Wichtig für den Füllstandseffekt */
-            margin-top: 4rem; /* Abstand zum Header */
-            background-color: #01161E; /* Hintergrund des Zifferblatts */
+            overflow: hidden;
+            margin-top: 4rem;
+            background-color: #01161E;
             cursor: grab;
             user-select: none;
-            touch-action: none; /* Verhindert Scrollen beim Ziehen */
+            touch-action: none;
         }
 
-        /* Füllstand des Zifferblatts */
+        /* Füllstand des Zifferblatts (Farbe wird dynamisch gesetzt) */
         .volume-fill {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 0%; /* Start bei 0% Füllung */
-            background-color: #598392; /* Füllfarbe: primary */
-            transition: height 0.05s ease-out; /* Weicher Übergang beim Füllen */
+            height: 0%;
+            /* background-color wird von JS gesetzt */
+            transition: height 0.05s ease-out, background-color 0.1s ease-out; /* Übergang auch für Farbe */
             transform-origin: bottom;
         }
         
         .volume-value {
-            position: relative; /* Muss über dem Füllstand sein */
+            position: relative;
             z-index: 10;
-            font-size: 3.5rem; /* Große Zahl */
+            font-size: 4.5rem; /* VERGRÖSSERT: Große Zahl */
             font-weight: bold;
-            color: #EFF6E0; /* Textfarbe */
+            color: #EFF6E0;
         }
     </style>
 </head>
@@ -176,24 +176,52 @@
         let initialMouseY;
         let initialVolume;
 
-        // Funktion zum Aktualisieren der Anzeige und des Füllstands
+        // Farben für den Verlauf
+        const colors = {
+            low: { r: 98, g: 148, b: 113 },    // #629471 (rest)
+            mid: { r: 252, g: 129, b: 74 },   // #fc814a (warning)
+            high: { r: 253, g: 92, b: 52 }    // #fd5c34 (interval)
+        };
+
+        // Hilfsfunktion zur Interpolation von Farben (linear interpolation)
+        function interpolateColor(color1, color2, factor) {
+            let result = {};
+            result.r = Math.round(color1.r + factor * (color2.r - color1.r));
+            result.g = Math.round(color1.g + factor * (color2.g - color1.g));
+            result.b = Math.round(color1.b + factor * (color2.b - color1.b));
+            return `rgb(${result.r}, ${result.g}, ${result.b})`;
+        }
+
+        // Funktion zum Aktualisieren der Anzeige, des Füllstands und der Farbe
         function updateVolumeDisplay() {
             volumeValueDisplay.textContent = Math.round(currentVolume);
 
-            // Mapper von 50-150 auf 0-100% Füllung
-            // 50% -> 0% fill, 150% -> 100% fill
+            // Füllstand des Kreises (0% bei 50, 100% bei 150)
             const fillPercentage = ((currentVolume - 50) / 100) * 100;
             volumeFill.style.height = `${Math.max(0, Math.min(100, fillPercentage))}%`;
 
-            // Für die tatsächliche Audio-Lautstärke (0.0 bis 1.0)
-            // Hier mappen wir z.B. 50-150 auf 0.0-1.0
-            // const actualAudioVolume = Math.max(0, Math.min(1, (currentVolume - 50) / 100));
-            // console.log("Actual Audio Volume:", actualAudioVolume);
-            // Hier würdest du die Lautstärke an ein globales Audio-Objekt übergeben:
-            // if (window.appAudioContext && window.appGainNode) {
-            //     window.appGainNode.gain.value = actualAudioVolume;
-            // } else if (window.appAudioElement) {
-            //     window.appAudioElement.volume = actualAudioVolume;
+            // Farbe interpolieren
+            let displayColor;
+            if (currentVolume <= 100) {
+                // Von low (50) zu mid (100)
+                const factor = (currentVolume - 50) / (100 - 50); // 0 bei 50, 1 bei 100
+                displayColor = interpolateColor(colors.low, colors.mid, factor);
+            } else {
+                // Von mid (100) zu high (150)
+                const factor = (currentVolume - 100) / (150 - 100); // 0 bei 100, 1 bei 150
+                displayColor = interpolateColor(colors.mid, colors.high, factor);
+            }
+            volumeFill.style.backgroundColor = displayColor;
+
+            // TODO: Für die tatsächliche Audio-Lautstärke (mit Web Audio API für Verstärkung über 1.0)
+            // Dies ist ein komplexeres Thema, das einen Umbau der Sound-Logik erfordert.
+            // Z.B. `window.audioContext.createGain()` und dessen `gain.value` steuern.
+            // Für's Erste mappen wir den sichtbaren Wert auf einen Bereich von 0.5 bis 1.0 für die normale Lautstärke:
+            // const actualAudioVolume = Math.max(0.0, Math.min(1.0, (currentVolume - 50) / 100)); // Mappt 50->0, 150->1
+            // console.log("Actual Audio Volume for standard Audio object:", actualAudioVolume);
+            // Beispiel für einfaches Audio-Objekt:
+            // if (window.currentPlayingAudio) { // Annahme: Du hast ein global referenziertes Audio-Objekt
+            //     window.currentPlayingAudio.volume = actualAudioVolume;
             // }
         }
 
@@ -207,10 +235,8 @@
 
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            const deltaY = initialMouseY - e.clientY; // Maus nach oben -> deltaY positiv -> Lautstärke rauf
-            
-            // Sensitivität des Reglers anpassen
-            const sensitivity = 0.5; // Kleinere Zahl = weniger sensitiv
+            const deltaY = initialMouseY - e.clientY;
+            const sensitivity = 0.7; // Angepasste Sensitivität
             currentVolume = initialVolume + deltaY * sensitivity;
 
             // Lautstärke im Bereich 50-150 halten
@@ -222,7 +248,6 @@
             if (isDragging) {
                 isDragging = false;
                 volumeDial.style.cursor = 'grab';
-                // Hier könnte der Wert in localStorage gespeichert werden
                 localStorage.setItem('appVolume', currentVolume);
                 console.log("Lautstärke gespeichert:", currentVolume);
             }
@@ -234,17 +259,17 @@
             initialMouseY = e.touches[0].clientY;
             initialVolume = currentVolume;
             volumeDial.style.cursor = 'grabbing';
-            e.preventDefault(); // Verhindert Scrollen der Seite beim Ziehen
-        }, { passive: false }); // passive: false, um preventDefault zu erlauben
+            e.preventDefault();
+        }, { passive: false });
 
         document.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
             const deltaY = initialMouseY - e.touches[0].clientY;
-            const sensitivity = 0.5;
+            const sensitivity = 0.7; // Angepasste Sensitivität
             currentVolume = initialVolume + deltaY * sensitivity;
             currentVolume = Math.max(50, Math.min(150, currentVolume));
             updateVolumeDisplay();
-            e.preventDefault(); // Verhindert Scrollen der Seite beim Ziehen
+            e.preventDefault();
         }, { passive: false });
 
         document.addEventListener('touchend', () => {
@@ -256,14 +281,13 @@
             }
         });
 
-
         // Initialisierung: Lautstärke beim Laden der Seite laden
         document.addEventListener('DOMContentLoaded', () => {
             const savedVolume = localStorage.getItem('appVolume');
             if (savedVolume !== null) {
                 currentVolume = parseFloat(savedVolume);
             }
-            updateVolumeDisplay(); // Initialen Wert anzeigen
+            updateVolumeDisplay(); // Initialen Wert und Farbe anzeigen
         });
     </script>
 </body>
