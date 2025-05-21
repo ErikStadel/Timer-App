@@ -1,1 +1,315 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#01161E" />
+    <title>Timer Review</title>
 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#01161E',
+                        background: '#124559',
+                        primary: '#598392',
+                        secondary: '#AEC3B0',
+                        light: '#EFF6E0',
+                        accent: '#83c5be',
+                        rest: '#94d1be',
+                        interval: '#e76f51',
+                        warning: '#fc814a',
+                    },
+                    fontFamily: {
+                        karla: ['Karla', 'sans-serif'],
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            padding-top: env(safe-area-inset-top);
+            background-color: #01161E;
+            font-family: 'Karla', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior: none;
+            scroll-padding-top: 4rem;
+            scroll-behavior: smooth;
+            color: #EFF6E0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 1rem;
+            background-color: #01161E;
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #83c5be;
+            text-align: center;
+            letter-spacing: 0.025em;
+            flex-grow: 1; /* Allows title to take available space */
+        }
+
+        .header-link {
+            color: #83c5be;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+            padding: 0.5rem 0.75rem;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        }
+
+        .header-link:hover {
+            text-decoration: underline;
+        }
+
+        .header-placeholder {
+            width: 70px; /* Adjust based on 'Back' button width */
+        }
+
+        .review-content {
+            padding: 1rem;
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .review-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .info-card {
+            background-color: #124559;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-card .label {
+            color: #AEC3B0;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-card .value {
+            color: #EFF6E0;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .interval-round-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .interval-round-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #accent; /* Use your accent color */
+            margin-bottom: 1rem;
+            text-align: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(131, 197, 190, 0.3); /* Lighter accent border */
+        }
+
+        .interval-item-review {
+            background-color: #124559;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .interval-item-review.rest-item {
+            background-color: #598392; /* primary or a custom rest color for review */
+        }
+
+        .interval-name-review {
+            font-size: 1.05rem;
+            color: #EFF6E0;
+            flex-grow: 1;
+        }
+
+        .interval-duration-review {
+            font-size: 1.05rem;
+            font-weight: bold;
+            color: #AEC3B0; /* secondary color for duration */
+        }
+    </style>
+</head>
+
+<body>
+
+    <header id="header">
+        <a href="https://erikstadel.github.io/Timer-App/home-screen/index.html" class="header-link">Back</a>
+        <h1 class="header-title" id="timer-name-display">Timer Name</h1>
+        <div class="header-placeholder"></div>
+    </header>
+
+    <main class="review-content">
+        <div class="info-card">
+            <div>
+                <div class="label">Total Rounds</div>
+                <div class="value" id="repeat-display">1</div>
+            </div>
+            </div>
+
+        <div id="rounds-container">
+            </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const timerNameDisplay = document.getElementById('timer-name-display');
+            const repeatDisplay = document.getElementById('repeat-display');
+            const roundsContainer = document.getElementById('rounds-container');
+
+            // Beispiel-Daten für einen Timer. Diese müssten dynamisch geladen werden,
+            // z.B. über localStorage basierend auf einer ID aus den URL-Parametern
+            // oder durch Übergabe eines gesamten Timer-Objekts.
+            // Ich verwende hier eine erweiterte Struktur, um Intervall- und Pausen-Dauern zu trennen.
+            const exampleTimerData = {
+                name: "Basic Workout",
+                repeat: 3,
+                intervals: [
+                    { name: "Preparation", duration: "00:10", type: "preparation" }, // New type for 'Get Ready'
+                    { name: "Round 1 Training", duration: "01:00", type: "interval" },
+                    { name: "Short Rest", duration: "00:30", type: "rest" },
+                    { name: "Round 2 Training", duration: "01:00", type: "interval" },
+                    { name: "Short Rest", duration: "00:30", type: "rest" },
+                    { name: "Round 3 Training", duration: "01:00", type: "interval" },
+                    { name: "Cool Down", duration: "00:45", type: "cooldown" } // New type for 'Cool Down'
+                ]
+            };
+
+            // Simuliere das Laden der Timer-Daten basierend auf einer URL-ID
+            // In einer echten Anwendung würde man hier die ID aus den URL-Parametern lesen:
+            // const urlParams = new URLSearchParams(window.location.search);
+            // const timerId = urlParams.get('id');
+            // const savedTimers = JSON.parse(localStorage.getItem('timers')) || {};
+            // const timerToDisplay = savedTimers[timerId] || exampleTimerData;
+            const timerToDisplay = exampleTimerData; // Für Demonstrationszwecke
+
+            timerNameDisplay.textContent = timerToDisplay.name;
+            repeatDisplay.textContent = timerToDisplay.repeat;
+
+            function formatTime(durationString) {
+                // Konvertiert "MM:SS" in einen anzeigbaren String, z.B. "1 Min 30 Sek" oder "45 Sek"
+                const parts = durationString.split(':');
+                const minutes = parseInt(parts[0], 10);
+                const seconds = parseInt(parts[1], 10);
+                let formatted = [];
+                if (minutes > 0) {
+                    formatted.push(`${minutes} Min`);
+                }
+                if (seconds > 0) {
+                    formatted.push(`${seconds} Sek`);
+                }
+                return formatted.join(' ') || "0 Sek";
+            }
+
+            function renderRounds() {
+                roundsContainer.innerHTML = ''; // Vorherige Inhalte leeren
+
+                let currentRoundNumber = 0;
+                const intervalsPerRound = timerToDisplay.intervals.filter(i => i.type === 'interval' || i.type === 'rest').length;
+
+                for (let r = 0; r < timerToDisplay.repeat; r++) {
+                    currentRoundNumber++;
+                    const roundSection = document.createElement('div');
+                    roundSection.classList.add('interval-round-section');
+
+                    const roundTitle = document.createElement('h2');
+                    roundTitle.classList.add('interval-round-title');
+                    roundTitle.textContent = `Round ${currentRoundNumber}`;
+                    roundSection.appendChild(roundTitle);
+
+                    timerToDisplay.intervals.forEach((interval, index) => {
+                        const intervalItem = document.createElement('div');
+                        intervalItem.classList.add('interval-item-review');
+
+                        let displayName = interval.name;
+                        let itemClass = '';
+
+                        // Logic to determine display name and class
+                        if (interval.type === 'preparation' && r === 0) {
+                            // Only show preparation before the very first round
+                            displayName = "Get Ready";
+                            itemClass = 'preparation-item';
+                        } else if (interval.type === 'rest' && index < timerToDisplay.intervals.length -1) { // Ensure it's not the last interval if it's a 'rest' type before cooldown
+                            displayName = "Rest";
+                            itemClass = 'rest-item';
+                        } else if (interval.type === 'cooldown' && r === timerToDisplay.repeat - 1) {
+                            // Only show cooldown after the very last round
+                            displayName = "Cool Down";
+                            itemClass = 'cooldown-item';
+                        } else if (interval.type === 'interval') {
+                             // Regular interval, use its name
+                            itemClass = 'interval-item';
+                        } else {
+                            return; // Skip intervals that don't fit the current round's display logic
+                        }
+
+                        if (itemClass) {
+                            intervalItem.classList.add(itemClass);
+                        }
+
+                        const nameSpan = document.createElement('span');
+                        nameSpan.classList.add('interval-name-review');
+                        nameSpan.textContent = displayName;
+
+                        const durationSpan = document.createElement('span');
+                        durationSpan.classList.add('interval-duration-review');
+                        durationSpan.textContent = formatTime(interval.duration);
+
+                        intervalItem.appendChild(nameSpan);
+                        intervalItem.appendChild(durationSpan);
+                        roundSection.appendChild(intervalItem);
+                    });
+                    roundsContainer.appendChild(roundSection);
+                }
+            }
+
+            renderRounds();
+        });
+    </script>
+</body>
+</html>
