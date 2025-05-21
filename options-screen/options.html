@@ -1,183 +1,165 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
+  <head>
     <meta charset="UTF-8" />
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <title>Options Screen</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#01161E" />
+    <title>Options</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        // Tailwind CSS Konfiguration - identisch zum Timer-Screen
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#629471',      /* Satteres Grün für Rest-Zustand */
-                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand */
-                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-        rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
+      rel="stylesheet"
     />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              dark: '#01161E',
+              background: '#124559',
+              primary: '#598392',
+              secondary: '#AEC3B0',
+              light: '#EFF6E0',
+              accent: '#83c5be',
+              rest: '#94d1be',
+              interval: '#e76f51',
+              warning: '#fc814a',
+            },
+            fontFamily: {
+              karla: ['Karla', 'sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
+
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            /* padding-top: env(safe-area-inset-top); // Füge dies hinzu, wenn du es für mobile Safe-Areas brauchst */
-            background-color: #01161E; /* Hintergrundfarbe wie Home-Screen Body */
-            font-family: 'Karla', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior: none; /* Von Home-Screen übernommen */
-            scroll-padding-top: 4rem; /* Von Home-Screen übernommen */
-            scroll-behavior: smooth; /* Glattes Scrollverhalten, von Home-Screen übernommen */
-            color: #EFF6E0; /* Helle Textfarbe */
-            display: flex;
-            flex-direction: column;
-        }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        padding-top: env(safe-area-inset-top);
+        background-color: #01161E;
+        font-family: 'Karla', sans-serif;
+        display: flex;
+        flex-direction: column;
+        overscroll-behavior: none;
+      }
 
-        /* --- Sticky Header --- */
-        .sticky-header {
-            position: sticky;
-            top: 0;
-            width: 100%;
-            background-color: #01161E; /* Header Hintergrund wie Home-Screen Header */
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between; /* Elemente auseinanderziehen */
-            align-items: center;
-            /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); // Könnte hinzugefügt werden, wenn gewünscht */
-            z-index: 50; /* z-index wie Home-Screen Header */
-            flex-shrink: 0;
-        }
-        
-        /* Pseudo-Element für den Bereich über dem Header, wie auf dem Home-Screen */
-        .sticky-header::before {
-            content: "";
-            position: absolute;
-            top: -100vh;
-            left: 0;
-            right: 0;
-            height: 100vh;
-            background-color: #01161E;
-            z-index: -1;
-        }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        padding: 1rem;
+        background-color: #01161E;
+        transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+      }
 
-        .header-title {
-            font-size: 1.25rem; /* Kleinere Schriftgröße (text-xl in Tailwind) */
-            font-weight: bold;
-            color: #83c5be; /* accent Farbe */
-            text-align: center;
-            letter-spacing: 0.025em; /* tracking-wide, von Home-Screen h1 */
-            position: absolute; /* Macht den Titel unabhängig von Flex-Layout */
-            left: 50%;
-            transform: translateX(-50%); /* Zentriert den Titel exakt */
-        }
+      header::before {
+        content: "";
+        position: absolute;
+        top: -100vh;
+        left: 0;
+        right: 0;
+        height: 100vh;
+        background-color: #01161E;
+        z-index: -1;
+      }
 
-        .header-link {
-            color: #83c5be; /* accent Farbe */
-            font-weight: 600; /* font-semibold */
-            text-decoration: none;
-            transition: color 0.2s;
-            padding: 0.5rem 0.75rem;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        }
+      header.scrolled {
+        background-color: rgba(1, 22, 30, 0.7);
+        backdrop-filter: blur(6px);
+      }
 
-        .header-link:hover {
-            text-decoration: underline;
-        }
+      main {
+        flex-grow: 1;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem; /* Abstand zwischen den Options-Boxen */
+      }
 
-        /* Platzhalter auf der linken Seite, um den Titel zu zentrieren */
-        .header-placeholder {
-            width: 90px; /* Ca. Breite des "Timer"-Links */
-        }
+      .option-box {
+        background-color: #124559; /* background color */
+        border-radius: 1rem;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        transition: transform 0.2s ease, background-color 0.2s ease;
+      }
 
-        /* --- Main Content Area --- */
-        .main-content {
-            flex-grow: 1;
-            padding: 1.5rem 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            overflow-y: auto;
-        }
+      .option-box:active {
+        transform: translateY(2px);
+        background-color: #1e5a70; /* Slightly darker on press */
+      }
 
-        .option-button {
-            background-color: #124559; /* Hintergrund wie timer-item */
-            /* border-bottom: 1px solid #EFF6E0; */ /* ENTFERNT: Border-Bottom für abgerundete Ecken */
-            border-radius: 0.75rem; /* NEU: Abgerundete Ecken */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            text-align: left;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #edede9; /* Farbe wie timer-name */
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        }
+      .option-box span {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #EFF6E0; /* light color */
+      }
 
-        .option-button:active {
-            background-color: rgba(18, 69, 89, 0.8);
-            transform: scale(0.99);
-        }
-
-        .option-button .icon {
-            font-size: 1.5rem;
-            margin-left: 1rem;
-            color: #83c5be; /* accent Farbe für Icons */
-        }
-
+      .option-box .arrow {
+        font-size: 1.5rem;
+        color: #83c5be; /* accent color */
+      }
     </style>
-</head>
+  </head>
 
-<body>
-
-    <header class="sticky-header" id="options-header">
-        <div class="header-placeholder"></div>
-        <h1 class="header-title">Options</h1>
-        <a href="timer.html" class="header-link">Timer</a>
+  <body class="bg-dark text-light">
+    <header id="header" class="text-light shadow-md">
+      <div class="w-full flex justify-between items-center">
+        <button id="backButton" class="text-accent font-semibold hover:underline">Back</button>
+        <h1 class="text-xl font-bold text-accent tracking-wide">Options</h1>
+        <div class="w-12"></div> </div>
     </header>
 
-    <div class="main-content">
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signals-screen.html" class="option-button" id="signals-option">
-            <span>Signals</span>
-            <span class="icon">></span>
-        </a>
+    <main>
+      <div id="signalsOption" class="option-box">
+        <span>Signals</span>
+        <span class="arrow">&gt;</span>
+      </div>
 
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/Sound/sound.html" class="option-button" id="sound-option">
-            <span>Sound</span>
-            <span class="icon">></span>
-        </a>
-    </div>
+      <div id="soundSettingsOption" class="option-box">
+        <span>Sound Settings</span>
+        <span class="arrow">&gt;</span>
+      </div>
+
+      </main>
 
     <script>
-        document.querySelector('.header-link[href="timer.html"]').addEventListener('click', (event) => {
-            console.log('Zum Timer-Screen navigieren...');
-            // Im echten Einsatz: window.location.href = 'timer.html';
-        });
+      const header = document.getElementById('header');
+      const backButton = document.getElementById('backButton');
+      const signalsOption = document.getElementById('signalsOption');
+      const soundSettingsOption = document.getElementById('soundSettingsOption');
+
+      // --- Event Listener ---
+
+      backButton.addEventListener('click', () => {
+        window.location.href = '../home-screen/index.html'; // Zurück zum Home-Screen
+      });
+
+      signalsOption.addEventListener('click', () => {
+        window.location.href = 'options-screen/signals/signals-screen.html'; // Navigiert zum Signals Screen
+      });
+
+      soundSettingsOption.addEventListener('click', () => {
+        window.location.href = 'options-screen/Sound/sound.html'; // Navigiert zum Sound Settings Screen
+      });
+
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 0) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+      });
     </script>
-</body>
+  </body>
 </html>
