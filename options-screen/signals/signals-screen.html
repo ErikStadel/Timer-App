@@ -41,15 +41,14 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            /* padding-top: env(safe-area-inset-top); // Füge dies hinzu, wenn du es für mobile Safe-Areas brauchst */
-            background-color: #01161E; /* Hintergrundfarbe wie Home-Screen Body */
+            background-color: #01161E;
             font-family: 'Karla', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior: none; /* Von Home-Screen übernommen */
-            scroll-padding-top: 4rem; /* Von Home-Screen übernommen */
-            scroll-behavior: smooth; /* Glattes Scrollverhalten, von Home-Screen übernommen */
-            color: #EFF6E0; /* Helle Textfarbe */
+            overscroll-behavior: none;
+            scroll-padding-top: 4rem;
+            scroll-behavior: smooth;
+            color: #EFF6E0;
             display: flex;
             flex-direction: column;
         }
@@ -59,7 +58,7 @@
             position: sticky;
             top: 0;
             width: 100%;
-            background-color: #01161E; /* Header Hintergrund wie Home-Screen Header */
+            background-color: #01161E;
             padding: 1rem;
             display: flex;
             justify-content: space-between;
@@ -214,6 +213,58 @@
     </div>
 
     <script>
+        // Globales Objekt für Audio-Steuerung (muss auf allen Seiten verfügbar sein, die Audio nutzen)
+        window.appAudio = window.appAudio || {
+            audioContext: null,
+            masterGainNode: null,
+            loadedSounds: {}, // Speichert geladene AudioBuffer
+            // Basispfad zu deinen Sounds. Wichtig: Von hier aus muss der Pfad stimmen!
+            basePath: 'https://erikstadel.github.io/Timer-App/options-screen/signals/sounds/', 
+            currentGlobalVolume: 1.0 // Standardwert, wird von Sound-Regler-Screen aktualisiert
+        };
+
+        // Funktion zur Initialisierung des AudioContext und GainNode
+        // Diese Funktion sollte auf allen Seiten vorhanden sein, die potenziell Sounds abspielen
+        async function initAudioContext() {
+            if (!window.appAudio.audioContext) {
+                try {
+                    window.appAudio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    window.appAudio.masterGainNode = window.appAudio.audioContext.createGain();
+                    window.appAudio.masterGainNode.connect(window.appAudio.audioContext.destination);
+
+                    // Lautstärke aus localStorage laden und GainNode setzen
+                    const savedVolume = localStorage.getItem('appVolume');
+                    if (savedVolume !== null) {
+                        const volumeValue = parseFloat(savedVolume);
+                        // Mappe 50-150 auf 0.0-1.5 (GainNode kann über 1.0 gehen)
+                        window.appAudio.currentGlobalVolume = Math.max(0, (volumeValue - 50) / 100 + 0.5); // 50 -> 0.5, 100 -> 1.0, 150 -> 1.5
+                    } else {
+                        window.appAudio.currentGlobalVolume = 1.0; // Standardwert
+                    }
+                    window.appAudio.masterGainNode.gain.value = window.appAudio.currentGlobalVolume;
+                    console.log("AudioContext und MasterGainNode initialisiert/gefunden. Aktuelle Lautstärke:", window.appAudio.currentGlobalVolume);
+
+                } catch (e) {
+                    console.error("Web Audio API konnte nicht initialisiert werden:", e);
+                    alert("Ihr Browser unterstützt die Web Audio API nicht oder es gab ein Problem beim Initialisieren. Soundfunktionen sind möglicherweise eingeschränkt.");
+                    return false;
+                }
+            }
+            // Optional: Wenn der AudioContext suspended ist, versuchen ihn zu reaktivieren.
+            // Dies ist meistens auf User-Interaktion notwendig. Hier im Signals-Screen
+            // findet keine direkte Audio-Wiedergabe statt, daher ist dies eher präventiv.
+            // Die Haupt-Resume-Logik bleibt im signal-select.html beim Klick.
+            if (window.appAudio.audioContext && window.appAudio.audioContext.state === 'suspended') {
+                 console.log("AudioContext ist 'suspended' auf Signals-Screen, versuche zu 'resume'...");
+                 await window.appAudio.audioContext.resume().then(() => {
+                     console.log("AudioContext auf Signals-Screen wurde 'resumed'.");
+                 }).catch(e => {
+                     console.error("Fehler beim Resuming des AudioContext auf Signals-Screen:", e);
+                 });
+            }
+            return true;
+        }
+
         // Dummy-Funktion, die auf den Klick eines Signal-Buttons reagiert
         function handleSignalClick(signalType) {
             console.log(`Signal '${signalType}' geklickt!`);
@@ -227,24 +278,23 @@
         document.getElementById('halfway-signal').addEventListener('click', () => handleSignalClick('halfway'));
         document.getElementById('five-second-signal').addEventListener('click', () => handleSignalClick('five-second'));
 
-        // Event Listener für den "Back"-Link im Header
-        // Hier ist der href bereits in HTML angepasst, daher muss das JS nicht mehr überschrieben werden
-        // document.querySelector('.header-link[href="options.html"]').addEventListener('click', (event) => {
-        //     console.log('Zurück zu Options navigieren...');
-        // });
-
         // Funktion zum Laden und Anzeigen der Sounds
         function loadAndDisplaySignals() {
             let savedSignals = JSON.parse(localStorage.getItem('savedSignalsSounds')) || {};
 
-            document.getElementById('timer-start-sound').textContent = savedSignals['timer-start'] || 'bell';
-            document.getElementById('timer-end-sound').textContent = savedSignals['timer-end'] || 'horn';
-            document.getElementById('halfway-sound').textContent = savedSignals['halfway'] || 'beep';
-            document.getElementById('five-second-sound').textContent = savedSignals['five-second'] || 'applause';
+            document.getElementById('timer-start-sound').textContent = savedSignals['timer-start'] ? savedSignals['timer-start'] : 'bell';
+            document.getElementById('timer-end-sound').textContent = savedSignals['timer-end'] ? savedSignals['timer-end'] : 'horn';
+            document.getElementById('halfway-sound').textContent = savedSignals['halfway'] ? savedSignals['halfway'] : 'beep';
+            document.getElementById('five-second-sound').textContent = savedSignals['five-second'] ? savedSignals['five-second'] : 'applause';
         }
 
-        // Laden der Sounds beim Initialisieren der Seite
-        document.addEventListener('DOMContentLoaded', loadAndDisplaySignals);
+        // Laden der Sounds und Initialisierung des AudioContext beim Laden der Seite
+        document.addEventListener('DOMContentLoaded', async () => {
+            loadAndDisplaySignals();
+            // Initialisiere den AudioContext beim Laden des Screens.
+            // Dadurch ist das window.appAudio-Objekt bereit, wenn signal-select.html geladen wird.
+            await initAudioContext();
+        });
     </script>
 </body>
 </html>

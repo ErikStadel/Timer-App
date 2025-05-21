@@ -10,7 +10,6 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Tailwind CSS Konfiguration - identisch zu den anderen Screens
         tailwind.config = {
             theme: {
                 extend: {
@@ -21,9 +20,9 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
-                        rest: '#629471',      /* Satteres Grün für Rest-Zustand */
-                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand */
-                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
+                        rest: '#629471',
+                        interval: '#fd5c34',
+                        warning: '#fc814a',
                     },
                     fontFamily: {
                         karla: ['Karla', 'sans-serif'],
@@ -53,7 +52,6 @@
             flex-direction: column;
         }
 
-        /* --- Sticky Header --- */
         .sticky-header {
             position: sticky;
             top: 0;
@@ -67,7 +65,6 @@
             flex-shrink: 0;
         }
         
-        /* Pseudo-Element für den Bereich über dem Header */
         .sticky-header::before {
             content: "";
             position: absolute;
@@ -104,12 +101,10 @@
             text-decoration: underline;
         }
 
-        /* Platzhalter für die rechte Seite, da hier kein Button ist */
         .header-placeholder {
             width: 90px;
         }
 
-        /* --- Sound Liste --- */
         .sound-list {
             list-style: none;
             padding: 0;
@@ -123,7 +118,6 @@
         .sound-list::-webkit-scrollbar {
             display: none;
         }
-        /* Touch action for scroll area to prevent unwanted horizontal scrolling or page refresh */
         .sound-list {
             touch-action: pan-y;
         }
@@ -162,7 +156,7 @@
 <body>
 
     <header class="sticky-header" id="signal-select-header">
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signals-screen.html" class="header-link" id="back-link">Back</a>
+        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signals-screen.html" class="header-link" id="back-link">Back</a> 
         <h1 class="header-title" id="signal-name-display">Signalname</h1>
         <div class="header-placeholder"></div>
     </header>
@@ -189,74 +183,22 @@
         <li class="sound-item" data-sound-id="whoosh" data-file="whoosh.mp3">
             <span class="sound-name">Whoosh</span>
         </li>
-        </ul>
+    </ul>
 
     <script>
         const soundList = document.getElementById('sound-list');
         const signalNameDisplay = document.getElementById('signal-name-display');
         const backLink = document.getElementById('back-link');
 
-        // Referenz auf den globalen AudioContext und GainNode
-        const audioContext = window.audioContext;
-        const mainGainNode = window.mainGainNode;
+        // Globales Objekt für Audio-Steuerung
+        window.appAudio = window.appAudio || {
+            audioContext: null,
+            masterGainNode: null,
+            loadedSounds: {}, // Speichert geladene AudioBuffer
+            basePath: 'https://erikstadel.github.io/Timer-App/options-screen/signals/sounds/',
+            currentGlobalVolume: 1.0 // Wird vom Volume-Screen aktualisiert
+        };
 
-        // Caching für geladene Audio-Buffer, um sie nicht jedes Mal neu laden zu müssen
-        const audioBufferCache = {};
-
-        // Funktion zum Laden und Decodieren eines Sounds
-        async function loadSound(filePath) {
-            const fullPath = `https://erikstadel.github.io/Timer-App/options-screen/signals/sounds/${filePath}`;
-
-            if (audioBufferCache[fullPath]) {
-                return audioBufferCache[fullPath];
-            }
-
-            try {
-                const response = await fetch(fullPath);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                audioBufferCache[fullPath] = audioBuffer; // Cache the buffer
-                return audioBuffer;
-            } catch (error) {
-                console.error(`Fehler beim Laden oder Decodieren des Sounds '${fullPath}':`, error);
-                alert(`Konnte Sound '${filePath}' nicht laden. Überprüfe den Pfad und Autoplay-Regeln des Browsers.`);
-                return null;
-            }
-        }
-
-        // Funktion zum Abspielen eines Sounds über die Web Audio API
-        async function playSound(filePath) {
-            // Aktiviere AudioContext, falls suspended (z.B. nach initialem Laden)
-            if (audioContext.state === 'suspended') {
-                await audioContext.resume();
-            }
-
-            const audioBuffer = await loadSound(filePath);
-            if (!audioBuffer) return;
-
-            const source = audioContext.createBufferSource();
-            source.buffer = audioBuffer;
-
-            // Verbinde die Quelle mit unserem Haupt-GainNode
-            source.connect(mainGainNode);
-
-            // Spiele den Sound ab
-            source.start(0); // Sofort abspielen
-
-            // Optional: Wenn der Sound einmalig ist und nicht wiederverwendet wird,
-            // kann man die Source trennen, wenn sie fertig ist, um Ressourcen freizugeben.
-            source.onended = () => {
-                source.disconnect(mainGainNode);
-                console.log(`Sound '${filePath}' beendet und getrennt.`);
-            };
-            
-            console.log(`Spiele Sound ab: ${filePath}`);
-        }
-
-        // Dummy-Liste der verfügbaren Sounds (wird nicht direkt verwendet, nur zur Info)
         const availableSounds = [
             { id: 'bell', name: 'Bell', file: 'bell.mp3' },
             { id: 'horn', name: 'Horn', file: 'horn.mp3' },
@@ -269,6 +211,105 @@
 
         let currentSelectedSoundId = null;
         let currentSignalType = null;
+
+        // Funktion zur Initialisierung des AudioContext und GainNode
+        async function initAudioContext() {
+            if (!window.appAudio.audioContext) {
+                try {
+                    window.appAudio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    window.appAudio.masterGainNode = window.appAudio.audioContext.createGain();
+                    window.appAudio.masterGainNode.connect(window.appAudio.audioContext.destination);
+
+                    // Lautstärke aus localStorage laden und GainNode setzen
+                    const savedVolume = localStorage.getItem('appVolume');
+                    if (savedVolume !== null) {
+                        const volumeValue = parseFloat(savedVolume);
+                        window.appAudio.currentGlobalVolume = Math.max(0, (volumeValue - 50) / 100 + 0.5); // 50 -> 0.5, 100 -> 1.0, 150 -> 1.5
+                    } else {
+                        window.appAudio.currentGlobalVolume = 1.0; // Standardwert
+                    }
+                    window.appAudio.masterGainNode.gain.value = window.appAudio.currentGlobalVolume;
+                    console.log("AudioContext und MasterGainNode initialisiert. Aktuelle Lautstärke:", window.appAudio.currentGlobalVolume);
+
+                } catch (e) {
+                    console.error("Web Audio API konnte nicht initialisiert werden:", e);
+                    alert("Ihr Browser unterstützt die Web Audio API nicht oder es gab ein Problem beim Initialisieren. Soundfunktionen sind möglicherweise eingeschränkt.");
+                    return false;
+                }
+            }
+            // Wichtig: Context resume, falls er suspended ist (oft nach erster Nutzerinteraktion)
+            if (window.appAudio.audioContext.state === 'suspended') {
+                console.log("AudioContext ist 'suspended', versuche zu 'resume'...");
+                await window.appAudio.audioContext.resume().then(() => {
+                    console.log("AudioContext wurde 'resumed'.");
+                }).catch(e => {
+                    console.error("Fehler beim Resuming des AudioContext:", e);
+                });
+            }
+            return true;
+        }
+
+        // Funktion zum Laden einer Sounddatei
+        async function loadSound(file) {
+            const url = window.appAudio.basePath + file;
+            if (window.appAudio.loadedSounds[file]) {
+                console.log(`Sound '${file}' bereits geladen.`);
+                return window.appAudio.loadedSounds[file]; // Sound bereits geladen
+            }
+
+            // Sicherstellen, dass AudioContext bereit ist, bevor geladen wird
+            // Dies ist ein optionaler Aufruf, um sicherzustellen, dass fetch/decodeAudioData funktioniert.
+            // Die eigentliche 'resume' Logik ist im playSound oder beim ersten Klick.
+            if (!window.appAudio.audioContext) {
+                await initAudioContext(); // Nur initialisieren, nicht resume erzwingen
+                if (!window.appAudio.audioContext) {
+                    console.error("AudioContext ist nicht verfügbar, kann Sound nicht laden.");
+                    return null;
+                }
+            }
+
+            console.log(`Lade Sound: ${url}`);
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await window.appAudio.audioContext.decodeAudioData(arrayBuffer);
+                window.appAudio.loadedSounds[file] = audioBuffer;
+                console.log(`Sound '${file}' erfolgreich geladen.`);
+                return audioBuffer;
+            } catch (error) {
+                console.error(`Fehler beim Laden oder Dekodieren von Sound '${file}':`, error);
+                alert(`Fehler beim Laden des Sounds: ${file}. Bitte prüfen Sie die Konsolenausgabe.`);
+                return null;
+            }
+        }
+
+        // Neue playSound-Funktion mit Web Audio API
+        async function playSound(filePath) {
+            // WICHTIG: AudioContext erst hier (nach Nutzerinteraktion) sicherstellen und resume
+            if (!await initAudioContext()) {
+                 console.error("Konnte AudioContext nicht initialisieren/resumen, Sound kann nicht abgespielt werden.");
+                 return;
+            }
+            
+            const audioBuffer = await loadSound(filePath);
+            if (!audioBuffer) {
+                console.warn(`Sound '${filePath}' konnte nicht abgespielt werden, da nicht geladen.`);
+                return;
+            }
+
+            try {
+                const source = window.appAudio.audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(window.appAudio.masterGainNode); // Verbindung zum Master Gain Node
+                source.start(0); // Sofort abspielen
+                console.log(`Sound '${filePath}' wird über Web Audio API abgespielt.`);
+            } catch (error) {
+                console.error(`Fehler beim Erstellen der BufferSource für '${filePath}':`, error);
+            }
+        }
 
         function selectSoundItem(soundId) {
             document.querySelectorAll('.sound-item').forEach(item => {
@@ -292,17 +333,19 @@
             }
         }
 
-        soundList.addEventListener('click', (event) => {
+        soundList.addEventListener('click', async (event) => { // 'async' hinzugefügt
             const clickedItem = event.target.closest('.sound-item');
             if (clickedItem) {
                 const soundId = clickedItem.dataset.soundId;
                 const soundFile = clickedItem.dataset.file;
                 selectSoundItem(soundId);
-                playSound(soundFile);
+                // Beim Klick versuchen, den AudioContext zu initialisieren und zu resumieren
+                await initAudioContext(); 
+                playSound(soundFile); // Nutzt die neue playSound-Funktion
             }
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             currentSignalType = urlParams.get('type');
 
@@ -321,6 +364,16 @@
                 }
             } else {
                 signalNameDisplay.textContent = "Sound auswählen";
+            }
+
+            // Sounds im Hintergrund vorladen, um Latenz zu vermeiden.
+            // Autoplay-Regeln verhindern hier die Initialisierung/Resume des AudioContexts ohne User-Interaktion.
+            // Daher wird initAudioContext() beim Laden nur initialisiert, nicht resumed.
+            // Das Resume findet dann beim ersten Klick statt.
+            await initAudioContext(); // Stellt sicher, dass context-Objekt existiert
+            for (const sound of availableSounds) {
+                // Nur laden, nicht abspielen, falls AudioContext noch suspended ist
+                loadSound(sound.file); 
             }
         });
 
