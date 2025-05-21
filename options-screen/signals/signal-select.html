@@ -41,17 +41,16 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            /* padding-top: env(safe-area-inset-top); // Füge dies hinzu, wenn du es für mobile Safe-Areas brauchst */
-            background-color: #01161E; /* Hintergrundfarbe wie Home-Screen Body */
+            background-color: #01161E;
             font-family: 'Karla', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior: none; /* Von Home-Screen übernommen */
-            scroll-padding-top: 4rem; /* Von Home-Screen übernommen */
-            scroll-behavior: smooth; /* Glattes Scrollverhalten, von Home-Screen übernommen */
-            color: #EFF6E0; /* Helle Textfarbe */
+            overscroll-behavior: none;
+            scroll-padding-top: 4rem;
+            scroll-behavior: smooth;
+            color: #EFF6E0;
             display: flex;
-            flex-direction: column; /* Für Header und scrollbare Liste */
+            flex-direction: column;
         }
 
         /* --- Sticky Header --- */
@@ -59,7 +58,7 @@
             position: sticky;
             top: 0;
             width: 100%;
-            background-color: #01161E; /* Header Hintergrund wie Home-Screen Header */
+            background-color: #01161E;
             padding: 1rem;
             display: flex;
             justify-content: space-between;
@@ -68,7 +67,7 @@
             flex-shrink: 0;
         }
         
-        /* Pseudo-Element für den Bereich über dem Header, wie auf dem Home-Screen */
+        /* Pseudo-Element für den Bereich über dem Header */
         .sticky-header::before {
             content: "";
             position: absolute;
@@ -107,7 +106,7 @@
 
         /* Platzhalter für die rechte Seite, da hier kein Button ist */
         .header-placeholder {
-            width: 90px; /* Ca. Breite des "Back"-Links */
+            width: 90px;
         }
 
         /* --- Sound Liste --- */
@@ -115,14 +114,14 @@
             list-style: none;
             padding: 0;
             margin: 0;
-            flex-grow: 1; /* Nimmt den verbleibenden Platz ein */
-            overflow-y: auto; /* Macht die Liste scrollbar */
-            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE 10+ */
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
         .sound-list::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+            display: none;
         }
         /* Touch action for scroll area to prevent unwanted horizontal scrolling or page refresh */
         .sound-list {
@@ -130,8 +129,8 @@
         }
 
         .sound-item {
-            background-color: #124559; /* Hintergrundfarbe wie timer-item */
-            border-bottom: 1px solid #EFF6E0; /* Trennlinie wie timer-item */
+            background-color: #124559;
+            border-bottom: 1px solid #EFF6E0;
             display: flex;
             align-items: center;
             padding: 1rem;
@@ -142,19 +141,19 @@
         }
 
         .sound-item:active {
-            background-color: rgba(18, 69, 89, 0.8); /* Leichter Klick-Effekt */
+            background-color: rgba(18, 69, 89, 0.8);
         }
 
         .sound-item.selected {
-            background-color: #598392; /* Highlight-Farbe: primary */
+            background-color: #598392;
             font-weight: bold;
-            color: #EFF6E0; /* Sicherstellen, dass Text gut sichtbar ist */
+            color: #EFF6E0;
         }
 
         .sound-name {
             font-size: 1.1rem;
-            color: inherit; /* Nimmt Farbe vom Elternelement an (für selected state) */
-            flex-grow: 1; /* Nimmt den meisten Platz ein */
+            color: inherit;
+            flex-grow: 1;
         }
 
     </style>
@@ -163,7 +162,7 @@
 <body>
 
     <header class="sticky-header" id="signal-select-header">
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signals-screen.html" class="header-link" id="back-link">Back</a> 
+        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signal-screen.html" class="header-link" id="back-link">Back</a>
         <h1 class="header-title" id="signal-name-display">Signalname</h1>
         <div class="header-placeholder"></div>
     </header>
@@ -190,13 +189,74 @@
         <li class="sound-item" data-sound-id="whoosh" data-file="whoosh.mp3">
             <span class="sound-name">Whoosh</span>
         </li>
-    </ul>
+        </ul>
 
     <script>
         const soundList = document.getElementById('sound-list');
         const signalNameDisplay = document.getElementById('signal-name-display');
         const backLink = document.getElementById('back-link');
 
+        // Referenz auf den globalen AudioContext und GainNode
+        const audioContext = window.audioContext;
+        const mainGainNode = window.mainGainNode;
+
+        // Caching für geladene Audio-Buffer, um sie nicht jedes Mal neu laden zu müssen
+        const audioBufferCache = {};
+
+        // Funktion zum Laden und Decodieren eines Sounds
+        async function loadSound(filePath) {
+            const fullPath = `https://erikstadel.github.io/Timer-App/options-screen/signals/sounds/${filePath}`;
+
+            if (audioBufferCache[fullPath]) {
+                return audioBufferCache[fullPath];
+            }
+
+            try {
+                const response = await fetch(fullPath);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                audioBufferCache[fullPath] = audioBuffer; // Cache the buffer
+                return audioBuffer;
+            } catch (error) {
+                console.error(`Fehler beim Laden oder Decodieren des Sounds '${fullPath}':`, error);
+                alert(`Konnte Sound '${filePath}' nicht laden. Überprüfe den Pfad und Autoplay-Regeln des Browsers.`);
+                return null;
+            }
+        }
+
+        // Funktion zum Abspielen eines Sounds über die Web Audio API
+        async function playSound(filePath) {
+            // Aktiviere AudioContext, falls suspended (z.B. nach initialem Laden)
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+
+            const audioBuffer = await loadSound(filePath);
+            if (!audioBuffer) return;
+
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+
+            // Verbinde die Quelle mit unserem Haupt-GainNode
+            source.connect(mainGainNode);
+
+            // Spiele den Sound ab
+            source.start(0); // Sofort abspielen
+
+            // Optional: Wenn der Sound einmalig ist und nicht wiederverwendet wird,
+            // kann man die Source trennen, wenn sie fertig ist, um Ressourcen freizugeben.
+            source.onended = () => {
+                source.disconnect(mainGainNode);
+                console.log(`Sound '${filePath}' beendet und getrennt.`);
+            };
+            
+            console.log(`Spiele Sound ab: ${filePath}`);
+        }
+
+        // Dummy-Liste der verfügbaren Sounds (wird nicht direkt verwendet, nur zur Info)
         const availableSounds = [
             { id: 'bell', name: 'Bell', file: 'bell.mp3' },
             { id: 'horn', name: 'Horn', file: 'horn.mp3' },
@@ -209,26 +269,6 @@
 
         let currentSelectedSoundId = null;
         let currentSignalType = null;
-
-        function playSound(filePath) {
-    // Der Basispfad zu deinen Sounds
-    const basePath = 'https://erikstadel.github.io/Timer-App/options-screen/signals/sounds/';
-    const fullPath = basePath + filePath; // filePath ist z.B. 'bell.mp3'
-
-    try {
-        const audio = new Audio(fullPath);
-        audio.volume = 0.7; // Optional: Lautstärke anpassen (0.0 bis 1.0)
-        audio.play().catch(error => {
-            console.error("Fehler beim Abspielen des Sounds:", error);
-            // Dies kann passieren, wenn der Browser Autoplay blockiert
-            // oder die Datei nicht geladen werden kann.
-            alert(`Konnte Sound nicht abspielen: ${filePath}. Browser-Autoplay-Regeln?`);
-        });
-        console.log(`Versuche Sound abzuspielen: ${fullPath}`);
-    } catch (e) {
-        console.error("Fehler beim Erstellen des Audio-Objekts:", e);
-    }
-}
 
         function selectSoundItem(soundId) {
             document.querySelectorAll('.sound-item').forEach(item => {
@@ -284,12 +324,11 @@
             }
         });
 
-        // Event Listener für den "Back"-Link im Header
         backLink.addEventListener('click', (event) => {
-            event.preventDefault(); // Verhindere die Standard-Navigation
-            saveSelectedSound(); // Speichere den ausgewählten Sound
+            event.preventDefault();
+            saveSelectedSound();
             console.log('Zurück zu Signals navigieren...');
-            window.location.href = backLink.href; // Jetzt navigieren zur absoluten URL
+            window.location.href = backLink.href;
         });
     </script>
 </body>
