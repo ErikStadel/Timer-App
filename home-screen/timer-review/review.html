@@ -112,40 +112,41 @@
             display: none;
         }
 
-        .info-card {
+        /* Styling for the "Repeat" display */
+        .repeat-display-card {
             background-color: #124559;
             border-radius: 0.75rem;
             padding: 1rem;
             margin-bottom: 1.5rem;
             display: flex;
-            justify-content: space-between;
+            justify-content: space-between; /* Aligns "Repeat" left and number right */
             align-items: center;
         }
 
-        .info-card .label {
+        .repeat-display-card .label {
             color: #AEC3B0;
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
+            font-size: 1.1rem; /* Adjust font size to match input label */
+            font-weight: 600; /* Adjust font weight to match input label */
         }
 
-        .info-card .value {
+        .repeat-display-card .value {
             color: #EFF6E0;
             font-size: 1.1rem;
             font-weight: bold;
         }
 
-        .interval-round-section {
-            margin-bottom: 1.5rem;
+        .intervals-list-container {
+            margin-top: 1rem;
         }
 
-         .interval-round-title {
+        .intervals-list-title {
             font-size: 1.2rem;
             font-weight: bold;
-            color: #83c5be; /* Verwende den tatsächlichen Hex-Code für 'accent' */
+            color: #83c5be; /* Using accent color directly */
             margin-bottom: 1rem;
             text-align: center;
             padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(131, 197, 190, 0.3); /* Lighter accent border */
+            border-bottom: 1px solid rgba(131, 197, 190, 0.3);
         }
 
         .interval-item-review {
@@ -159,7 +160,7 @@
         }
 
         .interval-item-review.rest-item {
-            background-color: #598392; /* primary or a custom rest color for review */
+            background-color: #598392; /* primary color for rest items */
         }
 
         .interval-name-review {
@@ -185,14 +186,13 @@
     </header>
 
     <main class="review-content">
-        <div class="info-card">
-            <div>
-                <div class="label">Total Rounds</div>
-                <div class="value" id="repeat-display">1</div>
-            </div>
-            </div>
+        <div class="repeat-display-card">
+            <div class="label">Repeat</div>
+            <div class="value" id="repeat-display">1</div>
+        </div>
 
-        <div id="rounds-container">
+        <div class="intervals-list-container" id="intervals-container">
+            <h2 class="intervals-list-title">Sequence</h2>
             </div>
     </main>
 
@@ -200,39 +200,34 @@
         document.addEventListener('DOMContentLoaded', () => {
             const timerNameDisplay = document.getElementById('timer-name-display');
             const repeatDisplay = document.getElementById('repeat-display');
-            const roundsContainer = document.getElementById('rounds-container');
+            const intervalsContainer = document.getElementById('intervals-container');
 
-            // Beispiel-Daten für einen Timer. Diese müssten dynamisch geladen werden,
-            // z.B. über localStorage basierend auf einer ID aus den URL-Parametern
-            // oder durch Übergabe eines gesamten Timer-Objekts.
-            // Ich verwende hier eine erweiterte Struktur, um Intervall- und Pausen-Dauern zu trennen.
+            // Beispiel-Daten für einen Timer.
+            // Die `type` Eigenschaft ist jetzt nur noch 'interval' oder 'rest'.
+            // "Get Ready" und "Cool Down" wären normale Intervalle,
+            // die der Nutzer entsprechend benennt.
             const exampleTimerData = {
-                name: "Basic Workout",
+                name: "Free Boxing Round",
                 repeat: 3,
                 intervals: [
-                    { name: "Preparation", duration: "00:10", type: "preparation" }, // New type for 'Get Ready'
-                    { name: "Round 1 Training", duration: "01:00", type: "interval" },
-                    { name: "Short Rest", duration: "00:30", type: "rest" },
-                    { name: "Round 2 Training", duration: "01:00", type: "interval" },
-                    { name: "Short Rest", duration: "00:30", type: "rest" },
-                    { name: "Round 3 Training", duration: "01:00", type: "interval" },
-                    { name: "Cool Down", duration: "00:45", type: "cooldown" } // New type for 'Cool Down'
+                    { name: "Get Ready", duration: "00:10", type: "interval" },
+                    { name: "Boxing", duration: "01:00", type: "interval" },
+                    { name: "Rest", duration: "00:30", type: "rest" },
+                    { name: "Kicking", duration: "01:00", type: "interval" },
+                    { name: "Rest", duration: "00:30", type: "rest" },
+                    { name: "Shadowboxing", duration: "01:00", type: "interval" },
+                    { name: "Cool Down", duration: "00:45", type: "interval" }
                 ]
             };
 
-            // Simuliere das Laden der Timer-Daten basierend auf einer URL-ID
-            // In einer echten Anwendung würde man hier die ID aus den URL-Parametern lesen:
-            // const urlParams = new URLSearchParams(window.location.search);
-            // const timerId = urlParams.get('id');
-            // const savedTimers = JSON.parse(localStorage.getItem('timers')) || {};
-            // const timerToDisplay = savedTimers[timerId] || exampleTimerData;
+            // Simuliere das Laden der Timer-Daten.
+            // In einer echten Anwendung: const timerToDisplay = JSON.parse(localStorage.getItem('currentTimerForReview')) || exampleTimerData;
             const timerToDisplay = exampleTimerData; // Für Demonstrationszwecke
 
             timerNameDisplay.textContent = timerToDisplay.name;
             repeatDisplay.textContent = timerToDisplay.repeat;
 
             function formatTime(durationString) {
-                // Konvertiert "MM:SS" in einen anzeigbaren String, z.B. "1 Min 30 Sek" oder "45 Sek"
                 const parts = durationString.split(':');
                 const minutes = parseInt(parts[0], 10);
                 const seconds = parseInt(parts[1], 10);
@@ -246,55 +241,30 @@
                 return formatted.join(' ') || "0 Sek";
             }
 
-            function renderRounds() {
-                roundsContainer.innerHTML = ''; // Vorherige Inhalte leeren
-
-                let currentRoundNumber = 0;
-                const intervalsPerRound = timerToDisplay.intervals.filter(i => i.type === 'interval' || i.type === 'rest').length;
+            function renderFullSequence() {
+                intervalsContainer.innerHTML = '<h2 class="intervals-list-title">Sequence</h2>'; // Titel neu setzen
 
                 for (let r = 0; r < timerToDisplay.repeat; r++) {
-                    currentRoundNumber++;
-                    const roundSection = document.createElement('div');
-                    roundSection.classList.add('interval-round-section');
-
-                    const roundTitle = document.createElement('h2');
-                    roundTitle.classList.add('interval-round-title');
-                    roundTitle.textContent = `Round ${currentRoundNumber}`;
-                    roundSection.appendChild(roundTitle);
+                    // Optional: Eine Überschrift für jede Wiederholung, wenn das nützlich ist
+                    // if (timerToDisplay.repeat > 1) { // Nur anzeigen, wenn es mehr als eine Wiederholung gibt
+                    //     const repeatSubtitle = document.createElement('h3');
+                    //     repeatSubtitle.classList.add('text-secondary', 'font-semibold', 'text-center', 'mt-4', 'mb-2');
+                    //     repeatSubtitle.textContent = `Repeat ${r + 1}`;
+                    //     intervalsContainer.appendChild(repeatSubtitle);
+                    // }
 
                     timerToDisplay.intervals.forEach((interval, index) => {
                         const intervalItem = document.createElement('div');
                         intervalItem.classList.add('interval-item-review');
 
-                        let displayName = interval.name;
-                        let itemClass = '';
-
-                        // Logic to determine display name and class
-                        if (interval.type === 'preparation' && r === 0) {
-                            // Only show preparation before the very first round
-                            displayName = "Get Ready";
-                            itemClass = 'preparation-item';
-                        } else if (interval.type === 'rest' && index < timerToDisplay.intervals.length -1) { // Ensure it's not the last interval if it's a 'rest' type before cooldown
-                            displayName = "Rest";
-                            itemClass = 'rest-item';
-                        } else if (interval.type === 'cooldown' && r === timerToDisplay.repeat - 1) {
-                            // Only show cooldown after the very last round
-                            displayName = "Cool Down";
-                            itemClass = 'cooldown-item';
-                        } else if (interval.type === 'interval') {
-                             // Regular interval, use its name
-                            itemClass = 'interval-item';
-                        } else {
-                            return; // Skip intervals that don't fit the current round's display logic
-                        }
-
-                        if (itemClass) {
-                            intervalItem.classList.add(itemClass);
+                        // Wenn der Typ "rest" ist, füge die rest-item Klasse hinzu
+                        if (interval.type === 'rest') {
+                            intervalItem.classList.add('rest-item');
                         }
 
                         const nameSpan = document.createElement('span');
                         nameSpan.classList.add('interval-name-review');
-                        nameSpan.textContent = displayName;
+                        nameSpan.textContent = interval.name;
 
                         const durationSpan = document.createElement('span');
                         durationSpan.classList.add('interval-duration-review');
@@ -302,13 +272,12 @@
 
                         intervalItem.appendChild(nameSpan);
                         intervalItem.appendChild(durationSpan);
-                        roundSection.appendChild(intervalItem);
+                        intervalsContainer.appendChild(intervalItem);
                     });
-                    roundsContainer.appendChild(roundSection);
                 }
             }
 
-            renderRounds();
+            renderFullSequence();
         });
     </script>
 </body>
