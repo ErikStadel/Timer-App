@@ -154,7 +154,7 @@
       <input
         type="text"
         value="Intervall"
-        class="bg-transparent text-2xl font-bold text-accent border-b border-accent focus:outline-none text-center w-full"
+        id="intervalNameInput" class="bg-transparent text-2xl font-bold text-accent border-b border-accent focus:outline-none text-center w-full"
         onclick="this.select()"
       />
     </div>
@@ -295,7 +295,7 @@
     </div>
 
     <button
-      class="w-full bg-accent text-dark py-3 rounded-xl font-bold hover:bg-accent/90 transition-all"
+      id="saveIntervalButton" class="w-full bg-accent text-dark py-3 rounded-xl font-bold hover:bg-accent/90 transition-all"
     >
       Save
     </button>
@@ -303,63 +303,189 @@
 
   <script>
     const wheels = document.querySelectorAll('.wheel');
+    const intervalNameInput = document.getElementById('intervalNameInput');
+    const tabInterval = document.getElementById('tab-interval');
+    const tabRest = document.getElementById('tab-rest');
+    const contentInterval = document.getElementById('content-interval');
+    const contentRest = document.getElementById('content-rest');
+    const saveIntervalButton = document.getElementById('saveIntervalButton');
 
+    // Aktuell bearbeitetes Intervall (zum Speichern der ID)
+    let currentIntervalId = null;
+
+    // --- Wheel-Funktionalität ---
     wheels.forEach((wheel) => {
         setTimeout(() => updateWheel(wheel), 10);
         wheel.addEventListener('scroll', () => updateWheel(wheel));
     });
 
     function updateWheel(wheel) {
-      const items = wheel.getElementsByClassName('wheel-item');
-      clearTimeout(wheel.scrollTimeout);
+        const items = wheel.getElementsByClassName('wheel-item');
+        clearTimeout(wheel.scrollTimeout);
 
-      wheel.scrollTimeout = setTimeout(() => {
-        const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
-        Array.from(items).forEach((item) => {
-          const rect = item.getBoundingClientRect();
-          const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
+        wheel.scrollTimeout = setTimeout(() => {
+            const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
+            let closestItem = null;
+            let minDistance = Infinity;
 
-          if (distance < 10) {
-            item.classList.add('selected');
-          } else {
-            item.classList.remove('selected');
-          }
-        });
-      }, 5);
+            Array.from(items).forEach((item) => {
+                const rect = item.getBoundingClientRect();
+                const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestItem = item;
+                }
+                item.classList.remove('selected'); // Alle Selektionen entfernen
+            });
+
+            if (closestItem) {
+                closestItem.classList.add('selected'); // Das nächste Element auswählen
+                // Optional: Scrollen zum nächsten ausgewählten Element, wenn es nicht genau in der Mitte ist
+                const currentScrollTop = wheel.scrollTop;
+                const targetScrollTop = closestItem.offsetTop - wheel.offsetHeight / 2 + closestItem.offsetHeight / 2;
+                if (Math.abs(currentScrollTop - targetScrollTop) > 1) { // Nur scrollen, wenn nötig
+                     wheel.scrollTo({
+                        top: targetScrollTop,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        }, 50); // Etwas längeres Timeout, um Scroll-Ende besser zu erkennen
     }
 
-    document.getElementById('tab-interval').addEventListener('click', function() {
-      document.getElementById('tab-interval').classList.add('active');
-      document.getElementById('tab-interval').classList.remove('inactive');
-      document.getElementById('tab-rest').classList.add('inactive');
-      document.getElementById('tab-rest').classList.remove('active');
+    // Hilfsfunktion zum Setzen des Wheel-Wertes
+    function setWheelValue(wheelId, value) {
+        const wheel = document.getElementById(wheelId);
+        if (wheel) {
+            const items = Array.from(wheel.querySelectorAll('.wheel-item'));
+            const itemToSelect = items.find(item => item.textContent === value);
+            if (itemToSelect) {
+                // Sofort scrollen
+                wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
+                // Timeout, um sicherzustellen, dass die Auswahl nach dem Scrollen aktualisiert wird
+                setTimeout(() => updateWheel(wheel), 100);
+            }
+        }
+    }
 
-      document.getElementById('content-interval').classList.add('active');
-      document.getElementById('content-rest').classList.remove('active');
 
+    // --- Tab-Funktionalität ---
+    tabInterval.addEventListener('click', function() {
+      tabInterval.classList.add('active');
+      tabInterval.classList.remove('inactive');
+      tabRest.classList.add('inactive');
+      tabRest.classList.remove('active');
+
+      contentInterval.classList.add('active');
+      contentRest.classList.remove('active');
+
+      // Nach Tab-Wechsel Wheels aktualisieren
       setTimeout(() => {
           document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
       }, 0);
     });
 
-    document.getElementById('tab-rest').addEventListener('click', function() {
-      document.getElementById('tab-rest').classList.add('active');
-      document.getElementById('tab-rest').classList.remove('inactive');
-      document.getElementById('tab-interval').classList.add('inactive');
-      document.getElementById('tab-interval').classList.remove('active');
+    tabRest.addEventListener('click', function() {
+      tabRest.classList.add('active');
+      tabRest.classList.remove('inactive');
+      tabInterval.classList.add('inactive');
+      tabInterval.classList.remove('active');
 
-      document.getElementById('content-rest').classList.add('active');
-      document.getElementById('content-interval').classList.remove('active');
+      contentRest.classList.add('active');
+      contentInterval.classList.remove('active');
 
+      // Nach Tab-Wechsel Wheels aktualisieren
       setTimeout(() => {
           document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
       }, 0);
     });
 
+    // --- Speichern-Funktionalität ---
+    saveIntervalButton.addEventListener('click', () => {
+        const name = intervalNameInput.value.trim();
+        const type = tabInterval.classList.contains('active') ? "interval" : "rest";
+
+        let minutesElement;
+        let secondsElement;
+
+        if (type === "interval") {
+            minutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
+            secondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
+        } else { // type === "rest"
+            minutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
+            secondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
+        }
+
+        const minutes = minutesElement ? minutesElement.textContent : "00";
+        const seconds = secondsElement ? secondsElement.textContent : "00";
+        const duration = `${minutes}:${seconds}`;
+
+        const intervalData = {
+            id: currentIntervalId, // Sende die ID zurück, damit der Eltern-Editor das richtige Intervall aktualisieren kann
+            name: name,
+            duration: duration,
+            type: type
+        };
+
+        // Sende die Daten an den Timer-Editor zurück
+        if (window.opener) {
+            window.opener.postMessage({ type: 'saveInterval', data: intervalData }, window.location.origin);
+        } else {
+            console.warn("No opener window found. Interval data not sent.");
+        }
+        window.close(); // Schließe das Popup
+    });
+
+    // --- Initialisierung beim Laden (Empfang von Daten vom Timer-Editor) ---
     document.addEventListener('DOMContentLoaded', () => {
+        // Initial alle Wheels aktualisieren, um die "selected"-Klasse zu setzen
         wheels.forEach((wheel) => {
             updateWheel(wheel);
         });
+
+        // Event-Listener für Nachrichten vom Elternfenster (Timer-Editor)
+        window.addEventListener('message', (event) => {
+            // Wichtig: Prüfe event.origin für Sicherheit in einer echten Anwendung
+            // if (event.origin !== "http://deine-timer-editor-domain.de") {
+            //     return;
+            // }
+
+            if (event.data && event.data.type === 'loadInterval') {
+                const intervalToLoad = event.data.data;
+                currentIntervalId = intervalToLoad.id; // Speichere die ID des zu bearbeitenden Intervalls
+
+                intervalNameInput.value = intervalToLoad.name;
+
+                // Tab basierend auf dem Typ setzen
+                if (intervalToLoad.type === 'rest') {
+                    tabRest.click(); // Simuliert Klick auf den Rest-Tab
+                } else {
+                    tabInterval.click(); // Simuliert Klick auf den Interval-Tab
+                }
+
+                // Dauer auf den Wheels einstellen
+                const [initialMinutes, initialSeconds] = intervalToLoad.duration.split(':');
+
+                // Setze die Werte auf den korrekten Wheels, abhängig vom Typ
+                if (intervalToLoad.type === 'interval') {
+                    setWheelValue('minutes-wheel', initialMinutes);
+                    setWheelValue('seconds-wheel', initialSeconds);
+                } else { // type === 'rest'
+                    setWheelValue('minutes-wheel-rest', initialMinutes);
+                    setWheelValue('seconds-wheel-rest', initialSeconds);
+                }
+            }
+        });
+
+        // Wenn das Popup ohne übergebene Daten geöffnet wird, setze Standardwerte
+        if (!window.opener) {
+             // Setze die Standardwerte für ein neues Intervall (z.B. "00:00" und "Interval")
+             setWheelValue('minutes-wheel', '00');
+             setWheelValue('seconds-wheel', '00');
+             intervalNameInput.value = 'Intervall'; // Standardname für neue Intervalle
+             tabInterval.click(); // Standardmäßig den Interval-Tab aktiv
+        }
     });
   </script>
 </body>
