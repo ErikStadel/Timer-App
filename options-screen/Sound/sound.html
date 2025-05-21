@@ -44,7 +44,7 @@
             background-color: #01161E;
             font-family: 'Karla', sans-serif;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            -moz-osx-osx-font-smoothing: grayscale;
             overscroll-behavior: none;
             scroll-padding-top: 4rem;
             scroll-behavior: smooth;
@@ -116,8 +116,8 @@
         /* --- Volume Dial Container --- */
         .volume-dial-container {
             position: relative;
-            width: 280px; /* VERGRÖSSERT: Größe des Zifferblatts */
-            height: 280px; /* VERGRÖSSERT */
+            width: 280px;
+            height: 280px;
             border-radius: 50%;
             border: 4px solid #EFF6E0;
             display: flex;
@@ -138,15 +138,14 @@
             left: 0;
             width: 100%;
             height: 0%;
-            /* background-color wird von JS gesetzt */
-            transition: height 0.05s ease-out, background-color 0.1s ease-out; /* Übergang auch für Farbe */
+            transition: height 0.05s ease-out, background-color 0.1s ease-out;
             transform-origin: bottom;
         }
         
         .volume-value {
             position: relative;
             z-index: 10;
-            font-size: 4.5rem; /* VERGRÖSSERT: Große Zahl */
+            font-size: 4.5rem;
             font-weight: bold;
             color: #EFF6E0;
         }
@@ -176,7 +175,7 @@
         let initialMouseY;
         let initialVolume;
 
-        // Farben für den Verlauf
+        // Farben für den Verlauf (RGB-Werte für Interpolation)
         const colors = {
             low: { r: 98, g: 148, b: 113 },    // #629471 (rest)
             mid: { r: 252, g: 129, b: 74 },   // #fc814a (warning)
@@ -191,6 +190,30 @@
             result.b = Math.round(color1.b + factor * (color2.b - color1.b));
             return `rgb(${result.r}, ${result.g}, ${result.b})`;
         }
+
+        // --- Web Audio API Setup ---
+        // Diesen Kontext und GainNode machen wir global verfügbar,
+        // damit signal-select.html sie nutzen kann.
+        window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
+        window.mainGainNode = window.mainGainNode || window.audioContext.createGain();
+        // Verbinde den GainNode mit der Lautsprecher-Ausgabe
+        window.mainGainNode.connect(window.audioContext.destination);
+
+        // Standard-Lautstärke auf 1.0 setzen, wenn nicht anders geladen
+        // Der gain-Wert entspricht dem Faktor der Verstärkung.
+        // Bei 50% soll er 0.5 sein, bei 100% 1.0, bei 150% 1.5
+        function mapVolumeToGain(volume) {
+            // Mappt den Bereich 50-150 auf 0.5-1.5
+            // Min-Wert 50 -> 0.5
+            // Max-Wert 150 -> 1.5
+            // Skala ist 100 Einheiten breit (150-50)
+            // Ziel-Skala ist 1.0 Einheiten breit (1.5-0.5)
+            // Faktor: (volume - 50) / 100 -> 0.0 bis 1.0
+            // Ergebnis: 0.5 + Faktor * 1.0
+            const gainValue = 0.5 + (volume - 50) / 100;
+            return Math.max(0, gainValue); // Sicherstellen, dass der Wert nicht negativ ist
+        }
+
 
         // Funktion zum Aktualisieren der Anzeige, des Füllstands und der Farbe
         function updateVolumeDisplay() {
@@ -213,16 +236,14 @@
             }
             volumeFill.style.backgroundColor = displayColor;
 
-            // TODO: Für die tatsächliche Audio-Lautstärke (mit Web Audio API für Verstärkung über 1.0)
-            // Dies ist ein komplexeres Thema, das einen Umbau der Sound-Logik erfordert.
-            // Z.B. `window.audioContext.createGain()` und dessen `gain.value` steuern.
-            // Für's Erste mappen wir den sichtbaren Wert auf einen Bereich von 0.5 bis 1.0 für die normale Lautstärke:
-            // const actualAudioVolume = Math.max(0.0, Math.min(1.0, (currentVolume - 50) / 100)); // Mappt 50->0, 150->1
-            // console.log("Actual Audio Volume for standard Audio object:", actualAudioVolume);
-            // Beispiel für einfaches Audio-Objekt:
-            // if (window.currentPlayingAudio) { // Annahme: Du hast ein global referenziertes Audio-Objekt
-            //     window.currentPlayingAudio.volume = actualAudioVolume;
-            // }
+            // --- Lautstärke des GainNode aktualisieren ---
+            window.mainGainNode.gain.value = mapVolumeToGain(currentVolume);
+            console.log(`Lautstärke auf ${currentVolume}% (${window.mainGainNode.gain.value.toFixed(2)} Gain) gesetzt.`);
+
+            // Aktivieren des AudioContext, falls noch nicht aktiv (durch User-Geste)
+            if (window.audioContext.state === 'suspended') {
+                window.audioContext.resume();
+            }
         }
 
         // --- Event Listener für Maus (Desktop) ---
@@ -231,6 +252,10 @@
             initialMouseY = e.clientY;
             initialVolume = currentVolume;
             volumeDial.style.cursor = 'grabbing';
+            // Versuche den AudioContext zu aktivieren, falls er pausiert ist
+            if (window.audioContext.state === 'suspended') {
+                window.audioContext.resume();
+            }
         });
 
         document.addEventListener('mousemove', (e) => {
@@ -260,12 +285,16 @@
             initialVolume = currentVolume;
             volumeDial.style.cursor = 'grabbing';
             e.preventDefault();
+            // Versuche den AudioContext zu aktivieren, falls er pausiert ist
+            if (window.audioContext.state === 'suspended') {
+                window.audioContext.resume();
+            }
         }, { passive: false });
 
         document.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
             const deltaY = initialMouseY - e.touches[0].clientY;
-            const sensitivity = 0.7; // Angepasste Sensitivität
+            const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
             currentVolume = Math.max(50, Math.min(150, currentVolume));
             updateVolumeDisplay();
@@ -287,7 +316,7 @@
             if (savedVolume !== null) {
                 currentVolume = parseFloat(savedVolume);
             }
-            updateVolumeDisplay(); // Initialen Wert und Farbe anzeigen
+            updateVolumeDisplay(); // Initialen Wert und Farbe anzeigen und GainNode setzen
         });
     </script>
 </body>
