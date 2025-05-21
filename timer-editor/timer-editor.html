@@ -80,12 +80,12 @@
         padding-left: 1rem;
         padding-right: 1rem;
         padding-bottom: 1rem;
-        space-y-4;
+        gap: 1rem;
       }
 
       .interval-list {
         margin-top: 1rem;
-        space-y-3;
+        gap: 0.75rem;
       }
 
       .interval-item {
@@ -288,8 +288,8 @@
             }
 
             setTimeout(() => {
-                optionsElement.classList.add('slide-in');
                 optionsElement.classList.remove('translate-x-full');
+                optionsElement.classList.add('slide-in');
                 listItem.classList.add('options-active');
             }, 0);
         }
@@ -380,7 +380,7 @@
                         clearTimeout(longPressTimeout);
                         if (!isLongPress && isSwiping) {
                             const endX = e.changedTouches[0].clientX;
-                            const deltaX = endX - startX;
+                            const deltaX = startX - endX;
                             handleSwipe(listItem, deltaX);
                         }
                         startX = 0;
