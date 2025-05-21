@@ -6,7 +6,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Sound auswählen</title>
+    <title>Signal Select</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -64,7 +64,7 @@
             z-index: 50;
             flex-shrink: 0;
         }
-        
+
         .sticky-header::before {
             content: "";
             position: absolute;
@@ -156,7 +156,7 @@
 <body>
 
     <header class="sticky-header" id="signal-select-header">
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signals-screen.html" class="header-link" id="back-link">Back</a> 
+        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signals-screen.html" class="header-link" id="back-link">Back</a>
         <h1 class="header-title" id="signal-name-display">Signalname</h1>
         <div class="header-placeholder"></div>
     </header>
@@ -293,7 +293,7 @@
                  console.error("Konnte AudioContext nicht initialisieren/resumen, Sound kann nicht abgespielt werden.");
                  return;
             }
-            
+
             const audioBuffer = await loadSound(filePath);
             if (!audioBuffer) {
                 console.warn(`Sound '${filePath}' konnte nicht abgespielt werden, da nicht geladen.`);
@@ -340,7 +340,7 @@
                 const soundFile = clickedItem.dataset.file;
                 selectSoundItem(soundId);
                 // Beim Klick versuchen, den AudioContext zu initialisieren und zu resumieren
-                await initAudioContext(); 
+                await initAudioContext();
                 playSound(soundFile); // Nutzt die neue playSound-Funktion
             }
         });
@@ -358,7 +358,7 @@
 
                 let savedSignals = JSON.parse(localStorage.getItem('savedSignalsSounds')) || {};
                 const savedSoundId = savedSignals[currentSignalType];
-                
+
                 if (savedSoundId) {
                     selectSoundItem(savedSoundId);
                 }
@@ -373,7 +373,7 @@
             await initAudioContext(); // Stellt sicher, dass context-Objekt existiert
             for (const sound of availableSounds) {
                 // Nur laden, nicht abspielen, falls AudioContext noch suspended ist
-                loadSound(sound.file); 
+                loadSound(sound.file);
             }
         });
 
