@@ -298,7 +298,7 @@
       const optionsButton = document.getElementById('optionsButton'); // Get the options button
       const deleteConfirmationDialog = document.getElementById('deleteConfirmationDialog');
       const cancelDeleteButton = document.getElementById('cancelDelete');
-      const confirmDeleteButton = document.getElementById('confirmDelete');
+      const confirmDeleteButton = document = document.getElementById('confirmDelete');
 
       let activeOptionsItem = null;
       let sortable = null;
@@ -349,25 +349,9 @@
               }
           });
 
-          // If no timers exist, populate with initial examples (with proper IDs and intervals)
-          if (storedTimers.length === 0) {
-              storedTimers = [
-                { id: generateUniqueId(), name: "Aufwärmen", intervals: [{ duration: 300, type: 'work' }], repeat: 1 }, // 5:00
-                { id: generateUniqueId(), name: "Sparring", intervals: [{ duration: 180, type: 'work' }, {duration: 60, type: 'rest'}], repeat: 3 }, // 3x3 Min + 1min rest
-                { id: generateUniqueId(), name: "Sandsack", intervals: [{ duration: 600, type: 'work' }], repeat: 1 }, // 10:00
-                { id: generateUniqueId(), name: "Dehnen", intervals: [{ duration: 300, type: 'work' }], repeat: 1 }, // 5:00
-                { id: generateUniqueId(), name: "Cool Down", intervals: [{ duration: 300, type: 'work' }], repeat: 1 }, // 5:00
-                { id: generateUniqueId(), name: "Workout", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
-                { id: generateUniqueId(), name: "Laufen", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
-                { id: generateUniqueId(), name: "Springseil", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
-                { id: generateUniqueId(), name: "Schattenboxen", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
-                { id: generateUniqueId(), name: "Partnerübung", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
-                { id: generateUniqueId(), name: "Techniktraining", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
-                { id: generateUniqueId(), name: "Wettkampfsimulation", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
-              ];
-              needsUpdate = true;
-          }
-
+          // Removed hardcoded dummy data. Now, if localStorage is empty, the list will simply be empty.
+          // The "No timers yet" message will be displayed by renderTimerList if timers.length is 0.
+          
           if (needsUpdate) {
               saveTimers(storedTimers); 
           }
@@ -635,13 +619,14 @@
                     if (!isSortableMode) { // Only handle swipe/tap if not in sortable mode
                         const currentX = e.changedTouches[0].screenX;
                         const deltaX = currentX - touchStartX;
+                        const deltaY = e.changedTouches[0].screenY - touchStartY;
                         
                         if (isSwipingOrScrolling) { // It was a swipe or scroll gesture
-                            // If swipe (horizontal movement dominated), handle it
-                            if (Math.abs(deltaX) > Math.abs(e.changedTouches[0].screenY - touchStartY)) {
+                            // If primarily horizontal movement (swipe), handle it
+                            if (Math.abs(deltaX) > Math.abs(deltaY)) {
                                 handleSwipe(li, currentX, touchStartX); // Call original handleSwipe for decision
                             } else {
-                                // If mostly vertical movement (scroll), just close options if any were open
+                                // If primarily vertical movement (scroll), just close options if any were open
                                 if (li.classList.contains('options-active')) {
                                     closeOptions(li);
                                 }
