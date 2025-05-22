@@ -183,7 +183,7 @@
         opacity: 1;
       }
 
-      /* Confirmation Dialog Styles (Re-integrated from your previous successful version) */
+      /* Confirmation Dialog Styles */
       .confirmation-dialog-overlay {
           position: fixed;
           top: 0;
@@ -305,11 +305,10 @@
       let longPressTimer = null;
       let longPressThreshold = 1000;
       let isSortableMode = false;
-      let isSwiping = false; // Flag to track if it's a swipe
+      let isSwipingOrScrolling = false; // Combined flag for any significant movement
       let touchStartX = 0;
-      let touchStartY = 0; // Added for vertical movement check in long press
-      let deltaXThreshold = 10; // Minimum horizontal movement for swipe
-      let deltaYThreshold = 10; // Minimum vertical movement to cancel long press/tap
+      let touchStartY = 0; 
+      let movementThreshold = 10; // Threshold for any movement (swipe or scroll)
 
       let timers = []; // Will be loaded from localStorage
 
@@ -321,30 +320,31 @@
       function loadTimers() {
           let storedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
           
-          // Add unique IDs to existing timers if they don't have them
           let needsUpdate = false;
+          // Ensure all timers have an ID and correct intervals/repeat structure
           storedTimers.forEach(timer => {
               if (!timer.id) {
                   timer.id = generateUniqueId();
                   needsUpdate = true;
               }
-              // Ensure intervals array exists for calculation consistency and correct format
-              if (!timer.intervals) {
+              if (!timer.intervals || !Array.isArray(timer.intervals) || timer.intervals.length === 0) {
                   // Attempt to convert old "duration" string to new "intervals" structure
                   if (timer.duration && typeof timer.duration === 'string' && timer.duration.includes(':')) {
                       const parts = timer.duration.split(':');
                       const totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
                       timer.intervals = [{ duration: totalSeconds, type: 'work' }];
-                      timer.repeat = 1; // Assume 1 repeat for simple duration timers
                   } else {
-                      // Fallback if no valid duration found, set to a default interval
-                      timer.intervals = [{ duration: 300, type: 'work' }]; // Default 5 minutes
-                      timer.repeat = 1;
+                      timer.intervals = [{ duration: 300, type: 'work' }]; // Default 5 minutes if no valid duration
                   }
                   needsUpdate = true;
               }
               if (timer.repeat === undefined) {
                   timer.repeat = 1;
+                  needsUpdate = true;
+              }
+              // Remove old `duration` property if it exists to clean up
+              if (timer.duration !== undefined && typeof timer.duration === 'string') {
+                  delete timer.duration;
                   needsUpdate = true;
               }
           });
@@ -369,7 +369,7 @@
           }
 
           if (needsUpdate) {
-              saveTimers(storedTimers); // Save updated timers with IDs and intervals
+              saveTimers(storedTimers); 
           }
           return storedTimers;
       }
@@ -389,28 +389,26 @@
         function calculateTotalTimerDuration(timer) {
             let duration = 0;
             if (timer.intervals && Array.isArray(timer.intervals)) {
+                // Sum durations of all intervals and multiply by repeat count
                 timer.intervals.forEach(interval => {
                     duration += interval.duration;
                 });
             }
-            return duration * (timer.repeat || 1); // Use repeat, default to 1
+            return duration * (timer.repeat || 1); 
         }
-
 
       function handleSwipe(listItem, endX, startX) {
         const deltaX = endX - startX;
         const swipeThreshold = 50;
 
-        if (deltaX < -swipeThreshold) {
+        if (deltaX < -swipeThreshold) { // Swipe Left
           showOptions(listItem);
-        } else if (deltaX > swipeThreshold) {
+        } else if (deltaX > swipeThreshold) { // Swipe Right
           closeOptions(listItem);
         } else {
-            // If swipe was not significant enough, snap back or keep open if already open
+            // If swipe was not significant enough, but an option panel was open, close it
             if (listItem.classList.contains('options-active')) {
-                showOptions(listItem); // Keep options open
-            } else {
-                closeOptions(listItem); // Snap closed
+                closeOptions(listItem); 
             }
         }
       }
@@ -442,8 +440,6 @@
           const optionSpan = document.createElement('span');
           optionSpan.classList.add('text-light', 'cursor-pointer');
           optionSpan.textContent = option.text;
-
-          // No specific background colors per option, just text as requested
           
           optionSpan.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent li click
@@ -514,7 +510,7 @@
           }
       }
 
-      // --- Confirmation Dialog and Delete Logic (Re-integrated) ---
+      // --- Confirmation Dialog and Delete Logic ---
       let timerToDeleteId = null;
 
       function showDeleteConfirmation(timerId) {
@@ -582,56 +578,52 @@
           li.appendChild(nameSpan);
           li.appendChild(durationSpan);
 
-          // --- Touch Event Listeners for Swipe and Long Press ---
+          // --- Touch Event Listeners for Swipe and Long Press/Tap ---
             li.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
+                if (e.touches.length === 1 && !isSortableMode) { // Only listen if not in sortable mode
                     touchStartX = e.touches[0].screenX;
                     touchStartY = e.touches[0].screenY;
-                    isSwiping = false; // Reset swipe flag
+                    isSwipingOrScrolling = false; // Reset flag
                     
                     // Close any active options if starting a new touch on a different item
                     if (activeOptionsItem && activeOptionsItem !== li) {
                         closeOptions(activeOptionsItem);
                     }
 
-                    // Only set long press timer if not in sortable mode
-                    if (!isSortableMode) {
-                        longPressTimer = setTimeout(() => {
-                            // Only activate sortable mode if no significant horizontal movement
-                            if (Math.abs(e.touches[0].screenX - touchStartX) < deltaXThreshold &&
-                                Math.abs(e.touches[0].screenY - touchStartY) < deltaYThreshold) {
-                                e.preventDefault(); // Prevent accidental click after long press
-                                enableSortableMode();
-                            }
-                        }, longPressThreshold);
-                    }
+                    longPressTimer = setTimeout(() => {
+                        // Only activate sortable mode if no significant movement occurred
+                        if (!isSwipingOrScrolling) {
+                            e.preventDefault(); // Prevent accidental click after long press
+                            enableSortableMode();
+                        }
+                    }, longPressThreshold);
                 }
             }, { passive: false }); // Passive: false to allow preventDefault
 
             li.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1 && !isSortableMode) {
+                if (e.touches.length === 1 && !isSortableMode) { // Only listen if not in sortable mode
                     const currentX = e.touches[0].screenX;
                     const currentY = e.touches[0].screenY;
                     const deltaX = currentX - touchStartX;
                     const deltaY = currentY - touchStartY;
 
-                    // If significant horizontal movement, it's a swipe
-                    if (Math.abs(deltaX) > deltaXThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
-                        isSwiping = true;
-                        clearTimeout(longPressTimer); // Cancel long press if swiping
-                        e.preventDefault(); // Prevent default scroll/bounce
-                        
-                        // Keep swipe options visible during drag, even if not fully open yet
-                        const optionsElement = li.querySelector('.swipe-options-container');
-                        if (optionsElement) {
-                             // This ensures the options stay with the swipe gesture
-                            optionsElement.style.transform = `translateX(${Math.min(100, 100 + (deltaX / li.offsetWidth) * 100)}%)`; 
+                    // If any significant movement (horizontal or vertical)
+                    if (Math.abs(deltaX) > movementThreshold || Math.abs(deltaY) > movementThreshold) {
+                        isSwipingOrScrolling = true;
+                        clearTimeout(longPressTimer); // Cancel long press if moving
+
+                        // If it's a horizontal swipe, prevent default to avoid scrolling
+                        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                            e.preventDefault(); 
+                            // Optional: Visually show the options sliding with the finger
+                            const optionsElement = li.querySelector('.swipe-options-container');
+                            if (optionsElement) {
+                                // Calculate desired position for the options based on swipe distance
+                                // Clamping the value to prevent options from moving too far left
+                                const newTransformX = Math.max(0, 100 + (deltaX / li.offsetWidth) * 100); 
+                                optionsElement.style.transform = `translateX(${newTransformX}%)`;
+                            }
                         }
-                    } 
-                    // If significant vertical movement, cancel long press
-                    else if (Math.abs(deltaY) > deltaYThreshold) {
-                        clearTimeout(longPressTimer); // Cancel long press if scrolling
-                        // Allow default scroll behavior
                     }
                 }
             }, { passive: false }); // Passive: false to allow preventDefault
@@ -644,16 +636,23 @@
                         const currentX = e.changedTouches[0].screenX;
                         const deltaX = currentX - touchStartX;
                         
-                        if (isSwiping) { // It was a swipe gesture
-                            handleSwipe(li, currentX, touchStartX); // Call original handleSwipe for decision
+                        if (isSwipingOrScrolling) { // It was a swipe or scroll gesture
+                            // If swipe (horizontal movement dominated), handle it
+                            if (Math.abs(deltaX) > Math.abs(e.changedTouches[0].screenY - touchStartY)) {
+                                handleSwipe(li, currentX, touchStartX); // Call original handleSwipe for decision
+                            } else {
+                                // If mostly vertical movement (scroll), just close options if any were open
+                                if (li.classList.contains('options-active')) {
+                                    closeOptions(li);
+                                }
+                            }
                             // Reset transform for swipe options after handling the gesture
                             const optionsElement = li.querySelector('.swipe-options-container');
                             if (optionsElement) {
                                 optionsElement.style.transform = ''; // Reset transform for transition
                             }
-                        } else { // It was a tap or very small drag
-                            // Only trigger the timer screen if options are not currently open
-                            // and no significant swipe occurred
+                        } else { // It was a tap (no significant movement)
+                            // Only trigger the timer screen if no options are currently open
                             if (!li.classList.contains('options-active')) {
                                 const timerId = li.getAttribute('data-timer-id');
                                 localStorage.setItem('selectedTimerId', timerId);
@@ -661,7 +660,7 @@
                             }
                         }
                     }
-                    isSwiping = false; // Reset flag
+                    isSwipingOrScrolling = false; // Reset flag
                     touchStartX = 0; // Reset
                     touchStartY = 0; // Reset
                 }
@@ -674,6 +673,7 @@
           timerList.appendChild(li);
         });
 
+        // Re-enable SortableJS if already in sortable mode
         if (isSortableMode) {
           enableSortable();
         }
@@ -695,8 +695,9 @@
         // Remove class from timerList items
         Array.from(timerList.children).forEach(li => li.classList.remove('sortable-mode'));
         if (sortable) {
-          const newOrder = sortable.toArray(); // Get current order of IDs from SortableJS
-          // Update the internal timers array based on new DOM order
+          // Get the current order of elements from SortableJS's internal state
+          const newOrder = sortable.toArray(); 
+          // Map these IDs back to the full timer objects
           const newOrderTimers = newOrder.map(id => timers.find(t => t.id === id)).filter(Boolean);
           
           timers = newOrderTimers; // Update the global timers array
@@ -706,23 +707,26 @@
           sortable.destroy(); // Destroy to clean up listeners
           sortable = null;
         }
-        renderTimerList(); // Re-render to update the list from saved data
+        renderTimerList(); // Re-render to update the list from saved data (important to reflect the new order and ensure consistency)
       }
 
       function enableSortable() {
         if (!sortable) {
           sortable = new Sortable(timerList, {
             animation: 150,
-            handle: '.sort-icon', // Only drag by the icon
+            handle: '.timer-item', // <--- Change: Entire item is now the handle
             filter: '.swipe-options-container', // Prevents dragging when clicking on swipe options
-            preventOnFilter: false, // Allows click events on filtered elements
-            // Set the ID of each item for SortableJS to track
-            setData: function (dataTransfer, dragEl) {
-                dataTransfer.setData('text/plain', dragEl.getAttribute('data-timer-id'));
+            preventOnFilter: false, // Allows click events on filtered elements (for the swipe options)
+            // Tell SortableJS which property to use as ID
+            dataIdAttr: 'data-timer-id', 
+            onStart: function(evt) {
+                // When dragging starts, ensure any open options are closed
+                if (activeOptionsItem) {
+                    closeOptions(activeOptionsItem);
+                }
             },
             onEnd: function (evt) {
-                // SortableJS automatically updates the DOM. We need to sync our `timers` array.
-                // The `disableSortableMode` function will save the order based on the DOM.
+                // SortableJS automatically updates the DOM. We will save the order on disableSortableMode.
             }
           });
         } else {
@@ -755,12 +759,8 @@
       });
 
       document.addEventListener('click', (event) => {
-          // Use the new class name for swipe options container
-        const openOptions = document.querySelector('.timer-item .swipe-options-container');
-        const targetElement = event.target;
-
-        // Close options if click is outside the options panel AND outside the timer item itself
-        if (activeOptionsItem && !activeOptionsItem.contains(targetElement) && !deleteConfirmationDialog.contains(targetElement)) {
+        // Ensure options are closed if clicking outside the active options or the confirmation dialog
+        if (activeOptionsItem && !activeOptionsItem.contains(event.target) && !deleteConfirmationDialog.contains(event.target)) {
           closeOptions(activeOptionsItem);
         }
       });
