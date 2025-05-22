@@ -41,7 +41,7 @@ const defaultTimers = [
     {
         id: 'timer-example-1',
         name: 'Basic Workout',
-        repeat: 2,
+        repeat: 1,
         intervals: [
             { id: 'int-1-1', name: 'Warm-up', duration: 30, type: 'interval', signalId: 'signal-gong' },
             { id: 'int-1-2', name: 'Rest', duration: 15, type: 'rest', signalId: 'signal-bell' },
