@@ -174,6 +174,28 @@
             font-weight: bold;
             color: #AEC3B0; /* secondary color for duration */
         }
+
+        .start-timer-button {
+            width: 100%;
+            background-color: #e76f51; /* Using interval/warning color for emphasis */
+            color: #EFF6E0;
+            border-radius: 0.75rem;
+            padding: 1rem 1.5rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-top: 1.5rem; /* Space above the button */
+            margin-bottom: 1.5rem; /* Space below the button */
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            flex-shrink: 0; /* Prevents button from shrinking */
+        }
+
+        .start-timer-button:hover {
+            background-color: #fc814a;
+        }
     </style>
 </head>
 
@@ -193,41 +215,64 @@
 
         <div class="intervals-list-container" id="intervals-container">
             <h2 class="intervals-list-title">Sequence</h2>
-            </div>
+        </div>
     </main>
+
+    <button id="start-timer-button" class="start-timer-button">
+        Start Timer
+    </button>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const timerNameDisplay = document.getElementById('timer-name-display');
             const repeatDisplay = document.getElementById('repeat-display');
             const intervalsContainer = document.getElementById('intervals-container');
+            const startTimerButton = document.getElementById('start-timer-button');
 
-            // Beispiel-Daten für einen Timer.
-            // Die `type` Eigenschaft ist jetzt nur noch 'interval' oder 'rest'.
-            // "Get Ready" und "Cool Down" wären normale Intervalle,
-            // die der Nutzer entsprechend benennt.
-            const exampleTimerData = {
-                name: "Free Boxing Round",
-                repeat: 3,
-                intervals: [
-                    { name: "Get Ready", duration: "00:10", type: "interval" },
-                    { name: "Boxing", duration: "01:00", type: "interval" },
-                    { name: "Rest", duration: "00:30", type: "rest" },
-                    { name: "Kicking", duration: "01:00", type: "interval" },
-                    { name: "Rest", duration: "00:30", type: "rest" },
-                    { name: "Shadowboxing", duration: "01:00", type: "interval" },
-                    { name: "Cool Down", duration: "00:45", type: "interval" }
-                ]
-            };
+            // --- Helper Functions for Data Management (re-used from timer-editor) ---
+            function loadTimers() {
+                let storedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
+                // Ensure unique IDs and intervals structure for older timers if needed
+                let needsUpdate = false;
+                storedTimers.forEach(timer => {
+                    if (!timer.id) {
+                        timer.id = `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        needsUpdate = true;
+                    }
+                    if (!timer.intervals || !Array.isArray(timer.intervals)) {
+                        timer.intervals = []; // Ensure it's an array
+                        needsUpdate = true;
+                    }
+                    // Migrate old 'duration' field to 'intervals' if it exists and intervals is empty
+                    if (timer.duration !== undefined && typeof timer.duration === 'string' && timer.intervals.length === 0) {
+                        const parts = timer.duration.split(':');
+                        const totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                        timer.intervals = [{ name: "Default Interval", duration: `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`, type: 'work', id: `interval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` }];
+                        delete timer.duration; // Remove old field
+                        needsUpdate = true;
+                    }
+                    if (timer.repeat === undefined) {
+                        timer.repeat = 1;
+                        needsUpdate = true;
+                    }
+                    timer.intervals.forEach(interval => {
+                        if (!interval.id) {
+                             interval.id = `interval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                             needsUpdate = true;
+                        }
+                    });
+                });
+                if (needsUpdate) {
+                    localStorage.setItem('timers', JSON.stringify(storedTimers));
+                }
+                return storedTimers;
+            }
 
-            // Simuliere das Laden der Timer-Daten.
-            // In einer echten Anwendung: const timerToDisplay = JSON.parse(localStorage.getItem('currentTimerForReview')) || exampleTimerData;
-            const timerToDisplay = exampleTimerData; // Für Demonstrationszwecke
-
-            timerNameDisplay.textContent = timerToDisplay.name;
-            repeatDisplay.textContent = timerToDisplay.repeat;
-
+            // --- Time Formatting Helper ---
             function formatTime(durationString) {
+                if (!durationString || !durationString.includes(':')) {
+                    return "0 Sek";
+                }
                 const parts = durationString.split(':');
                 const minutes = parseInt(parts[0], 10);
                 const seconds = parseInt(parts[1], 10);
@@ -241,23 +286,23 @@
                 return formatted.join(' ') || "0 Sek";
             }
 
-            function renderFullSequence() {
-                intervalsContainer.innerHTML = '<h2 class="intervals-list-title">Sequence</h2>'; // Titel neu setzen
+            // --- Render Logic ---
+            function renderFullSequence(timerData) {
+                intervalsContainer.innerHTML = '<h2 class="intervals-list-title">Sequence</h2>'; // Reset title
 
-                for (let r = 0; r < timerToDisplay.repeat; r++) {
-                    // Optional: Eine Überschrift für jede Wiederholung, wenn das nützlich ist
-                    // if (timerToDisplay.repeat > 1) { // Nur anzeigen, wenn es mehr als eine Wiederholung gibt
-                    //     const repeatSubtitle = document.createElement('h3');
-                    //     repeatSubtitle.classList.add('text-secondary', 'font-semibold', 'text-center', 'mt-4', 'mb-2');
-                    //     repeatSubtitle.textContent = `Repeat ${r + 1}`;
-                    //     intervalsContainer.appendChild(repeatSubtitle);
-                    // }
+                if (!timerData || !timerData.intervals || timerData.intervals.length === 0) {
+                    const noIntervalsMessage = document.createElement('div');
+                    noIntervalsMessage.classList.add('text-center', 'text-secondary', 'mt-4', 'p-4', 'rounded-xl', 'bg-background');
+                    noIntervalsMessage.textContent = 'No intervals defined for this timer.';
+                    intervalsContainer.appendChild(noIntervalsMessage);
+                    return;
+                }
 
-                    timerToDisplay.intervals.forEach((interval, index) => {
+                for (let r = 0; r < timerData.repeat; r++) {
+                    timerData.intervals.forEach((interval, index) => {
                         const intervalItem = document.createElement('div');
                         intervalItem.classList.add('interval-item-review');
 
-                        // Wenn der Typ "rest" ist, füge die rest-item Klasse hinzu
                         if (interval.type === 'rest') {
                             intervalItem.classList.add('rest-item');
                         }
@@ -277,7 +322,35 @@
                 }
             }
 
-            renderFullSequence();
+            // --- Main Load Logic ---
+            const selectedTimerId = localStorage.getItem('selectedTimerId');
+            let timerToDisplay = null;
+
+            if (selectedTimerId) {
+                const allTimers = loadTimers();
+                timerToDisplay = allTimers.find(t => t.id === selectedTimerId);
+            }
+
+            if (timerToDisplay) {
+                timerNameDisplay.textContent = timerToDisplay.name;
+                repeatDisplay.textContent = timerToDisplay.repeat;
+                renderFullSequence(timerToDisplay);
+            } else {
+                timerNameDisplay.textContent = 'Timer Not Found';
+                repeatDisplay.textContent = 'N/A';
+                intervalsContainer.innerHTML = '<h2 class="intervals-list-title">Sequence</h2><div class="text-center text-warning mt-4 p-4 rounded-xl bg-background">Could not load timer details. Please go back to the home screen.</div>';
+                startTimerButton.style.display = 'none'; // Hide start button if no timer
+            }
+
+            // --- Start Timer Button Event Listener ---
+            startTimerButton.addEventListener('click', () => {
+                if (timerToDisplay) {
+                    // Save the timer ID to localStorage for the countdown screen
+                    localStorage.setItem('currentRunningTimerId', timerToDisplay.id);
+                    // Navigate to the countdown screen (assuming its path is 'countdown-screen/index.html')
+                    window.location.href = '../countdown-screen/index.html';
+                }
+            });
         });
     </script>
 </body>
