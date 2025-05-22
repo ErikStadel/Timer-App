@@ -182,7 +182,7 @@
         color: #AEC3B0;
         display: inline-block;
       }
-      
+
       .interval-item.sortable-mode > div:first-child {
         cursor: grab;
       }
@@ -193,7 +193,6 @@
           cursor: not-allowed;
           background-color: #598392; /* Slightly different color for disabled state */
       }
-
 
       /* Confirmation Dialog Styles (Copied from home-screen.html) */
       .confirmation-dialog-overlay {
@@ -523,7 +522,6 @@
       }
       // --- End Confirmation Dialog and Delete Logic ---
 
-
       function renderIntervalList() {
           intervalContainer.innerHTML = '';
           if (intervals.length === 0) {
@@ -544,7 +542,7 @@
               } else {
                   listItem.classList.add('is-interval-type');
               }
-              
+
               if (isSortableMode) {
                 listItem.classList.add('sortable-mode');
               }
@@ -567,7 +565,7 @@
 
                   if (intervalToEdit) {
                       const popupWindow = window.open('interval-editor.html', '_blank', 'width=400,height=600');
-                      
+
                       popupWindow.addEventListener('load', () => {
                           if (popupWindow && !popupWindow.closed) {
                               popupWindow.postMessage({
@@ -586,14 +584,13 @@
               let longPressTimeout;
               let movementThreshold = 10;
 
-
               listItem.addEventListener('touchstart', (e) => {
                   if (!isSortableMode) {
                       touchStartX = e.touches[0].clientX;
                       touchStartY = e.touches[0].clientY;
                       isSwipingOrScrolling = false;
                       isLongPress = false;
-                      
+
                       if (activeOptionsItem && activeOptionsItem !== listItem) {
                           closeOptions(activeOptionsItem);
                       }
@@ -637,7 +634,7 @@
                       if (!isLongPress && isSwipingOrScrolling) {
                           const endX = e.changedTouches[0].clientX;
                           const deltaX = endX - touchStartX;
-                          
+
                           if (Math.abs(deltaX) > Math.abs(e.changedTouches[0].clientY - touchStartY)) {
                               handleSwipe(listItem, deltaX);
                           } else {
@@ -820,7 +817,7 @@
               if (timerToLoad) {
                   timerNameInput.value = timerToLoad.name;
                   repeatInput.value = timerToLoad.repeat;
-                  intervals = JSON.parse(JSON.stringify(timerToLoad.intervals)); 
+                  intervals = JSON.parse(JSON.stringify(timerToLoad.intervals));
               } else {
                   console.warn(`Timer with ID ${selectedTimerId} not found. Starting a new timer.`);
                   currentTimerId = null;
