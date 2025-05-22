@@ -111,12 +111,18 @@
         -ms-user-select: none;
       }
 
+      /* This is the container for swipe options */
       .timer-item > div.absolute {
         transform: translateX(100%);
         transition: transform 0.3s ease-in-out;
         top: 0;
         left: 0;
         bottom: 0;
+        background-color: #01161E; /* Make sure it has a background */
+        display: flex; /* Ensure flex for options layout */
+        align-items: center;
+        justify-content: space-around;
+        padding: 1rem;
       }
 
       .timer-item > div.absolute.slide-in {
@@ -127,17 +133,21 @@
         transform: translateX(100%);
       }
 
+      /* Original look of swipe options - just text, no specific background color per option */
       .timer-item > div.absolute span {
         padding: 0.5rem 0.75rem;
-        /* Adjusted colors for consistency with previous user's design */
         color: #EFF6E0; /* Light text color for buttons */
+        white-space: nowrap; /* Prevent text wrapping */
+        cursor: pointer;
       }
-
-      /* Specific background colors for each option */
-        .timer-item > div.absolute span:nth-child(1) { background-color: #598392; } /* Review - primary */
-        .timer-item > div.absolute span:nth-child(2) { background-color: #83c5be; } /* Modify - accent */
-        .timer-item > div.absolute span:nth-child(3) { background-color: #AEC3B0; } /* Clone - secondary */
-        .timer-item > div.absolute span:nth-child(4) { background-color: #e76f51; } /* Delete - interval */
+      
+      /* Remove specific background colors per option from previous attempt */
+      .timer-item > div.absolute span:nth-child(1),
+      .timer-item > div.absolute span:nth-child(2),
+      .timer-item > div.absolute span:nth-child(3),
+      .timer-item > div.absolute span:nth-child(4) {
+          background-color: transparent; /* Reset to transparent */
+      }
 
 
       .timer-item.options-active .timer-name,
@@ -295,7 +305,7 @@
       let longPressTimer = null;
       let longPressThreshold = 1000;
       let isSortableMode = false;
-      let isSwiping = false; // New flag to track if it's a swipe
+      let isSwiping = false; // Flag to track if it's a swipe
       let touchStartX = 0;
       let touchStartY = 0; // Added for vertical movement check in long press
       let deltaXThreshold = 10; // Minimum horizontal movement for swipe
@@ -318,9 +328,19 @@
                   timer.id = generateUniqueId();
                   needsUpdate = true;
               }
-              // Ensure intervals array exists for calculation consistency
+              // Ensure intervals array exists for calculation consistency and correct format
               if (!timer.intervals) {
-                  timer.intervals = [{ duration: parseInt(timer.duration.split(':')[0]) * 60 + parseInt(timer.duration.split(':')[1]), type: 'work' }]; // Basic conversion for old format
+                  // Attempt to convert old "duration" string to new "intervals" structure
+                  if (timer.duration && typeof timer.duration === 'string' && timer.duration.includes(':')) {
+                      const parts = timer.duration.split(':');
+                      const totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                      timer.intervals = [{ duration: totalSeconds, type: 'work' }];
+                      timer.repeat = 1; // Assume 1 repeat for simple duration timers
+                  } else {
+                      // Fallback if no valid duration found, set to a default interval
+                      timer.intervals = [{ duration: 300, type: 'work' }]; // Default 5 minutes
+                      timer.repeat = 1;
+                  }
                   needsUpdate = true;
               }
               if (timer.repeat === undefined) {
@@ -372,11 +392,6 @@
                 timer.intervals.forEach(interval => {
                     duration += interval.duration;
                 });
-            } else if (timer.duration) { // Fallback for old format if 'intervals' is missing
-                const parts = timer.duration.split(':');
-                if (parts.length === 2) {
-                    duration = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                }
             }
             return duration * (timer.repeat || 1); // Use repeat, default to 1
         }
@@ -390,6 +405,13 @@
           showOptions(listItem);
         } else if (deltaX > swipeThreshold) {
           closeOptions(listItem);
+        } else {
+            // If swipe was not significant enough, snap back or keep open if already open
+            if (listItem.classList.contains('options-active')) {
+                showOptions(listItem); // Keep options open
+            } else {
+                closeOptions(listItem); // Snap closed
+            }
         }
       }
 
@@ -421,12 +443,8 @@
           optionSpan.classList.add('text-light', 'cursor-pointer');
           optionSpan.textContent = option.text;
 
-          // Add specific class for styling
-          if (option.action === 'review') optionSpan.style.backgroundColor = '#598392';
-          else if (option.action === 'modify') optionSpan.style.backgroundColor = '#83c5be';
-          else if (option.action === 'clone') optionSpan.style.backgroundColor = '#AEC3B0';
-          else if (option.action === 'delete') optionSpan.style.backgroundColor = '#e76f51';
-
+          // No specific background colors per option, just text as requested
+          
           optionSpan.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent li click
             closeOptions(listItem); // Close swipe options
@@ -576,11 +594,13 @@
                         closeOptions(activeOptionsItem);
                     }
 
+                    // Only set long press timer if not in sortable mode
                     if (!isSortableMode) {
-                        // Start long press timer if not in sortable mode
                         longPressTimer = setTimeout(() => {
-                            // Only activate sortable mode if not already swiping/dragging too much
-                            if (!isSwiping) {
+                            // Only activate sortable mode if no significant horizontal movement
+                            if (Math.abs(e.touches[0].screenX - touchStartX) < deltaXThreshold &&
+                                Math.abs(e.touches[0].screenY - touchStartY) < deltaYThreshold) {
+                                e.preventDefault(); // Prevent accidental click after long press
                                 enableSortableMode();
                             }
                         }, longPressThreshold);
@@ -595,25 +615,20 @@
                     const deltaX = currentX - touchStartX;
                     const deltaY = currentY - touchStartY;
 
-                    // Check for significant horizontal movement (swipe)
+                    // If significant horizontal movement, it's a swipe
                     if (Math.abs(deltaX) > deltaXThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
                         isSwiping = true;
                         clearTimeout(longPressTimer); // Cancel long press if swiping
                         e.preventDefault(); // Prevent default scroll/bounce
                         
-                        // Original swipe logic was based on creating and transforming a new element
-                        // To keep original design, we adjust based on deltaX
-                        // This might feel less smooth than directly manipulating a div, but follows original pattern
+                        // Keep swipe options visible during drag, even if not fully open yet
                         const optionsElement = li.querySelector('.swipe-options-container');
                         if (optionsElement) {
-                            optionsElement.style.transform = `translateX(${100 + (deltaX / li.offsetWidth) * 100}%)`; // Adjust as per original logic
-                            li.classList.add('options-active');
-                        } else {
-                            // If options element isn't created yet, handleSwipe should be called on touchend
-                            // For now, just prevent default to block scroll
+                             // This ensures the options stay with the swipe gesture
+                            optionsElement.style.transform = `translateX(${Math.min(100, 100 + (deltaX / li.offsetWidth) * 100)}%)`; 
                         }
                     } 
-                    // Check for significant vertical movement (scrolling)
+                    // If significant vertical movement, cancel long press
                     else if (Math.abs(deltaY) > deltaYThreshold) {
                         clearTimeout(longPressTimer); // Cancel long press if scrolling
                         // Allow default scroll behavior
@@ -625,15 +640,20 @@
                 if (e.changedTouches.length === 1) {
                     clearTimeout(longPressTimer); // Clear any pending long press
 
-                    if (!isSortableMode) {
+                    if (!isSortableMode) { // Only handle swipe/tap if not in sortable mode
                         const currentX = e.changedTouches[0].screenX;
                         const deltaX = currentX - touchStartX;
                         
                         if (isSwiping) { // It was a swipe gesture
                             handleSwipe(li, currentX, touchStartX); // Call original handleSwipe for decision
+                            // Reset transform for swipe options after handling the gesture
+                            const optionsElement = li.querySelector('.swipe-options-container');
+                            if (optionsElement) {
+                                optionsElement.style.transform = ''; // Reset transform for transition
+                            }
                         } else { // It was a tap or very small drag
-                            // If no significant swipe happened, treat as a click to go to timer-screen
-                            // But only if no options are currently active for THIS item
+                            // Only trigger the timer screen if options are not currently open
+                            // and no significant swipe occurred
                             if (!li.classList.contains('options-active')) {
                                 const timerId = li.getAttribute('data-timer-id');
                                 localStorage.setItem('selectedTimerId', timerId);
@@ -665,8 +685,7 @@
         saveButton.style.display = 'block';
         // Add class to timerList to show sort icons
         Array.from(timerList.children).forEach(li => li.classList.add('sortable-mode'));
-        // renderTimerList(); // No need to re-render, just add class
-        enableSortable();
+        enableSortable(); // Enable SortableJS
       }
 
       function disableSortableMode() {
@@ -676,20 +695,17 @@
         // Remove class from timerList items
         Array.from(timerList.children).forEach(li => li.classList.remove('sortable-mode'));
         if (sortable) {
+          const newOrder = sortable.toArray(); // Get current order of IDs from SortableJS
+          // Update the internal timers array based on new DOM order
+          const newOrderTimers = newOrder.map(id => timers.find(t => t.id === id)).filter(Boolean);
+          
+          timers = newOrderTimers; // Update the global timers array
+          saveTimers(timers); // Save the new order to localStorage
+
           sortable.option("disabled", true);
           sortable.destroy(); // Destroy to clean up listeners
           sortable = null;
         }
-        // Update the order in the timers array based on new DOM order
-        const newOrderTimers = Array.from(timerList.children)
-            .map(li => {
-                const timerId = li.getAttribute('data-timer-id');
-                return timers.find(t => t.id === timerId);
-            })
-            .filter(Boolean); // Filter out any undefined/null entries
-        
-        timers = newOrderTimers; // Update the global timers array
-        saveTimers(timers); // Save the new order to localStorage
         renderTimerList(); // Re-render to update the list from saved data
       }
 
@@ -700,12 +716,13 @@
             handle: '.sort-icon', // Only drag by the icon
             filter: '.swipe-options-container', // Prevents dragging when clicking on swipe options
             preventOnFilter: false, // Allows click events on filtered elements
+            // Set the ID of each item for SortableJS to track
+            setData: function (dataTransfer, dragEl) {
+                dataTransfer.setData('text/plain', dragEl.getAttribute('data-timer-id'));
+            },
             onEnd: function (evt) {
-                // Update the internal timers array after drag & drop
-                const movedItem = timers.splice(evt.oldIndex, 1)[0];
-                timers.splice(evt.newIndex, 0, movedItem);
-                // No need to save here, will be saved on disableSortableMode
-                // renderTimerList() is also not needed here, SortableJS updates DOM
+                // SortableJS automatically updates the DOM. We need to sync our `timers` array.
+                // The `disableSortableMode` function will save the order based on the DOM.
             }
           });
         } else {
@@ -742,11 +759,9 @@
         const openOptions = document.querySelector('.timer-item .swipe-options-container');
         const targetElement = event.target;
 
-        if (openOptions && !openOptions.contains(targetElement) && !targetElement.classList.contains('timer-item') && !targetElement.closest('.timer-item')) {
-          const activeListItem = document.querySelector('.timer-item.options-active');
-          if (activeListItem) {
-            closeOptions(activeListItem);
-          }
+        // Close options if click is outside the options panel AND outside the timer item itself
+        if (activeOptionsItem && !activeOptionsItem.contains(targetElement) && !deleteConfirmationDialog.contains(targetElement)) {
+          closeOptions(activeOptionsItem);
         }
       });
 
