@@ -36,13 +36,17 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            padding-top: env(safe-area-inset-top);
+            /* No padding-top for safe-area-inset here, let header handle it */
             background-color: #01161E;
             font-family: 'Karla', sans-serif;
             overscroll-behavior: none;
-            scroll-padding-top: 4rem;
+            scroll-padding-top: 4rem; /* For smooth scrolling to anchors, if any */
             scroll-behavior: smooth;
-            color: #EFF6E0; /* Added for general text color */
+            color: #EFF6E0;
+            display: flex; /* Use flex to make body fill viewport and manage content */
+            flex-direction: column; /* Stack header and main content vertically */
+            -webkit-font-smoothing: antialiased; /* Better font rendering */
+            -moz-osx-font-smoothing: grayscale;
         }
 
         header {
@@ -50,9 +54,11 @@
             top: 0;
             z-index: 50;
             padding: 1rem;
+            padding-top: calc(1rem + env(safe-area-inset-top)); /* Add safe area to header padding */
             background-color: #01161E;
             transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
-            display: flex; /* Ensure header items are aligned */
+            flex-shrink: 0; /* Prevent header from shrinking */
+            display: flex;
             justify-content: space-between;
             align-items: center;
         }
@@ -60,7 +66,7 @@
         header::before {
             content: "";
             position: absolute;
-            top: -100vh;
+            top: -100vh; /* Cover area above header */
             left: 0;
             right: 0;
             height: 100vh;
@@ -76,7 +82,7 @@
         .header-button {
             background: none;
             border: none;
-            color: #83c5be; /* accent color */
+            color: #83c5be;
             font-weight: 600;
             font-size: 1rem;
             padding: 0.5rem 0.75rem;
@@ -88,136 +94,139 @@
         }
 
         .header-title {
-            font-size: 1.25rem; /* adjusted from xl for consistency */
+            font-size: 1.25rem;
             font-weight: bold;
             color: #83c5be;
             text-align: center;
             letter-spacing: 0.025em;
-            flex-grow: 1; /* Allow title to take available space */
+            flex-grow: 1;
+        }
+
+        .main-content { /* New wrapper for the list to take remaining height */
+            flex-grow: 1; /* Allow main content to take all available space */
+            overflow-y: auto; /* This allows the main content to scroll */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            padding: 1rem; /* Add some padding around the list */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
+        }
+        .main-content::-webkit-scrollbar { /* Chrome, Safari, Opera */
+            display: none;
         }
 
         .timer-list {
             list-style: none;
             padding: 0;
             margin: 0;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
-            scroll-behavior: smooth;
-            height: calc(100vh - 4rem - env(safe-area-inset-top)); /* Adjust height for header and padding */
-            padding-bottom: 1rem; /* Padding at the bottom of the list */
-        }
-        
-        /* Hide scrollbar for webkit browsers */
-        .timer-list::-webkit-scrollbar {
-            display: none;
-        }
-        /* Hide scrollbar for Firefox */
-        .timer-list {
-            scrollbar-width: none;
+            /* Removed overflow-y and height from here, main-content handles it */
         }
 
         .timer-item {
             background-color: #124559;
-            border-bottom: 1px solid #EFF6E0; /* Thin border */
+            border-bottom: 1px solid #EFF6E0;
             display: flex;
             align-items: center;
             padding: 1rem;
             cursor: pointer;
             transition: background-color 0.2s;
-            position: relative;
-            overflow: hidden;
+            position: relative; /* For swipe options positioning */
+            overflow: hidden; /* To hide overflowing swipe options */
             user-select: none;
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             margin-bottom: 0.5rem; /* Space between items */
-            border-radius: 0.5rem; /* Slightly rounded corners */
+            border-radius: 0.5rem; /* Rounded corners for items */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Subtle shadow */
         }
 
-        .timer-item > div.absolute {
+        /* Original structure for timer-info (name and duration) */
+        .timer-item .timer-info-wrapper {
+            flex-grow: 1; /* Allow name and duration to take space */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative; /* Essential for its transform property in swipe */
+            z-index: 10; /* Ensure it's above swipe options when not swiped */
+            background-color: inherit; /* To cover the swipe options when not swiped */
+            transition: transform 0.3s ease-in-out; /* Smooth transition for swipe */
+        }
+
+        /* Your original swipe options container, adjusted */
+        .timer-item .swipe-options-container {
             position: absolute;
             top: 0;
-            right: 0; /* Start at the right edge of the item */
-            width: 100%; /* Take full width of the item */
+            right: 0; /* Start at the right edge */
             height: 100%;
             display: flex;
             align-items: center;
-            justify-content: space-around; /* Distribute buttons */
-            background-color: #01161E; /* Dark background for options */
-            transform: translateX(100%); /* Hidden by default, slides in from right */
-            transition: transform 0.3s ease-in-out;
-            padding: 1rem; /* Adjust padding to match timer-item */
-            box-sizing: border-box; /* Include padding in width */
-            z-index: 20; /* Ensure options are above timer-info */
-            border-radius: 0.5rem; /* Match item border-radius */
+            /* We will control its visibility by adjusting the translateX of timer-info-wrapper */
+            /* It is always on the right, and timer-info-wrapper moves over it */
+            z-index: 5; /* Behind the timer-info-wrapper */
+            /* Added padding to match timer-item's padding */
+            padding: 1rem;
+            box-sizing: border-box; /* Include padding in dimensions */
+            background-color: #01161E; /* Background for options */
+            border-radius: 0.5rem; /* Match timer-item radius */
         }
 
-        .timer-item > div.absolute.slide-in {
-            transform: translateX(0%);
-        }
-
-        .timer-item > div.absolute.slide-out {
-            transform: translateX(100%);
-        }
-
-        .timer-item > div.absolute span {
-            padding: 0.5rem 0.75rem; /* Padding for option text */
-            flex-grow: 1; /* Allow options to grow */
-            text-align: center; /* Center text within option */
-            color: #EFF6E0; /* Light text color */
+        /* Styles for individual swipe buttons (your original style) */
+        .timer-item .swipe-options-container span {
+            padding: 0.5rem 0.75rem; /* Your original padding */
+            margin: 0 0.25rem; /* Small margin between buttons */
+            cursor: pointer;
             font-weight: bold;
+            white-space: nowrap; /* Prevent text wrapping */
+            border-radius: 0.25rem; /* Small radius for buttons */
+            color: #EFF6E0; /* Light text color for buttons */
         }
 
-        .timer-name-duration-wrapper { /* New wrapper for timer info */
-            display: flex;
-            flex-grow: 1;
-            align-items: center;
-            justify-content: space-between;
-            position: relative; /* For z-index to be above options when not active */
-            z-index: 30; /* Ensure this is above options when not active */
-            background-color: inherit; /* Inherit background from timer-item */
-            padding-right: 0.5rem; /* Add some padding to the right for swipe */
-        }
-        
-        /* This rule was making the name/duration disappear, now we only hide it when options are active */
-        .timer-item.options-active .timer-name-duration-wrapper {
-             /* Hide the original content when options are active by pushing it out */
-            transform: translateX(-100%); 
-            transition: transform 0.3s ease;
+        /* Specific background colors for each option, as per your palette */
+        .timer-item .swipe-options-container span.review-btn { background-color: #598392; } /* primary */
+        .timer-item .swipe-options-container span.modify-btn { background-color: #83c5be; } /* accent */
+        .timer-item .swipe-options-container span.clone-btn { background-color: #AEC3B0; } /* secondary */
+        .timer-item .swipe-options-container span.delete-btn { background-color: #e76f51; } /* interval */
+
+
+        /* No need for slide-in/slide-out classes on optionsElement itself,
+           we control the transform of timer-info-wrapper */
+        /* .timer-item.options-active state to push timer-info-wrapper left */
+        .timer-item.options-active .timer-info-wrapper {
+            /* This will be set by JS based on actual options width */
+            /* For now, just a placeholder to indicate the state */
+            transform: translateX(-100%); /* Placeholder */
         }
 
         .timer-name {
             font-size: 1.1rem;
-            color: #EFF6E0; /* light color */
+            color: #EFF6E0;
             margin-left: 0.5rem;
             flex-grow: 1;
-            text-align: left; /* Align name to left */
         }
 
         .timer-duration {
             font-size: 0.9rem;
-            color: #83c5be; /* accent color */
-            white-space: nowrap; /* Prevent duration from wrapping */
+            color: #83c5be;
         }
 
         .sortable-chosen {
             background-color: #AEC3B0 !important;
-            opacity: 0.7; /* Make dragged item slightly transparent */
+            opacity: 0.7;
         }
 
         .sort-icon {
             margin-right: 0.5rem;
             opacity: 0;
             transition: opacity 0.3s ease;
-            cursor: grab; /* Indicate draggable */
-            font-size: 1.2rem; /* Make grab handle more visible */
+            cursor: grab;
+            font-size: 1.2rem;
         }
 
         .timer-item.sortable-mode .sort-icon {
             opacity: 1;
         }
-
-        /* Confirmation Dialog Styles (unchanged from your original, ensuring it's here) */
+        
+        /* Confirmation Dialog Styles (Your original, kept as is) */
         .confirmation-dialog-overlay {
             position: fixed;
             top: 0;
@@ -272,21 +281,21 @@
         }
 
         .btn-cancel {
-            background-color: #598392; /* primary */
+            background-color: #598392;
             color: #EFF6E0;
         }
 
         .btn-cancel:hover {
-            background-color: #AEC3B0; /* secondary */
+            background-color: #AEC3B0;
         }
 
         .btn-confirm {
-            background-color: #e76f51; /* interval (warning/delete) */
+            background-color: #e76f51;
             color: #EFF6E0;
         }
 
         .btn-confirm:hover {
-            background-color: #fc814a; /* warning */
+            background-color: #fc814a;
         }
     </style>
 </head>
@@ -301,7 +310,8 @@
         </div>
     </header>
 
-    <ul class="timer-list"></ul>
+    <main class="main-content"> <ul class="timer-list"></ul>
+    </main>
 
     <div class="confirmation-dialog-overlay" id="deleteConfirmationDialog">
         <div class="confirmation-dialog">
@@ -320,35 +330,32 @@
         const timerList = document.querySelector('.timer-list');
         const addButton = document.getElementById('addButton');
         const saveButton = document.getElementById('saveButton');
-        const optionsButton = document.getElementById('optionsButton'); // Corrected ID
-        const deleteConfirmationDialog = document.getElementById('deleteConfirmationDialog'); // New ID
-        const cancelDeleteButton = document.getElementById('cancelDelete'); // New ID
-        const confirmDeleteButton = document.getElementById('confirmDelete'); // New ID
+        const optionsButton = document.getElementById('optionsButton');
+        const deleteConfirmationDialog = document.getElementById('deleteConfirmationDialog');
+        const cancelDeleteButton = document.getElementById('cancelDelete');
+        const confirmDeleteButton = document.getElementById('confirmDelete');
 
         let activeOptionsItem = null;
         let sortable = null;
         let longPressTimer = null;
         let longPressThreshold = 1000;
         let isSortableMode = false;
+        let isSwiping = false; // Flag to distinguish swipe from tap
+        let touchStartX = 0;
+        let touchStartY = 0; // Added for vertical movement check in long press
+        let deltaXThreshold = 10; // Minimum horizontal movement for swipe
+        let deltaYThreshold = 10; // Minimum vertical movement to cancel long press/tap
 
-        // Initial loading of timers
-        // We will now load them from dataStorage.js
-        let timers = loadTimers(); // Now populated from localStorage
+        let timers = loadTimers(); // Load initial timers from dataStorage.js
 
-        // Helper functions from previous suggestion, moved here for direct access
+        // Helper function: Format time to MM:SS
         function formatTime(totalSeconds) {
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
-            let formatted = [];
-            if (minutes > 0) {
-                formatted.push(`${minutes} Min`);
-            }
-            if (seconds > 0 || (minutes === 0 && seconds === 0)) { // Ensure 0 seconds is shown
-                formatted.push(`${seconds} Sek`);
-            }
-            return formatted.join(' ') || "0 Sek";
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
+        // Helper function: Calculate total duration of a timer
         function calculateTotalTimerDuration(timer) {
             let duration = 0;
             timer.intervals.forEach(interval => {
@@ -360,11 +367,11 @@
         // --- Core Functions ---
 
         function renderTimerList() {
-            timerList.innerHTML = ''; // Clear existing items
+            timerList.innerHTML = '';
             timers = loadTimers(); // Always load current state from localStorage
 
             if (timers.length === 0) {
-                const noTimersMessage = document.createElement('li'); // Changed to li for list
+                const noTimersMessage = document.createElement('li');
                 noTimersMessage.classList.add('text-center', 'text-secondary', 'mt-8', 'text-lg', 'p-4');
                 noTimersMessage.textContent = 'No timers yet. Tap "+" to create one!';
                 timerList.appendChild(noTimersMessage);
@@ -374,226 +381,204 @@
             timers.forEach(timer => {
                 const li = document.createElement('li');
                 li.classList.add('timer-item');
-                li.setAttribute('data-timer-id', timer.id); // Add data-timer-id for lookup
+                li.setAttribute('data-timer-id', timer.id);
                 if (isSortableMode) {
                     li.classList.add('sortable-mode');
                 }
 
-                // Wrapper for timer name and duration, to be swiped
-                const nameDurationWrapper = document.createElement('div');
-                nameDurationWrapper.classList.add('timer-name-duration-wrapper');
-                nameDurationWrapper.innerHTML = `
+                // Inner wrapper for timer name and duration that moves when swiping
+                const timerInfoWrapper = document.createElement('div');
+                timerInfoWrapper.classList.add('timer-info-wrapper');
+                timerInfoWrapper.innerHTML = `
                     <span class="sort-icon">=</span>
                     <span class="timer-name">${timer.name}</span>
                     <span class="timer-duration">${formatTime(calculateTotalTimerDuration(timer))}</span>
                 `;
-                li.appendChild(nameDurationWrapper);
+                li.appendChild(timerInfoWrapper);
 
                 // Swipe Options Container (your existing structure)
-                const optionsElement = document.createElement('div');
-                optionsElement.classList.add('bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute');
-                optionsElement.style.padding = '1rem';
+                const swipeOptionsContainer = document.createElement('div');
+                swipeOptionsContainer.classList.add('swipe-options-container');
 
-                // Dynamically create options with event listeners
                 const optionsConfig = [
-                    { text: 'Review', action: 'review', bgColor: '#598392' }, // primary
-                    { text: 'Modify', action: 'modify', bgColor: '#83c5be' }, // accent
-                    { text: 'Clone', action: 'clone', bgColor: '#AEC3B0' }, // secondary
-                    { text: 'Delete', action: 'delete', bgColor: '#e76f51' } // interval
+                    { text: 'Review', action: 'review', className: 'review-btn' },
+                    { text: 'Modify', action: 'modify', className: 'modify-btn' },
+                    { text: 'Clone', action: 'clone', className: 'clone-btn' },
+                    { text: 'Delete', action: 'delete', className: 'delete-btn' }
                 ];
 
                 optionsConfig.forEach(option => {
                     const optionSpan = document.createElement('span');
-                    optionSpan.classList.add('text-light', 'cursor-pointer');
+                    optionSpan.classList.add(option.className); // Add specific class for styling
                     optionSpan.textContent = option.text;
-                    optionSpan.style.backgroundColor = option.bgColor; // Apply background color directly or via class
-                    optionSpan.style.padding = '0.5rem 0.75rem'; // Re-apply padding if needed
-                    optionSpan.style.borderRadius = '0.25rem'; // Small rounded corners for buttons
-                    optionSpan.style.flex = '1'; // Make them take equal space
-                    optionSpan.style.margin = '0 0.25rem'; // Small margin between buttons
 
                     optionSpan.addEventListener('click', (e) => {
-                        e.stopPropagation(); // Prevent parent click events
+                        e.stopPropagation(); // Prevent li click
                         closeOptions(li); // Close swipe options
 
-                        const timerId = li.getAttribute('data-timer-id'); // Get the ID of the clicked timer
-                        localStorage.setItem('selectedTimerId', timerId); // Store for target screen
+                        const timerId = li.getAttribute('data-timer-id');
+                        localStorage.setItem('selectedTimerId', timerId);
 
                         switch (option.action) {
                             case 'review':
-                                window.location.href = '../timer-review/timer-review.html';
+                                window.location.href = '../home-screen/timer-review/timer-review.html'; // Corrected path
                                 break;
                             case 'modify':
                                 window.location.href = '../timer-editor/timer-editor.html';
                                 break;
                             case 'clone':
-                                cloneTimer(timerId); // Pass ID instead of index
+                                cloneTimer(timerId);
                                 break;
                             case 'delete':
-                                // showDeleteConfirmation will use timerId from data-attribute
-                                showDeleteConfirmation(timerId); 
+                                showDeleteConfirmation(timerId);
                                 break;
                         }
                     });
-                    optionsElement.appendChild(optionSpan);
+                    swipeOptionsContainer.appendChild(optionSpan);
                 });
 
-                li.appendChild(optionsElement);
+                li.appendChild(swipeOptionsContainer);
 
-
-                // --- Event Listeners for Swipe and Click ---
-                let touchStartX = 0;
-                let touchEndX = 0;
-                let touchMoveX = 0;
-                let isDragging = false; // To differentiate between drag and swipe/tap
-
+                // --- Touch Event Listeners for Swipe and Long Press ---
                 li.addEventListener('touchstart', (e) => {
-                    if (e.touches.length === 1) { // Only handle single touch
-                        if (!isSortableMode) {
-                            touchStartX = e.touches[0].screenX;
-                            isDragging = false;
-                            longPressTimer = setTimeout(() => {
-                                enableSortableMode();
-                            }, longPressThreshold);
-                        }
+                    if (e.touches.length === 1) {
+                        touchStartX = e.touches[0].screenX;
+                        touchStartY = e.touches[0].screenY;
+                        isSwiping = false; // Reset swipe flag
+                        
                         // Close any active options if starting a new touch on a different item
                         if (activeOptionsItem && activeOptionsItem !== li) {
                             closeOptions(activeOptionsItem);
                         }
+
+                        if (!isSortableMode) {
+                            // Start long press timer if not in sortable mode
+                            longPressTimer = setTimeout(() => {
+                                // Only activate sortable mode if not already swiping/dragging too much
+                                if (!isSwiping) {
+                                     // Prevent click from firing after long press
+                                    e.preventDefault(); 
+                                    enableSortableMode();
+                                }
+                            }, longPressThreshold);
+                        }
                     }
-                }, { passive: true });
+                }, { passive: false }); // Passive: false to allow preventDefault
 
                 li.addEventListener('touchmove', (e) => {
                     if (e.touches.length === 1 && !isSortableMode) {
-                        touchMoveX = e.touches[0].screenX;
-                        const deltaX = touchMoveX - touchStartX;
-                        if (Math.abs(deltaX) > 10) { // Consider it a drag if moved more than 10px
-                            isDragging = true;
-                            clearTimeout(longPressTimer); // Cancel long press if swiping
-                            
-                            // Adjust the transform of the nameDurationWrapper
-                            // Calculate the target X position, ensuring it doesn't go too far left
-                            const optionsWidth = optionsElement.offsetWidth;
-                            const targetX = Math.min(0, Math.max(-optionsWidth, deltaX));
-                            nameDurationWrapper.style.transform = `translateX(${targetX}px)`;
+                        const currentX = e.touches[0].screenX;
+                        const currentY = e.touches[0].screenY;
+                        const deltaX = currentX - touchStartX;
+                        const deltaY = currentY - touchStartY;
 
-                            // Also, if options are active and user pulls right, start closing them
-                            if (li.classList.contains('options-active')) {
-                                nameDurationWrapper.style.transform = `translateX(${Math.min(0, deltaX - optionsWidth)}px)`;
-                            }
+                        // Check for significant horizontal movement (swipe)
+                        if (Math.abs(deltaX) > deltaXThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
+                            isSwiping = true;
+                            clearTimeout(longPressTimer); // Cancel long press if swiping
+                            e.preventDefault(); // Prevent default scroll/bounce
+                            
+                            const optionsWidth = swipeOptionsContainer.offsetWidth; // Get the dynamic width of the options
+                            const targetX = Math.min(0, Math.max(-optionsWidth, deltaX)); // Limit swipe
+                            timerInfoWrapper.style.transform = `translateX(${targetX}px)`;
+
+                            // Ensure options are visible if swiped open
+                            li.classList.add('options-active'); // To apply styling if needed
+                        } 
+                        // Check for significant vertical movement (scrolling)
+                        else if (Math.abs(deltaY) > deltaYThreshold) {
+                            clearTimeout(longPressTimer); // Cancel long press if scrolling
+                            // Allow default scroll behavior
                         }
                     }
-                }, { passive: true });
+                }, { passive: false }); // Passive: false to allow preventDefault
 
                 li.addEventListener('touchend', (e) => {
-                    if (e.changedTouches.length === 1) { // Only handle single touch end
+                    if (e.changedTouches.length === 1) {
+                        clearTimeout(longPressTimer); // Clear any pending long press
+
                         if (!isSortableMode) {
-                            touchEndX = e.changedTouches[0].screenX;
-                            clearTimeout(longPressTimer);
+                            const currentX = e.changedTouches[0].screenX;
+                            const deltaX = currentX - touchStartX;
+                            const optionsWidth = swipeOptionsContainer.offsetWidth;
 
-                            const deltaX = touchEndX - touchStartX;
-                            const swipeThreshold = 50; // Threshold for swipe detection
-
-                            if (isDragging) { // Was it a drag/swipe gesture?
-                                const currentTransform = parseInt(nameDurationWrapper.style.transform.replace('translateX(', '').replace('px)', '') || '0');
-                                const optionsWidth = optionsElement.offsetWidth;
-
-                                if (deltaX < -swipeThreshold || (currentTransform < -optionsWidth / 2 && deltaX < 0)) {
-                                    // Swipe left to open options
+                            if (isSwiping) { // It was a swipe gesture
+                                // Determine if options should stay open or close
+                                if (deltaX < -optionsWidth * 0.4) { // Swiped far enough left to open
                                     showOptions(li);
-                                } else if (deltaX > swipeThreshold || (currentTransform > -optionsWidth / 2 && deltaX > 0)) {
-                                    // Swipe right to close options
+                                } else if (deltaX > optionsWidth * 0.4 || li.classList.contains('options-active') && deltaX > 0) {
+                                    // Swiped far enough right or was open and swiped right to close
                                     closeOptions(li);
                                 } else {
-                                    // Snap back if not past threshold
-                                    nameDurationWrapper.style.transition = 'transform 0.3s ease';
+                                    // Snap back to original position (or open if was open and not closed enough)
                                     if (li.classList.contains('options-active')) {
-                                        nameDurationWrapper.style.transform = `translateX(-${optionsWidth}px)`;
+                                        showOptions(li); // Keep open
                                     } else {
-                                        nameDurationWrapper.style.transform = `translateX(0)`;
+                                        closeOptions(li); // Snap closed
                                     }
                                 }
-                            } else { // It was a tap (not a drag/swipe)
-                                // Only handle click if no options are active or if clicking on the active item
-                                if (!activeOptionsItem || activeOptionsItem === li) {
-                                    if (!li.classList.contains('options-active')) {
-                                        // This is the direct click to timer-screen
-                                        const timerId = li.getAttribute('data-timer-id');
-                                        localStorage.setItem('selectedTimerId', timerId);
-                                        window.location.href = '../timer-screen/timer-screen.html';
-                                    }
+                                // Reset transform after determining final state
+                                timerInfoWrapper.style.transition = 'transform 0.3s ease-in-out';
+                            } else { // It was a tap or very small drag
+                                // If no significant swipe happened, treat as a click to go to timer-screen
+                                // But only if no options are currently active for THIS item
+                                if (!li.classList.contains('options-active')) {
+                                    const timerId = li.getAttribute('data-timer-id');
+                                    localStorage.setItem('selectedTimerId', timerId);
+                                    window.location.href = '../timer-screen/timer-screen.html';
                                 }
                             }
                         }
-                        // Reset transforms and flags after touchend
-                        nameDurationWrapper.style.transition = 'transform 0.3s ease';
-                        touchStartX = 0;
-                        touchEndX = 0;
-                        isDragging = false;
+                        isSwiping = false; // Reset flag
                     }
                 });
-
-
+                
+                // Prevent text selection on long press/drag (your original code)
                 li.addEventListener('selectstart', function(e) {
-                    e.preventDefault(); // Prevent text selection on long press/drag
+                    e.preventDefault();
                 });
 
                 timerList.appendChild(li);
             });
 
+            // Re-enable SortableJS if in sortable mode
             if (isSortableMode) {
                 enableSortable();
             }
         }
 
         // --- Swipe Option Handling Functions ---
-        function handleSwipe(listItem, endX, startX) {
-            // This function is now superseded by the direct touchmove/touchend logic
-            // but kept for reference if needed. The new logic directly manipulates transform
-            // and then snaps in touchend.
-        }
-
         function showOptions(listItem) {
             if (activeOptionsItem && activeOptionsItem !== listItem) {
                 closeOptions(activeOptionsItem);
             }
             activeOptionsItem = listItem;
 
-            const nameDurationWrapper = listItem.querySelector('.timer-name-duration-wrapper');
-            const optionsElement = listItem.querySelector('.bg-dark.absolute');
-            const optionsWidth = optionsElement.offsetWidth; // Get the actual width of the options menu
-
-            // Slide the content to the left to reveal options
-            nameDurationWrapper.style.transition = 'transform 0.3s ease';
-            nameDurationWrapper.style.transform = `translateX(-${optionsWidth}px)`;
-
-            // Make options visible (they are already positioned correctly relative to item)
-            optionsElement.classList.add('slide-in');
-            optionsElement.classList.remove('slide-out');
-            listItem.classList.add('options-active');
+            const timerInfoWrapper = listItem.querySelector('.timer-info-wrapper');
+            const swipeOptionsContainer = listItem.querySelector('.swipe-options-container');
+            
+            // Wait for next render cycle to get correct offsetWidth
+            requestAnimationFrame(() => {
+                const optionsWidth = swipeOptionsContainer.offsetWidth;
+                timerInfoWrapper.style.transform = `translateX(-${optionsWidth}px)`;
+                listItem.classList.add('options-active');
+            });
         }
 
         function closeOptions(listItem) {
-            const nameDurationWrapper = listItem.querySelector('.timer-name-duration-wrapper');
-            const optionsElement = listItem.querySelector('.bg-dark.absolute');
-
-            if (optionsElement) {
-                nameDurationWrapper.style.transition = 'transform 0.3s ease';
-                nameDurationWrapper.style.transform = `translateX(0)`; // Slide content back
-
-                optionsElement.classList.add('slide-out');
-                optionsElement.classList.remove('slide-in');
-                
-                listItem.classList.remove('options-active');
-                activeOptionsItem = null;
-            }
+            const timerInfoWrapper = listItem.querySelector('.timer-info-wrapper');
+            // Reset transform to original position
+            timerInfoWrapper.style.transform = `translateX(0px)`;
+            listItem.classList.remove('options-active');
+            activeOptionsItem = null;
         }
         
         // Universal click listener to close options when clicking outside
         document.addEventListener('click', (event) => {
             if (activeOptionsItem) {
-                const optionsElement = activeOptionsItem.querySelector('.bg-dark.absolute');
-                // Check if the click is outside the active item and outside the confirmation dialog
+                const optionsContainer = activeOptionsItem.querySelector('.swipe-options-container');
+                const timerInfoWrapper = activeOptionsItem.querySelector('.timer-info-wrapper');
+                // Check if the click is outside the active item AND not inside the confirmation dialog
                 if (!activeOptionsItem.contains(event.target) && !deleteConfirmationDialog.contains(event.target)) {
                     closeOptions(activeOptionsItem);
                 }
@@ -607,19 +592,25 @@
             const timerToClone = currentTimers.find(timer => timer.id === idToClone);
 
             if (timerToClone) {
-                // Create a deep copy and assign a new unique ID
                 const clonedTimer = JSON.parse(JSON.stringify(timerToClone));
-                clonedTimer.id = `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`; // New unique ID
-                clonedTimer.name = `${clonedTimer.name} (Copy)`; // Add (Copy) to the name
+                clonedTimer.id = `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                clonedTimer.name = `${clonedTimer.name} (Copy)`;
 
-                // Add to the list and save
-                currentTimers.push(clonedTimer); // Or insert after original: currentTimers.splice(index + 1, 0, clonedTimer);
+                // Find index to insert cloned timer right after the original
+                const originalIndex = currentTimers.findIndex(timer => timer.id === idToClone);
+                if (originalIndex !== -1) {
+                    currentTimers.splice(originalIndex + 1, 0, clonedTimer);
+                } else {
+                    currentTimers.push(clonedTimer); // Fallback if original not found (shouldn't happen)
+                }
+                
                 saveTimers(currentTimers);
-                renderTimerList(); // Re-render the list
+                timers = currentTimers; // Update local array immediately
+                renderTimerList();
             }
         }
 
-        // --- Confirmation Dialog and Delete Logic ---
+        // --- Confirmation Dialog and Delete Logic (Your original, integrated) ---
         let timerToDeleteId = null;
 
         function showDeleteConfirmation(timerId) {
@@ -630,8 +621,8 @@
         function hideDeleteConfirmation() {
             deleteConfirmationDialog.classList.remove('active');
             timerToDeleteId = null;
-            if (activeOptionsItem) { // Close options if they were open for the deleted item
-                closeOptions(activeOptionsItem);
+            if (activeOptionsItem) {
+                closeOptions(activeOptionsItem); // Ensure options are closed
             }
         }
 
@@ -647,6 +638,7 @@
             let currentTimers = loadTimers();
             currentTimers = currentTimers.filter(timer => timer.id !== id);
             saveTimers(currentTimers);
+            timers = currentTimers; // Update local array immediately
             renderTimerList();
         }
 
@@ -655,8 +647,8 @@
             isSortableMode = true;
             addButton.style.display = 'none';
             saveButton.style.display = 'block';
-            timerList.classList.add('sortable-mode'); // Add class to list container if needed for global styling
-            renderTimerList(); // Re-render to show sort icons
+            timerList.classList.add('sortable-mode');
+            renderTimerList(); // Re-render to show sort icons and apply sortable-mode class
             enableSortable();
         }
 
@@ -671,13 +663,17 @@
                 sortable = null;
             }
             // Update the order in the timers array based on new DOM order
-            const newOrderTimers = Array.from(timerList.children).map(li => {
-                const timerId = li.getAttribute('data-timer-id');
-                return timers.find(t => t.id === timerId);
-            });
-            timers = newOrderTimers.filter(Boolean); // Filter out any nulls if element not found
-            saveTimers(timers); // Save the new order
-            renderTimerList(); // Re-render to remove sort icons and update list
+            const newOrderTimers = Array.from(timerList.children)
+                .map(li => {
+                    const timerId = li.getAttribute('data-timer-id');
+                    // Find the original timer object from our 'timers' array
+                    return timers.find(t => t.id === timerId);
+                })
+                .filter(Boolean); // Filter out any undefined/null entries
+            
+            timers = newOrderTimers; // Update the global timers array
+            saveTimers(timers); // Save the new order to localStorage
+            renderTimerList(); // Re-render to remove sort icons and update list from saved data
         }
 
         function enableSortable() {
@@ -685,8 +681,11 @@
                 sortable = new Sortable(timerList, {
                     animation: 150,
                     handle: '.sort-icon', // Only drag by the icon
+                    filter: '.swipe-options-container', // Prevents dragging when clicking on swipe options
+                    preventOnFilter: false, // Allows click events on filtered elements
                     onEnd: function (evt) {
                         // Update the internal timers array after drag & drop
+                        // SortableJS provides oldIndex and newIndex
                         const movedItem = timers.splice(evt.oldIndex, 1)[0];
                         timers.splice(evt.newIndex, 0, movedItem);
                         // No need to save here, will be saved on disableSortableMode
@@ -698,19 +697,7 @@
             }
         }
 
-        // --- Header Button Event Listeners ---
-        optionsButton.addEventListener('click', () => {
-            window.location.href = '../options-screen/options-screen.html';
-        });
-
-        addButton.addEventListener('click', () => {
-            localStorage.removeItem('selectedTimerId'); // Ensure no old ID for new timer
-            window.location.href = '../timer-editor/timer-editor.html';
-        });
-
-        saveButton.addEventListener('click', disableSortableMode);
-
-        // --- Scroll Header Effect ---
+        // --- Header Scroll Effect ---
         window.addEventListener('scroll', () => {
             if (window.scrollY > 0) {
                 header.classList.add('scrolled');
