@@ -433,7 +433,7 @@
         } else {
             console.warn("No opener window found. Interval data not sent.");
         }
-        window.close(); // Schließe das Popup
+        window.location.href = '../timer-editor/timer-editor.html'; // Navigiere zurück zum Timer Editor
     });
 
     // --- Initialisierung beim Laden (Empfang von Daten vom Timer-Editor) ---
