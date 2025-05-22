@@ -140,7 +140,7 @@
         white-space: nowrap; /* Prevent text wrapping */
         cursor: pointer;
       }
-      
+
       /* Remove specific background colors per option from previous attempt */
       .timer-item > div.absolute span:nth-child(1),
       .timer-item > div.absolute span:nth-child(2),
@@ -148,7 +148,6 @@
       .timer-item > div.absolute span:nth-child(4) {
           background-color: transparent; /* Reset to transparent */
       }
-
 
       .timer-item.options-active .timer-name,
       .timer-item.options-active .timer-duration {
@@ -298,7 +297,7 @@
       const optionsButton = document.getElementById('optionsButton'); // Get the options button
       const deleteConfirmationDialog = document.getElementById('deleteConfirmationDialog');
       const cancelDeleteButton = document.getElementById('cancelDelete');
-      const confirmDeleteButton = document = document.getElementById('confirmDelete');
+      const confirmDeleteButton = document.getElementById('confirmDelete');
 
       let activeOptionsItem = null;
       let sortable = null;
@@ -307,7 +306,7 @@
       let isSortableMode = false;
       let isSwipingOrScrolling = false; // Combined flag for any significant movement
       let touchStartX = 0;
-      let touchStartY = 0; 
+      let touchStartY = 0;
       let movementThreshold = 10; // Threshold for any movement (swipe or scroll)
 
       let timers = []; // Will be loaded from localStorage
@@ -318,44 +317,11 @@
       }
 
       function loadTimers() {
-          let storedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
-          
-          let needsUpdate = false;
-          // Ensure all timers have an ID and correct intervals/repeat structure
-          storedTimers.forEach(timer => {
-              if (!timer.id) {
-                  timer.id = generateUniqueId();
-                  needsUpdate = true;
-              }
-              if (!timer.intervals || !Array.isArray(timer.intervals) || timer.intervals.length === 0) {
-                  // Attempt to convert old "duration" string to new "intervals" structure
-                  if (timer.duration && typeof timer.duration === 'string' && timer.duration.includes(':')) {
-                      const parts = timer.duration.split(':');
-                      const totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                      timer.intervals = [{ duration: totalSeconds, type: 'work' }];
-                  } else {
-                      timer.intervals = [{ duration: 300, type: 'work' }]; // Default 5 minutes if no valid duration
-                  }
-                  needsUpdate = true;
-              }
-              if (timer.repeat === undefined) {
-                  timer.repeat = 1;
-                  needsUpdate = true;
-              }
-              // Remove old `duration` property if it exists to clean up
-              if (timer.duration !== undefined && typeof timer.duration === 'string') {
-                  delete timer.duration;
-                  needsUpdate = true;
-              }
-          });
-
-          // Removed hardcoded dummy data. Now, if localStorage is empty, the list will simply be empty.
-          // The "No timers yet" message will be displayed by renderTimerList if timers.length is 0.
-          
-          if (needsUpdate) {
-              saveTimers(storedTimers); 
+          const storedTimers = localStorage.getItem('timers');
+          if (storedTimers) {
+              return JSON.parse(storedTimers);
           }
-          return storedTimers;
+          return [];
       }
 
       function saveTimers(currentTimers) {
@@ -378,7 +344,7 @@
                     duration += interval.duration;
                 });
             }
-            return duration * (timer.repeat || 1); 
+            return duration * (timer.repeat || 1);
         }
 
       function handleSwipe(listItem, endX, startX) {
@@ -392,7 +358,7 @@
         } else {
             // If swipe was not significant enough, but an option panel was open, close it
             if (listItem.classList.contains('options-active')) {
-                closeOptions(listItem); 
+                closeOptions(listItem);
             }
         }
       }
@@ -424,7 +390,7 @@
           const optionSpan = document.createElement('span');
           optionSpan.classList.add('text-light', 'cursor-pointer');
           optionSpan.textContent = option.text;
-          
+
           optionSpan.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent li click
             closeOptions(listItem); // Close swipe options
@@ -487,7 +453,7 @@
               } else {
                   currentTimers.push(clonedTimer); // Fallback if original not found
               }
-              
+
               saveTimers(currentTimers);
               timers = currentTimers; // Update local array immediately
               renderTimerList();
@@ -568,7 +534,7 @@
                     touchStartX = e.touches[0].screenX;
                     touchStartY = e.touches[0].screenY;
                     isSwipingOrScrolling = false; // Reset flag
-                    
+
                     // Close any active options if starting a new touch on a different item
                     if (activeOptionsItem && activeOptionsItem !== li) {
                         closeOptions(activeOptionsItem);
@@ -598,13 +564,13 @@
 
                         // If it's a horizontal swipe, prevent default to avoid scrolling
                         if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                            e.preventDefault(); 
+                            e.preventDefault();
                             // Optional: Visually show the options sliding with the finger
                             const optionsElement = li.querySelector('.swipe-options-container');
                             if (optionsElement) {
                                 // Calculate desired position for the options based on swipe distance
                                 // Clamping the value to prevent options from moving too far left
-                                const newTransformX = Math.max(0, 100 + (deltaX / li.offsetWidth) * 100); 
+                                const newTransformX = Math.max(0, 100 + (deltaX / li.offsetWidth) * 100);
                                 optionsElement.style.transform = `translateX(${newTransformX}%)`;
                             }
                         }
@@ -620,7 +586,7 @@
                         const currentX = e.changedTouches[0].screenX;
                         const deltaX = currentX - touchStartX;
                         const deltaY = e.changedTouches[0].screenY - touchStartY;
-                        
+
                         if (isSwipingOrScrolling) { // It was a swipe or scroll gesture
                             // If primarily horizontal movement (swipe), handle it
                             if (Math.abs(deltaX) > Math.abs(deltaY)) {
@@ -681,10 +647,10 @@
         Array.from(timerList.children).forEach(li => li.classList.remove('sortable-mode'));
         if (sortable) {
           // Get the current order of elements from SortableJS's internal state
-          const newOrder = sortable.toArray(); 
+          const newOrder = sortable.toArray();
           // Map these IDs back to the full timer objects
           const newOrderTimers = newOrder.map(id => timers.find(t => t.id === id)).filter(Boolean);
-          
+
           timers = newOrderTimers; // Update the global timers array
           saveTimers(timers); // Save the new order to localStorage
 
@@ -703,7 +669,7 @@
             filter: '.swipe-options-container', // Prevents dragging when clicking on swipe options
             preventOnFilter: false, // Allows click events on filtered elements (for the swipe options)
             // Tell SortableJS which property to use as ID
-            dataIdAttr: 'data-timer-id', 
+            dataIdAttr: 'data-timer-id',
             onStart: function(evt) {
                 // When dragging starts, ensure any open options are closed
                 if (activeOptionsItem) {
@@ -733,7 +699,6 @@
           // Link to options screen
           window.location.href = '../options-screen/options-screen.html'; // Assuming this path
       });
-
 
       window.addEventListener('scroll', () => {
         if (window.scrollY > 0) {
