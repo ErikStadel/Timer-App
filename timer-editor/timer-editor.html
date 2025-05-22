@@ -177,8 +177,8 @@
   <body class="text-light">
     <header id="header" class="text-light shadow-md">
       <div class="w-full flex justify-between items-center">
-        <button class="text-accent font-semibold hover:underline" onclick="window.location.href='https://erikstadel.github.io/Timer-App/home-screen/index.html';">Back</button>
-        <h1 class="text-xl font-bold text-accent tracking-wide">Add Timer</h1>
+        <button class="text-accent font-semibold hover:underline" onclick="window.location.href='../home-screen/index.html';">Back</button>
+        <h1 id="headerTitle" class="text-xl font-bold text-accent tracking-wide">Add Timer</h1>
         <button
           id="saveButton"
           class="text-accent font-semibold hover:underline"
@@ -225,36 +225,76 @@
 
     <script>
       const header = document.getElementById('header');
+      const headerTitle = document.getElementById('headerTitle');
       const saveButton = document.getElementById('saveButton');
       const intervalContainer = document.getElementById('intervalContainer');
       const addIntervalButton = document.getElementById('addIntervalButton');
-      const timerNameInput = document.getElementById('timerNameInput'); // Referenz auf Timer Name Input
-      const repeatInput = document.getElementById('repeatInput');     // Referenz auf Repeat Input
+      const timerNameInput = document.getElementById('timerNameInput');
+      const repeatInput = document.getElementById('repeatInput');
 
       let activeOptionsItem = null;
       let sortableInstance = null;
       let longPressTimer = null;
-      const longPressThreshold = 500; // Angepasste Schwelle für Longpress
+      const longPressThreshold = 500;
       let isSortableMode = false;
       let touchStartX = 0;
       let touchStartY = 0;
       const swipeThreshold = 50;
-      let currentListItem = null; // Speichert das aktuelle Listenelement für Touch-Operationen
+      let currentListItem = null;
 
-      // **ANGEPASSTE DATENSTRUKTUR FÜR INTERVALS**
-      // Jedes Intervall hat jetzt 'name', 'duration' (MM:SS) und 'type' ("interval" oder "rest")
-      let intervals = [
-        { id: 1, name: "Get Ready", duration: "00:10", type: "interval" },
-        { id: 2, name: "Boxing Round", duration: "01:00", type: "interval" },
-        { id: 3, name: "Rest", duration: "00:30", type: "rest" },
-        { id: 4, name: "Kicking Drills", duration: "01:15", type: "interval" },
-        { id: 5, name: "Cool Down", duration: "00:45", type: "interval" }
-      ];
+      let currentTimerId = null; // Stores the ID of the timer being edited
+      let intervals = []; // This will hold the intervals for the current timer
 
-      renderIntervalList();
+      // --- Helper Functions for Data Management (consistent with home-screen) ---
+      function generateUniqueId() {
+          return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      }
 
-      // **HILFSFUNKTION: Formatiert die Dauer für die Anzeige im Editor**
+      function loadTimers() {
+          let storedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
+          let needsUpdate = false;
+          // Ensure all timers have an ID and correct intervals/repeat structure
+          storedTimers.forEach(timer => {
+              if (!timer.id) {
+                  timer.id = generateUniqueId();
+                  needsUpdate = true;
+              }
+              if (!timer.intervals || !Array.isArray(timer.intervals) || timer.intervals.length === 0) {
+                  if (timer.duration && typeof timer.duration === 'string' && timer.duration.includes(':')) {
+                      const parts = timer.duration.split(':');
+                      const totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                      timer.intervals = [{ duration: totalSeconds, type: 'work' }];
+                  } else {
+                      timer.intervals = [{ duration: 300, type: 'work' }]; // Default 5 minutes
+                  }
+                  needsUpdate = true;
+              }
+              if (timer.repeat === undefined) {
+                  timer.repeat = 1;
+                  needsUpdate = true;
+              }
+              if (timer.duration !== undefined && typeof timer.duration === 'string') {
+                  delete timer.duration;
+                  needsUpdate = true;
+              }
+          });
+          if (needsUpdate) {
+              saveTimers(storedTimers);
+          }
+          return storedTimers;
+      }
+
+      function saveTimers(currentTimers) {
+          localStorage.setItem('timers', JSON.stringify(currentTimers));
+      }
+      // --- End Helper Functions ---
+
+      // Helper function: Format time for editor display (e.g., "1 Min 30 Sek")
       function formatTimeForEditor(durationString) {
+          if (!durationString || !durationString.includes(':')) {
+              // Handle invalid or missing duration strings gracefully
+              return "0 Sek";
+          }
           const parts = durationString.split(':');
           const minutes = parseInt(parts[0], 10);
           const seconds = parseInt(parts[1], 10);
@@ -265,7 +305,7 @@
           if (seconds > 0) {
               formatted.push(`${seconds} Sek`);
           }
-          return formatted.join(' ') || "0 Sek"; // Vermeidet "0 Min 0 Sek"
+          return formatted.join(' ') || "0 Sek"; // Avoids "0 Min 0 Sek"
       }
 
 
@@ -297,13 +337,13 @@
               const deleteButton = optionsElement.querySelector('.delete-button');
 
               cloneButton.addEventListener('click', () => {
-                  const itemId = parseInt(listItem.dataset.intervalId);
+                  const itemId = listItem.dataset.intervalId;
                   cloneInterval(itemId);
-                  closeOptions(listItem); // Optionen nach dem Klonen schließen
+                  closeOptions(listItem); // Close options after cloning
               });
 
               deleteButton.addEventListener('click', () => {
-                  const itemId = parseInt(listItem.dataset.intervalId);
+                  const itemId = listItem.dataset.intervalId;
                   deleteInterval(itemId);
               });
           }
@@ -333,8 +373,7 @@
       function cloneInterval(itemId) {
           const indexToClone = intervals.findIndex(item => item.id === itemId);
           if (indexToClone !== -1) {
-              // **CLONE LOGIK: Füge eine neue ID hinzu**
-              const clonedInterval = { ...intervals[indexToClone], id: Date.now() };
+              const clonedInterval = { ...intervals[indexToClone], id: generateUniqueId() }; // Use generateUniqueId for new interval
               intervals.splice(indexToClone + 1, 0, clonedInterval);
               renderIntervalList();
           }
@@ -348,15 +387,21 @@
           }
       }
 
-      // **ANGEPASSTE renderIntervalList FUNKTION**
       function renderIntervalList() {
           intervalContainer.innerHTML = '';
+          if (intervals.length === 0) {
+              const noIntervalsMessage = document.createElement('div');
+              noIntervalsMessage.classList.add('text-center', 'text-secondary', 'mt-4', 'p-4', 'rounded-xl', 'bg-background');
+              noIntervalsMessage.textContent = 'No intervals yet. Tap "+ Add Interval" to create one.';
+              intervalContainer.appendChild(noIntervalsMessage);
+              return;
+          }
+
           intervals.forEach(interval => {
               const listItem = document.createElement('div');
               listItem.classList.add('interval-item', 'relative', 'overflow-hidden', 'user-select-none');
-              listItem.dataset.intervalId = interval.id; // Wichtig für die Identifizierung
+              listItem.dataset.intervalId = interval.id;
 
-              // Füge spezifische Klasse basierend auf dem Typ hinzu für visuelle Unterscheidung
               if (interval.type === 'rest') {
                   listItem.classList.add('is-rest-type');
               } else {
@@ -370,33 +415,26 @@
                   </div>
               `;
 
-              // **Event Listener zum Öffnen des Intervall-Popups zum Bearbeiten**
               listItem.querySelector('div:first-child').addEventListener('click', (e) => {
-                  // Verhindere, dass der Klick die Optionen schließt, wenn sie aktiv sind
                   if (activeOptionsItem === listItem) return;
-                  if (isSortableMode) return; // Nicht öffnen, wenn im Sortier-Modus
+                  if (isSortableMode) return;
 
-                  const itemId = parseInt(listItem.dataset.intervalId);
+                  const itemId = listItem.dataset.intervalId;
                   const intervalToEdit = intervals.find(item => item.id === itemId);
 
                   if (intervalToEdit) {
-                      // Öffne das Popup und übergebe die Daten
-                      // WICHTIG: Die URL zum interval-editor.html muss korrekt sein
                       const popupWindow = window.open('interval-editor.html', '_blank', 'width=400,height=600');
                       
-                      // Sobald das Popup geladen ist, sende die Daten
-                      // Event listener für 'load' des Popups
                       popupWindow.addEventListener('load', () => {
-                        if (popupWindow && !popupWindow.closed) { // Stelle sicher, dass das Fenster noch offen ist
-                            popupWindow.postMessage({
-                                type: 'loadInterval',
-                                data: intervalToEdit
-                            }, window.location.origin); // Sende die Daten an das Popup
-                        }
-                      }, { once: true }); // Führt den Listener nur einmal aus
+                          if (popupWindow && !popupWindow.closed) {
+                              popupWindow.postMessage({
+                                  type: 'loadInterval',
+                                  data: intervalToEdit
+                              }, window.location.origin);
+                          }
+                      }, { once: true });
                   }
               });
-
 
               let startX = 0;
               let startY = 0;
@@ -416,7 +454,7 @@
                           enableSortableMode();
                       }, longPressThreshold);
                   }
-              });
+              }, { passive: true }); // Use passive:true for touchstart to improve scrolling performance initially
 
               listItem.addEventListener('touchmove', (e) => {
                   if (!isSortableMode && currentListItem === listItem) {
@@ -425,19 +463,22 @@
                       const deltaX = Math.abs(currentX - startX);
                       const deltaY = Math.abs(currentY - startY);
 
-                      if (deltaX > 10 || deltaY > 10) { // Genug Bewegung, um Swipe/Scroll zu erkennen
+                      if (deltaX > 10 || deltaY > 10) {
                           isSwiping = true;
                           clearTimeout(longPressTimeout);
+                          if (Math.abs(deltaX) > Math.abs(deltaY)) { // If horizontal movement is dominant, prevent default to avoid scrolling
+                            e.preventDefault();
+                          }
                       }
                   }
-              });
+              }, { passive: false }); // Use passive:false for touchmove when preventing default
 
               listItem.addEventListener('touchend', (e) => {
                   if (!isSortableMode && currentListItem === listItem) {
                       clearTimeout(longPressTimeout);
-                      if (!isLongPress && isSwiping) { // War ein Swipe, kein Longpress
+                      if (!isLongPress && isSwiping) {
                           const endX = e.changedTouches[0].clientX;
-                          const deltaX = startX - endX;
+                          const deltaX = startX - endX; // Swipe direction
                           handleSwipe(listItem, deltaX);
                       }
                       startX = 0;
@@ -448,7 +489,6 @@
                   }
               });
 
-              // Verhindern des Kontextmenüs bei langem Drücken (optional)
               listItem.addEventListener('contextmenu', (e) => {
                   if (!isSortableMode) {
                       e.preventDefault();
@@ -471,7 +511,7 @@
           saveButton.textContent = 'Save Order';
           const listItems = intervalContainer.querySelectorAll('.interval-item');
           listItems.forEach(item => item.classList.add('sortable-mode'));
-          if (activeOptionsItem) { // Wenn Optionen offen sind, schließen
+          if (activeOptionsItem) {
               closeOptions(activeOptionsItem);
           }
           enableSortable();
@@ -486,24 +526,26 @@
               sortableInstance.destroy();
               sortableInstance = null;
           }
-          console.log("Neue Reihenfolge der Intervalle:", intervals.map(i => i.id));
+          // The `intervals` array is already updated by Sortable's onEnd.
+          // No need to re-render the list here if we are just disabling sortable mode.
+          // It will be re-rendered on page load or when saving the timer.
       }
 
       function enableSortable() {
           if (!sortableInstance) {
               sortableInstance = new Sortable(intervalContainer, {
                   animation: 150,
-                  handle: '.sort-icon-placeholder', // Nur über das '=' Zeichen ziehen
+                  handle: '.sort-icon-placeholder',
                   onEnd: function (evt) {
                       const newIntervals = [];
                       Array.from(intervalContainer.children).forEach(item => {
-                          const id = parseInt(item.dataset.intervalId);
+                          const id = item.dataset.intervalId; // Use string id
                           const foundInterval = intervals.find(interval => interval.id === id);
                           if (foundInterval) {
                               newIntervals.push(foundInterval);
                           }
                       });
-                      intervals = newIntervals;
+                      intervals = newIntervals; // Update global intervals array with new order
                   },
               });
           }
@@ -512,33 +554,62 @@
       saveButton.addEventListener('click', () => {
           if (isSortableMode) {
               disableSortableMode();
-              // Logik zum Speichern der neuen Reihenfolge könnte hier folgen (z.B. in localStorage)
+              // When disabling sortable mode, the intervals array is already updated
+              // No further action needed here for saving order, as it's part of the overall timer save
           } else {
-              // **LOGIK FÜR DAS SPEICHERN DES GESAMTEN TIMERS**
               const timerName = timerNameInput.value.trim();
               const repeatCount = parseInt(repeatInput.value, 10);
 
-              const timerData = {
+              if (!timerName) {
+                  alert('Timer name cannot be empty.');
+                  return;
+              }
+              if (isNaN(repeatCount) || repeatCount < 1) {
+                  alert('Repeat count must be at least 1.');
+                  return;
+              }
+              if (intervals.length === 0) {
+                  alert('A timer must have at least one interval.');
+                  return;
+              }
+
+              let allTimers = loadTimers();
+              let timerToSave = {
+                  id: currentTimerId || generateUniqueId(), // Use existing ID or generate new
                   name: timerName,
                   repeat: repeatCount,
-                  intervals: intervals // Das aktualisierte Array von Intervallen
+                  intervals: intervals.map(interval => ({ // Ensure durations are numbers for saving
+                      id: interval.id,
+                      name: interval.name,
+                      duration: interval.duration, // Keep as MM:SS string for consistency
+                      type: interval.type
+                  }))
               };
 
-              console.log("Timer gespeichert:", timerData);
-              // Hier würdest du timerData in localStorage speichern oder an eine API senden
-              localStorage.setItem('currentTimerForReview', JSON.stringify(timerData));
-              
-              // Optional: Zur Review-Seite oder Home-Seite navigieren
-              window.location.href = 'review.html'; // Passe den Pfad an
+              if (currentTimerId) {
+                  // Editing existing timer
+                  const index = allTimers.findIndex(t => t.id === currentTimerId);
+                  if (index !== -1) {
+                      allTimers[index] = timerToSave;
+                  } else {
+                      // Should not happen if currentTimerId is set correctly
+                      allTimers.push(timerToSave);
+                  }
+              } else {
+                  // Adding new timer
+                  allTimers.push(timerToSave);
+              }
+
+              saveTimers(allTimers);
+              localStorage.removeItem('selectedTimerId'); // Clear selected ID after saving
+              window.location.href = '../home-screen/index.html'; // Navigate back to home
           }
       });
 
       addIntervalButton.addEventListener('click', () => {
-          const newId = Date.now();
-          // **NEUES INTERVALL MIT STANDARDTYP "interval" HINZUFÜGEN**
-          intervals.push({ id: newId, name: `New Interval`, duration: "00:00", type: "interval" });
+          const newId = generateUniqueId();
+          intervals.push({ id: newId, name: `New Interval`, duration: "00:00", type: "work" }); // Default type "work"
           renderIntervalList();
-          // Optional: Scroll zum neuen Intervall
           intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
       });
 
@@ -560,55 +631,47 @@
           }
       });
 
-      // **Empfangen von Nachrichten vom Intervall-Editor (Popup)**
+      // Receive updates from interval-editor popup
       window.addEventListener('message', (event) => {
-          // Wichtig: Prüfe event.origin für Sicherheit in einer echten Anwendung
-          // if (event.origin !== window.location.origin) { // Oder die spezifische Origin deines interval-editors
-          //     return;
-          // }
-
           if (event.data && event.data.type === 'saveInterval') {
               const updatedInterval = event.data.data;
               const index = intervals.findIndex(item => item.id === updatedInterval.id);
 
               if (index !== -1) {
-                  // Aktualisiere das bestehende Intervall mit den neuen Daten
                   intervals[index] = { ...intervals[index], ...updatedInterval };
               } else {
-                  // Dies sollte nur passieren, wenn ein Intervall im Popup erstellt wurde,
-                  // ohne dass es vorher im Timer-Editor existierte.
-                  // In deinem Fall wird es immer eine ID haben, da du es zum Bearbeiten sendest.
                   console.warn("Received update for unknown interval ID:", updatedInterval.id);
-                  // Optional: füge es hinzu, wenn es wirklich neu ist:
-                  // intervals.push(updatedInterval);
               }
-              renderIntervalList(); // Liste neu rendern, um Änderungen zu zeigen
+              renderIntervalList();
           }
       });
 
-      // **Initialisierung des Timer-Editors beim Laden**
-      // Hier könntest du gespeicherte Timer-Daten laden (z.B. aus localStorage),
-      // wenn du einen bestehenden Timer bearbeiten möchtest.
+      // Initialization logic for Timer Editor
       document.addEventListener('DOMContentLoaded', () => {
-          // Beispiel: Laden eines Timers aus localStorage, wenn eine ID in der URL ist
-          // const urlParams = new URLSearchParams(window.location.search);
-          // const timerId = urlParams.get('timerId');
-          // if (timerId) {
-          //     const savedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
-          //     const timerToLoad = savedTimers.find(t => t.id === timerId);
-          //     if (timerToLoad) {
-          //         timerNameInput.value = timerToLoad.name;
-          //         repeatInput.value = timerToLoad.repeat;
-          //         intervals = timerToLoad.intervals;
-          //         renderIntervalList();
-          //     }
-          // }
+          const selectedTimerId = localStorage.getItem('selectedTimerId');
+          if (selectedTimerId) {
+              headerTitle.textContent = 'Edit Timer';
+              currentTimerId = selectedTimerId;
+              const allTimers = loadTimers();
+              const timerToLoad = allTimers.find(t => t.id === selectedTimerId);
 
-          // Aktuelle Initialisierung für den "Add Timer" Anwendungsfall:
-          // Sicherstellen, dass die initialen Intervalle gerendert werden
+              if (timerToLoad) {
+                  timerNameInput.value = timerToLoad.name;
+                  repeatInput.value = timerToLoad.repeat;
+                  // Ensure intervals are deep copied to avoid direct modification of the loaded object
+                  intervals = JSON.parse(JSON.stringify(timerToLoad.intervals)); 
+              } else {
+                  console.warn(`Timer with ID ${selectedTimerId} not found.`);
+                  currentTimerId = null; // Reset to add new if not found
+                  intervals = []; // Start with empty intervals for a new timer
+              }
+          } else {
+              headerTitle.textContent = 'Add Timer';
+              currentTimerId = null;
+              intervals = []; // Start with empty intervals for a new timer
+          }
           renderIntervalList();
       });
-
     </script>
   </body>
 </html>
