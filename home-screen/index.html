@@ -2,7 +2,7 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#01161E" />
     <title>Home Screen</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -45,6 +45,7 @@
         overscroll-behavior: none;
         scroll-padding-top: 4rem;
         scroll-behavior: smooth;
+        color: #EFF6E0; /* Added for general text color */
       }
 
       header {
@@ -71,6 +72,20 @@
         background-color: rgba(1, 22, 30, 0.7);
         backdrop-filter: blur(6px);
       }
+
+      .header-button { /* New class for header buttons for consistent styling */
+            background: none;
+            border: none;
+            color: #83c5be;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            text-decoration: none;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            transition: color 0.2s;
+        }
 
       .timer-list {
         list-style: none;
@@ -114,7 +129,16 @@
 
       .timer-item > div.absolute span {
         padding: 0.5rem 0.75rem;
+        /* Adjusted colors for consistency with previous user's design */
+        color: #EFF6E0; /* Light text color for buttons */
       }
+
+      /* Specific background colors for each option */
+        .timer-item > div.absolute span:nth-child(1) { background-color: #598392; } /* Review - primary */
+        .timer-item > div.absolute span:nth-child(2) { background-color: #83c5be; } /* Modify - accent */
+        .timer-item > div.absolute span:nth-child(3) { background-color: #AEC3B0; } /* Clone - secondary */
+        .timer-item > div.absolute span:nth-child(4) { background-color: #e76f51; } /* Delete - interval */
+
 
       .timer-item.options-active .timer-name,
       .timer-item.options-active .timer-duration {
@@ -142,63 +166,221 @@
         margin-right: 0.5rem;
         opacity: 0;
         transition: opacity 0.3s ease;
+        cursor: grab; /* Added for visual cue */
       }
 
       .timer-item.sortable-mode .sort-icon {
         opacity: 1;
+      }
+
+      /* Confirmation Dialog Styles (Re-integrated from your previous successful version) */
+      .confirmation-dialog-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.6);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 100;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+
+      .confirmation-dialog-overlay.active {
+          opacity: 1;
+          visibility: visible;
+      }
+
+      .confirmation-dialog {
+          background-color: #124559;
+          color: #EFF6E0;
+          padding: 1.5rem;
+          border-radius: 0.75rem;
+          text-align: center;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+          max-width: 80%;
+          min-width: 280px;
+      }
+
+      .confirmation-dialog p {
+          font-size: 1.1rem;
+          margin-bottom: 1.5rem;
+      }
+
+      .confirmation-dialog-buttons {
+          display: flex;
+          justify-content: space-around;
+          gap: 1rem;
+      }
+
+      .btn-cancel, .btn-confirm {
+          padding: 0.75rem 1.5rem;
+          border-radius: 0.5rem;
+          font-weight: bold;
+          cursor: pointer;
+          border: none;
+          font-size: 1rem;
+          flex-grow: 1;
+      }
+
+      .btn-cancel {
+          background-color: #598392;
+          color: #EFF6E0;
+      }
+
+      .btn-cancel:hover {
+          background-color: #AEC3B0;
+      }
+
+      .btn-confirm {
+          background-color: #e76f51;
+          color: #EFF6E0;
+      }
+
+      .btn-confirm:hover {
+          background-color: #fc814a;
       }
     </style>
   </head>
   <body class="text-light">
     <header id="header" class="text-light shadow-md">
       <div class="w-full flex justify-between items-center">
-        <button class="text-accent font-semibold hover:underline">
+        <button id="optionsButton" class="header-button">
           Options
         </button>
         <h1 class="text-xl font-bold text-accent tracking-wide">Timer</h1>
         <button
           id="saveButton"
-          class="text-accent font-semibold hover:underline"
+          class="header-button"
           style="display: none;"
         >
           Save Order
         </button>
         <button
           id="addButton"
-          class="text-accent font-bold text-2xl leading-none hover:scale-110 transition-transform duration-150"
+          class="header-button text-2xl leading-none hover:scale-110 transition-transform duration-150"
         >
           +
         </button>
       </div>
     </header>
     <ul class="timer-list"></ul>
+
+    <div class="confirmation-dialog-overlay" id="deleteConfirmationDialog">
+        <div class="confirmation-dialog">
+            <p>Delete Timer?</p>
+            <div class="confirmation-dialog-buttons">
+                <button class="btn-cancel" id="cancelDelete">Cancel</button>
+                <button class="btn-confirm" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <script>
       const header = document.getElementById('header');
       const timerList = document.querySelector('.timer-list');
       const addButton = document.getElementById('addButton');
       const saveButton = document.getElementById('saveButton');
+      const optionsButton = document.getElementById('optionsButton'); // Get the options button
+      const deleteConfirmationDialog = document.getElementById('deleteConfirmationDialog');
+      const cancelDeleteButton = document.getElementById('cancelDelete');
+      const confirmDeleteButton = document.getElementById('confirmDelete');
+
       let activeOptionsItem = null;
       let sortable = null;
       let longPressTimer = null;
       let longPressThreshold = 1000;
       let isSortableMode = false;
+      let isSwiping = false; // New flag to track if it's a swipe
+      let touchStartX = 0;
+      let touchStartY = 0; // Added for vertical movement check in long press
+      let deltaXThreshold = 10; // Minimum horizontal movement for swipe
+      let deltaYThreshold = 10; // Minimum vertical movement to cancel long press/tap
 
-      let timers = [
-        { name: "Aufwärmen", duration: "05:00" },
-        { name: "Sparring", duration: "3x3 Min" },
-        { name: "Sandsack", duration: "10:00" },
-        { name: "Dehnen", duration: "05:00" },
-        { name: "Cool Down", duration: "05:00" },
-        { name: "Workout", duration: "05:00" },
-        { name: "Laufen", duration: "05:00" },
-        { name: "Springseil", duration: "05:00" },
-        { name: "Schattenboxen", duration: "05:00" },
-        { name: "Partnerübung", duration: "05:00" },
-        { name: "Techniktraining", duration: "05:00" },
-        { name: "Wettkampfsimulation", duration: "05:00" },
-      ];
+      let timers = []; // Will be loaded from localStorage
 
-      renderTimerList();
+      // --- Data Persistence (localStorage) ---
+      function generateUniqueId() {
+          return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      }
+
+      function loadTimers() {
+          let storedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
+          
+          // Add unique IDs to existing timers if they don't have them
+          let needsUpdate = false;
+          storedTimers.forEach(timer => {
+              if (!timer.id) {
+                  timer.id = generateUniqueId();
+                  needsUpdate = true;
+              }
+              // Ensure intervals array exists for calculation consistency
+              if (!timer.intervals) {
+                  timer.intervals = [{ duration: parseInt(timer.duration.split(':')[0]) * 60 + parseInt(timer.duration.split(':')[1]), type: 'work' }]; // Basic conversion for old format
+                  needsUpdate = true;
+              }
+              if (timer.repeat === undefined) {
+                  timer.repeat = 1;
+                  needsUpdate = true;
+              }
+          });
+
+          // If no timers exist, populate with initial examples (with proper IDs and intervals)
+          if (storedTimers.length === 0) {
+              storedTimers = [
+                { id: generateUniqueId(), name: "Aufwärmen", intervals: [{ duration: 300, type: 'work' }], repeat: 1 }, // 5:00
+                { id: generateUniqueId(), name: "Sparring", intervals: [{ duration: 180, type: 'work' }, {duration: 60, type: 'rest'}], repeat: 3 }, // 3x3 Min + 1min rest
+                { id: generateUniqueId(), name: "Sandsack", intervals: [{ duration: 600, type: 'work' }], repeat: 1 }, // 10:00
+                { id: generateUniqueId(), name: "Dehnen", intervals: [{ duration: 300, type: 'work' }], repeat: 1 }, // 5:00
+                { id: generateUniqueId(), name: "Cool Down", intervals: [{ duration: 300, type: 'work' }], repeat: 1 }, // 5:00
+                { id: generateUniqueId(), name: "Workout", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
+                { id: generateUniqueId(), name: "Laufen", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
+                { id: generateUniqueId(), name: "Springseil", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
+                { id: generateUniqueId(), name: "Schattenboxen", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
+                { id: generateUniqueId(), name: "Partnerübung", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
+                { id: generateUniqueId(), name: "Techniktraining", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
+                { id: generateUniqueId(), name: "Wettkampfsimulation", intervals: [{ duration: 300, type: 'work' }], repeat: 1 },
+              ];
+              needsUpdate = true;
+          }
+
+          if (needsUpdate) {
+              saveTimers(storedTimers); // Save updated timers with IDs and intervals
+          }
+          return storedTimers;
+      }
+
+      function saveTimers(currentTimers) {
+          localStorage.setItem('timers', JSON.stringify(currentTimers));
+      }
+
+      // Helper function: Format time to MM:SS
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Helper function: Calculate total duration of a timer
+        function calculateTotalTimerDuration(timer) {
+            let duration = 0;
+            if (timer.intervals && Array.isArray(timer.intervals)) {
+                timer.intervals.forEach(interval => {
+                    duration += interval.duration;
+                });
+            } else if (timer.duration) { // Fallback for old format if 'intervals' is missing
+                const parts = timer.duration.split(':');
+                if (parts.length === 2) {
+                    duration = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                }
+            }
+            return duration * (timer.repeat || 1); // Use repeat, default to 1
+        }
+
 
       function handleSwipe(listItem, endX, startX) {
         const deltaX = endX - startX;
@@ -217,33 +399,60 @@
         }
         activeOptionsItem = listItem;
 
-        const optionsElement = document.createElement('div');
-        optionsElement.classList.add('bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute');
-        optionsElement.style.padding = '1rem';
+        // Find existing options container or create new one
+        let optionsElement = listItem.querySelector('.swipe-options-container');
+        if (!optionsElement) {
+            optionsElement = document.createElement('div');
+            optionsElement.classList.add('bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute', 'swipe-options-container');
+            optionsElement.style.padding = '1rem';
+            listItem.appendChild(optionsElement);
+        }
+        optionsElement.innerHTML = ''; // Clear existing options
 
-        const options = ['Review', 'Modify', 'Clone', 'Delete'];
-        options.forEach(optionText => {
+        const optionsConfig = [
+            { text: 'Review', action: 'review' },
+            { text: 'Modify', action: 'modify' },
+            { text: 'Clone', action: 'clone' },
+            { text: 'Delete', action: 'delete' }
+        ];
+
+        optionsConfig.forEach(option => {
           const optionSpan = document.createElement('span');
           optionSpan.classList.add('text-light', 'cursor-pointer');
-          optionSpan.textContent = optionText;
-          optionSpan.addEventListener('click', () => {
-            closeOptions(listItem);
+          optionSpan.textContent = option.text;
 
-            const timerIndex = Array.from(timerList.children).indexOf(listItem);
-            const timerToDelete = timers[timerIndex];
+          // Add specific class for styling
+          if (option.action === 'review') optionSpan.style.backgroundColor = '#598392';
+          else if (option.action === 'modify') optionSpan.style.backgroundColor = '#83c5be';
+          else if (option.action === 'clone') optionSpan.style.backgroundColor = '#AEC3B0';
+          else if (option.action === 'delete') optionSpan.style.backgroundColor = '#e76f51';
 
-            if (optionText === 'Clone') {
-              cloneTimer(timerIndex);
-            } else if (optionText === 'Delete') {
-              deleteTimer(timerToDelete, timerIndex);
+          optionSpan.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent li click
+            closeOptions(listItem); // Close swipe options
+
+            const timerId = listItem.getAttribute('data-timer-id');
+            localStorage.setItem('selectedTimerId', timerId); // Store ID for next screen
+
+            switch (option.action) {
+                case 'review':
+                    window.location.href = '../home-screen/timer-review/timer-review.html'; // Corrected path
+                    break;
+                case 'modify':
+                    window.location.href = '../timer-editor/timer-editor.html';
+                    break;
+                case 'clone':
+                    cloneTimer(timerId);
+                    break;
+                case 'delete':
+                    showDeleteConfirmation(timerId); // Show confirmation dialog
+                    break;
             }
           });
           optionsElement.appendChild(optionSpan);
         });
 
-        listItem.style.position = 'relative';
-        listItem.appendChild(optionsElement);
-
+        listItem.style.position = 'relative'; // Ensure positioning context for options
         setTimeout(() => {
           optionsElement.classList.add('slide-in');
           listItem.classList.add('options-active');
@@ -251,7 +460,7 @@
       }
 
       function closeOptions(listItem) {
-        const existingOptions = listItem.querySelector('.bg-dark.absolute');
+        const existingOptions = listItem.querySelector('.swipe-options-container'); // Use the new class
         if (existingOptions) {
           existingOptions.classList.add('slide-out');
           existingOptions.classList.remove('slide-in');
@@ -264,24 +473,77 @@
         }
       }
 
-      function cloneTimer(indexToClone) {
-        const timerToClone = { ...timers[indexToClone] };
-        timers.splice(indexToClone + 1, 0, timerToClone);
-        renderTimerList();
+      function cloneTimer(idToClone) {
+          let currentTimers = loadTimers();
+          const timerToClone = currentTimers.find(timer => timer.id === idToClone);
+
+          if (timerToClone) {
+              const clonedTimer = JSON.parse(JSON.stringify(timerToClone)); // Deep copy
+              clonedTimer.id = generateUniqueId(); // New unique ID
+              clonedTimer.name = `${clonedTimer.name} (Copy)`;
+
+              // Find index to insert cloned timer right after the original
+              const originalIndex = currentTimers.findIndex(timer => timer.id === idToClone);
+              if (originalIndex !== -1) {
+                  currentTimers.splice(originalIndex + 1, 0, clonedTimer);
+              } else {
+                  currentTimers.push(clonedTimer); // Fallback if original not found
+              }
+              
+              saveTimers(currentTimers);
+              timers = currentTimers; // Update local array immediately
+              renderTimerList();
+          }
       }
 
-      function deleteTimer(timerToDelete, indexToDelete) {
-        if (confirm(`Möchtest du den Timer "${timerToDelete.name}" wirklich löschen?`)) {
-          timers.splice(indexToDelete, 1);
+      // --- Confirmation Dialog and Delete Logic (Re-integrated) ---
+      let timerToDeleteId = null;
+
+      function showDeleteConfirmation(timerId) {
+          timerToDeleteId = timerId;
+          deleteConfirmationDialog.classList.add('active');
+      }
+
+      function hideDeleteConfirmation() {
+          deleteConfirmationDialog.classList.remove('active');
+          timerToDeleteId = null;
+          if (activeOptionsItem) {
+              closeOptions(activeOptionsItem); // Ensure options are closed
+          }
+      }
+
+      cancelDeleteButton.addEventListener('click', hideDeleteConfirmation);
+      confirmDeleteButton.addEventListener('click', () => {
+          if (timerToDeleteId) {
+              deleteTimer(timerToDeleteId);
+              hideDeleteConfirmation();
+          }
+      });
+
+      function deleteTimer(idToDelete) {
+          let currentTimers = loadTimers();
+          currentTimers = currentTimers.filter(timer => timer.id !== idToDelete);
+          saveTimers(currentTimers);
+          timers = currentTimers; // Update local array immediately
           renderTimerList();
-        }
       }
 
       function renderTimerList() {
         timerList.innerHTML = '';
+        timers = loadTimers(); // Always load current state from localStorage
+
+        if (timers.length === 0) {
+            const noTimersMessage = document.createElement('li');
+            noTimersMessage.classList.add('text-center', 'text-secondary', 'mt-8', 'text-lg', 'p-4');
+            noTimersMessage.textContent = 'No timers yet. Tap "+" to create one!';
+            timerList.appendChild(noTimersMessage);
+            return;
+        }
+
         timers.forEach(timer => {
           const li = document.createElement('li');
           li.classList.add('timer-item');
+          li.setAttribute('data-timer-id', timer.id); // Set the unique ID
           if (isSortableMode) {
             li.classList.add('sortable-mode');
           }
@@ -296,33 +558,94 @@
 
           const durationSpan = document.createElement('span');
           durationSpan.classList.add('timer-duration');
-          durationSpan.textContent = timer.duration;
+          durationSpan.textContent = formatTime(calculateTotalTimerDuration(timer)); // Format duration dynamically
 
           li.appendChild(sortIcon);
           li.appendChild(nameSpan);
           li.appendChild(durationSpan);
 
-          let touchStartX = 0;
-          let touchEndX = 0;
+          // --- Touch Event Listeners for Swipe and Long Press ---
+            li.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].screenX;
+                    touchStartY = e.touches[0].screenY;
+                    isSwiping = false; // Reset swipe flag
+                    
+                    // Close any active options if starting a new touch on a different item
+                    if (activeOptionsItem && activeOptionsItem !== li) {
+                        closeOptions(activeOptionsItem);
+                    }
 
-          li.addEventListener('touchstart', (e) => {
-            if (!isSortableMode) {
-              touchStartX = e.changedTouches[0].screenX;
-              longPressTimer = setTimeout(() => {
-                enableSortableMode();
-              }, longPressThreshold);
-            }
-          });
+                    if (!isSortableMode) {
+                        // Start long press timer if not in sortable mode
+                        longPressTimer = setTimeout(() => {
+                            // Only activate sortable mode if not already swiping/dragging too much
+                            if (!isSwiping) {
+                                enableSortableMode();
+                            }
+                        }, longPressThreshold);
+                    }
+                }
+            }, { passive: false }); // Passive: false to allow preventDefault
 
-          li.addEventListener('touchend', (e) => {
-            if (!isSortableMode) {
-              touchEndX = e.changedTouches[0].screenX;
-              clearTimeout(longPressTimer);
-              handleSwipe(li, touchEndX, touchStartX);
-              touchStartX = 0;
-              touchEndX = 0;
-            }
-          });
+            li.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && !isSortableMode) {
+                    const currentX = e.touches[0].screenX;
+                    const currentY = e.touches[0].screenY;
+                    const deltaX = currentX - touchStartX;
+                    const deltaY = currentY - touchStartY;
+
+                    // Check for significant horizontal movement (swipe)
+                    if (Math.abs(deltaX) > deltaXThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
+                        isSwiping = true;
+                        clearTimeout(longPressTimer); // Cancel long press if swiping
+                        e.preventDefault(); // Prevent default scroll/bounce
+                        
+                        // Original swipe logic was based on creating and transforming a new element
+                        // To keep original design, we adjust based on deltaX
+                        // This might feel less smooth than directly manipulating a div, but follows original pattern
+                        const optionsElement = li.querySelector('.swipe-options-container');
+                        if (optionsElement) {
+                            optionsElement.style.transform = `translateX(${100 + (deltaX / li.offsetWidth) * 100}%)`; // Adjust as per original logic
+                            li.classList.add('options-active');
+                        } else {
+                            // If options element isn't created yet, handleSwipe should be called on touchend
+                            // For now, just prevent default to block scroll
+                        }
+                    } 
+                    // Check for significant vertical movement (scrolling)
+                    else if (Math.abs(deltaY) > deltaYThreshold) {
+                        clearTimeout(longPressTimer); // Cancel long press if scrolling
+                        // Allow default scroll behavior
+                    }
+                }
+            }, { passive: false }); // Passive: false to allow preventDefault
+
+            li.addEventListener('touchend', (e) => {
+                if (e.changedTouches.length === 1) {
+                    clearTimeout(longPressTimer); // Clear any pending long press
+
+                    if (!isSortableMode) {
+                        const currentX = e.changedTouches[0].screenX;
+                        const deltaX = currentX - touchStartX;
+                        
+                        if (isSwiping) { // It was a swipe gesture
+                            handleSwipe(li, currentX, touchStartX); // Call original handleSwipe for decision
+                        } else { // It was a tap or very small drag
+                            // If no significant swipe happened, treat as a click to go to timer-screen
+                            // But only if no options are currently active for THIS item
+                            if (!li.classList.contains('options-active')) {
+                                const timerId = li.getAttribute('data-timer-id');
+                                localStorage.setItem('selectedTimerId', timerId);
+                                window.location.href = '../timer-screen/timer-screen.html';
+                            }
+                        }
+                    }
+                    isSwiping = false; // Reset flag
+                    touchStartX = 0; // Reset
+                    touchStartY = 0; // Reset
+                }
+            });
 
           li.addEventListener('selectstart', function(e) {
             e.preventDefault();
@@ -340,29 +663,71 @@
         isSortableMode = true;
         addButton.style.display = 'none';
         saveButton.style.display = 'block';
-        renderTimerList();
+        // Add class to timerList to show sort icons
+        Array.from(timerList.children).forEach(li => li.classList.add('sortable-mode'));
+        // renderTimerList(); // No need to re-render, just add class
+        enableSortable();
       }
 
       function disableSortableMode() {
         isSortableMode = false;
         addButton.style.display = 'block';
         saveButton.style.display = 'none';
+        // Remove class from timerList items
+        Array.from(timerList.children).forEach(li => li.classList.remove('sortable-mode'));
         if (sortable) {
           sortable.option("disabled", true);
+          sortable.destroy(); // Destroy to clean up listeners
           sortable = null;
         }
-        renderTimerList();
+        // Update the order in the timers array based on new DOM order
+        const newOrderTimers = Array.from(timerList.children)
+            .map(li => {
+                const timerId = li.getAttribute('data-timer-id');
+                return timers.find(t => t.id === timerId);
+            })
+            .filter(Boolean); // Filter out any undefined/null entries
+        
+        timers = newOrderTimers; // Update the global timers array
+        saveTimers(timers); // Save the new order to localStorage
+        renderTimerList(); // Re-render to update the list from saved data
       }
 
       function enableSortable() {
         if (!sortable) {
           sortable = new Sortable(timerList, {
             animation: 150,
+            handle: '.sort-icon', // Only drag by the icon
+            filter: '.swipe-options-container', // Prevents dragging when clicking on swipe options
+            preventOnFilter: false, // Allows click events on filtered elements
+            onEnd: function (evt) {
+                // Update the internal timers array after drag & drop
+                const movedItem = timers.splice(evt.oldIndex, 1)[0];
+                timers.splice(evt.newIndex, 0, movedItem);
+                // No need to save here, will be saved on disableSortableMode
+                // renderTimerList() is also not needed here, SortableJS updates DOM
+            }
           });
+        } else {
+            sortable.option("disabled", false);
         }
       }
 
       saveButton.addEventListener('click', disableSortableMode);
+
+      // Add Button click handler
+      addButton.addEventListener('click', () => {
+          // No timer selected for new creation
+          localStorage.removeItem('selectedTimerId');
+          window.location.href = '../timer-editor/timer-editor.html';
+      });
+
+      // Options Button click handler
+      optionsButton.addEventListener('click', () => {
+          // Link to options screen
+          window.location.href = '../options-screen/options-screen.html'; // Assuming this path
+      });
+
 
       window.addEventListener('scroll', () => {
         if (window.scrollY > 0) {
@@ -373,7 +738,8 @@
       });
 
       document.addEventListener('click', (event) => {
-        const openOptions = document.querySelector('.timer-item.options-active > div.absolute');
+          // Use the new class name for swipe options container
+        const openOptions = document.querySelector('.timer-item .swipe-options-container');
         const targetElement = event.target;
 
         if (openOptions && !openOptions.contains(targetElement) && !targetElement.classList.contains('timer-item') && !targetElement.closest('.timer-item')) {
@@ -382,6 +748,12 @@
             closeOptions(activeListItem);
           }
         }
+      });
+
+      // Initial render when DOM is fully loaded
+      document.addEventListener('DOMContentLoaded', () => {
+          timers = loadTimers(); // Load timers at startup
+          renderTimerList();
       });
     </script>
   </body>
