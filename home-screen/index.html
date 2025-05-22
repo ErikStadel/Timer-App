@@ -535,7 +535,7 @@
         if (timerToReview) {
             // Speichere den ausgewählten Timer im localStorage für die Review-Seite
             localStorage.setItem('currentTimerForReview', JSON.stringify(timerToReview));
-            window.location.href = 'https://erikstadel.github.io/Timer-App/home-screen/timer-review/review.html'; // Korrekter Pfad
+            window.location.href = 'home-screen/timer-review/review.html'; // Korrekter Pfad
         } else {
             console.error("Timer für Review nicht gefunden:", timerId);
         }
@@ -555,7 +555,7 @@
           // Für einen neuen Timer, altes 'timerToEdit' löschen
           localStorage.removeItem('timerToEdit');
         }
-        window.location.href = 'https://erikstadel.github.io/Timer-App/timer-editor/timer-editor.htm'; // Korrekter Pfad zum Timer-Editor
+        window.location.href = 'timer-editor/timer-editor.html'; // Korrekter Pfad zum Timer-Editor
       }
 
       function navigateToTimerScreen(timerId) {
