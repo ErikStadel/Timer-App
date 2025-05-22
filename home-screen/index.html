@@ -102,12 +102,6 @@
         top: 0;
         left: 0;
         bottom: 0;
-        background-color: #01161E; /* Hintergrundfarbe der Optionen */
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-around; /* Für gleichmäßige Verteilung */
-        padding: 1rem; /* Innenabstand für Optionen */
       }
 
       .timer-item > div.absolute.slide-in {
@@ -120,12 +114,6 @@
 
       .timer-item > div.absolute span {
         padding: 0.5rem 0.75rem;
-        border-radius: 0.5rem; /* Leichte Rundung für die Option-Buttons */
-        transition: background-color 0.2s;
-      }
-
-      .timer-item > div.absolute span:hover {
-        background-color: rgba(239, 246, 224, 0.1); /* Leichter Hover-Effekt */
       }
 
       .timer-item.options-active .timer-name,
@@ -154,7 +142,6 @@
         margin-right: 0.5rem;
         opacity: 0;
         transition: opacity 0.3s ease;
-        cursor: grab; /* Zeigt an, dass es ziehbar ist */
       }
 
       .timer-item.sortable-mode .sort-icon {
@@ -166,19 +153,19 @@
   <body class="text-light">
     <header id="header" class="text-light shadow-md">
       <div class="w-full flex justify-between items-center">
-        <button id="optionsButton" class="text-accent font-semibold hover:underline">
+        <button class="text-accent font-semibold hover:underline">
           Options
         </button>
         <h1 class="text-xl font-bold text-accent tracking-wide">Timer</h1>
         <button
-          id="saveOrderButton"
+          id="saveButton"
           class="text-accent font-semibold hover:underline"
           style="display: none;"
         >
           Save Order
         </button>
         <button
-          id="addTimerButton"
+          id="addButton"
           class="text-accent font-bold text-2xl leading-none hover:scale-110 transition-transform duration-150"
         >
           +
@@ -191,81 +178,113 @@
     <script>
       const header = document.getElementById('header');
       const timerList = document.querySelector('.timer-list');
-      const addTimerButton = document.getElementById('addTimerButton'); // ID angepasst
-      const saveOrderButton = document.getElementById('saveOrderButton'); // ID angepasst
-      const optionsButton = document.getElementById('optionsButton'); // ID hinzugefügt
-
+      const addButton = document.getElementById('addButton');
+      const saveButton = document.getElementById('saveButton');
       let activeOptionsItem = null;
-      let sortableInstance = null; // SortableJS Instanz
+      let sortable = null;
       let longPressTimer = null;
-      const longPressThreshold = 700; // Angepasste Schwelle für Longpress (etwas länger für bessere UX)
+      let longPressThreshold = 1000;
       let isSortableMode = false;
-      let touchStartX = 0;
-      let touchStartY = 0;
-      const swipeThreshold = 50;
 
-      // **DATENSTRUKTUR FÜR TIMER (im localStorage)**
-      // Jeder Timer sollte eine eindeutige ID, einen Namen, eine Wiederholungsanzahl
-      // und ein Array von Intervallen haben.
-      // Beispiel:
-      // {
-      //   id: 123456789,
-      //   name: "Boxrunde",
-      //   repeat: 3,
-      //   intervals: [
-      //     { id: 1, name: "Get Ready", duration: "00:10", type: "interval" },
-      //     { id: 2, name: "Boxing Round", duration: "01:00", type: "interval" },
-      //     { id: 3, name: "Rest", duration: "00:30", type: "rest" }
-      //   ]
-      // }
-      let timers = []; // Wird initial aus localStorage geladen
+      let timers = [
+        { name: "Aufwärmen", duration: "05:00" },
+        { name: "Sparring", duration: "3x3 Min" },
+        { name: "Sandsack", duration: "10:00" },
+        { name: "Dehnen", duration: "05:00" },
+        { name: "Cool Down", duration: "05:00" },
+        { name: "Workout", duration: "05:00" },
+        { name: "Laufen", duration: "05:00" },
+        { name: "Springseil", duration: "05:00" },
+        { name: "Schattenboxen", duration: "05:00" },
+        { name: "Partnerübung", duration: "05:00" },
+        { name: "Techniktraining", duration: "05:00" },
+        { name: "Wettkampfsimulation", duration: "05:00" },
+      ];
 
-      // --- Hilfsfunktionen ---
+      renderTimerList();
 
-      // Berechnet die Gesamtdauer eines Timers in Sekunden und formatiert sie
-      function calculateTotalDuration(timer) {
-          if (!timer || !timer.intervals || timer.intervals.length === 0) {
-              return "0 Sek";
-          }
+      function handleSwipe(listItem, endX, startX) {
+        const deltaX = endX - startX;
+        const swipeThreshold = 50;
 
-          let totalSeconds = 0;
-          timer.intervals.forEach(interval => {
-              const parts = interval.duration.split(':');
-              totalSeconds += parseInt(parts[0], 10) * 60;
-              totalSeconds += parseInt(parts[1], 10);
-          });
-
-          // Multipliziere mit der Wiederholungsanzahl
-          totalSeconds *= timer.repeat;
-
-          const minutes = Math.floor(totalSeconds / 60);
-          const seconds = totalSeconds % 60;
-
-          let formatted = [];
-          if (minutes > 0) {
-              formatted.push(`${minutes} Min`);
-          }
-          if (seconds > 0 || minutes === 0) { // Zeigt "0 Sek" an, wenn nur Sekunden da sind
-              formatted.push(`${seconds} Sek`);
-          }
-          return formatted.join(' ');
+        if (deltaX < -swipeThreshold) {
+          showOptions(listItem);
+        } else if (deltaX > swipeThreshold) {
+          closeOptions(listItem);
+        }
       }
 
-      // Rendert die Liste der Timer
-      function renderTimerList() {
-        timerList.innerHTML = ''; // Liste leeren
-        if (timers.length === 0) {
-          const noTimersMessage = document.createElement('li');
-          noTimersMessage.classList.add('text-light/70', 'p-4', 'text-center');
-          noTimersMessage.textContent = 'Noch keine Timer vorhanden. Füge einen hinzu!';
-          timerList.appendChild(noTimersMessage);
-          return;
+      function showOptions(listItem) {
+        if (activeOptionsItem && activeOptionsItem !== listItem) {
+          closeOptions(activeOptionsItem);
         }
+        activeOptionsItem = listItem;
 
+        const optionsElement = document.createElement('div');
+        optionsElement.classList.add('bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute');
+        optionsElement.style.padding = '1rem';
+
+        const options = ['Review', 'Modify', 'Clone', 'Delete'];
+        options.forEach(optionText => {
+          const optionSpan = document.createElement('span');
+          optionSpan.classList.add('text-light', 'cursor-pointer');
+          optionSpan.textContent = optionText;
+          optionSpan.addEventListener('click', () => {
+            closeOptions(listItem);
+
+            const timerIndex = Array.from(timerList.children).indexOf(listItem);
+            const timerToDelete = timers[timerIndex];
+
+            if (optionText === 'Clone') {
+              cloneTimer(timerIndex);
+            } else if (optionText === 'Delete') {
+              deleteTimer(timerToDelete, timerIndex);
+            }
+          });
+          optionsElement.appendChild(optionSpan);
+        });
+
+        listItem.style.position = 'relative';
+        listItem.appendChild(optionsElement);
+
+        setTimeout(() => {
+          optionsElement.classList.add('slide-in');
+          listItem.classList.add('options-active');
+        }, 0);
+      }
+
+      function closeOptions(listItem) {
+        const existingOptions = listItem.querySelector('.bg-dark.absolute');
+        if (existingOptions) {
+          existingOptions.classList.add('slide-out');
+          existingOptions.classList.remove('slide-in');
+          listItem.classList.remove('options-active');
+          setTimeout(() => {
+            listItem.style.position = '';
+            existingOptions.remove();
+            activeOptionsItem = null;
+          }, 300);
+        }
+      }
+
+      function cloneTimer(indexToClone) {
+        const timerToClone = { ...timers[indexToClone] };
+        timers.splice(indexToClone + 1, 0, timerToClone);
+        renderTimerList();
+      }
+
+      function deleteTimer(timerToDelete, indexToDelete) {
+        if (confirm(`Möchtest du den Timer "${timerToDelete.name}" wirklich löschen?`)) {
+          timers.splice(indexToDelete, 1);
+          renderTimerList();
+        }
+      }
+
+      function renderTimerList() {
+        timerList.innerHTML = '';
         timers.forEach(timer => {
           const li = document.createElement('li');
           li.classList.add('timer-item');
-          li.dataset.timerId = timer.id; // Timer-ID als Datenattribut
           if (isSortableMode) {
             li.classList.add('sortable-mode');
           }
@@ -280,326 +299,73 @@
 
           const durationSpan = document.createElement('span');
           durationSpan.classList.add('timer-duration');
-          // Hier die tatsächliche Dauer des Timers anzeigen
-          durationSpan.textContent = `${calculateTotalDuration(timer)} (${timer.repeat}x)`; // Z.B. "5 Min 30 Sek (3x)"
+          durationSpan.textContent = timer.duration;
 
           li.appendChild(sortIcon);
           li.appendChild(nameSpan);
           li.appendChild(durationSpan);
 
-          // --- Event Listener für Touch-Gesten (Swipe & Long Press) ---
-          let touchStartClientX = 0;
-          let touchStartClientY = 0;
-          let isMoving = false; // Flag, um zu erkennen, ob sich der Finger bewegt hat
+          let touchStartX = 0;
+          let touchEndX = 0;
 
           li.addEventListener('touchstart', (e) => {
-              if (e.touches.length > 1) { // Mehr als ein Finger -> ignorieren
-                  clearTimeout(longPressTimer);
-                  return;
-              }
-              touchStartClientX = e.touches[0].clientX;
-              touchStartClientY = e.touches[0].clientY;
-              isMoving = false;
-              if (!isSortableMode) {
-                  longPressTimer = setTimeout(() => {
-                      // Nur aktivieren, wenn sich der Finger kaum bewegt hat
-                      if (!isMoving) {
-                          enableSortableMode();
-                          // SortableJS benötigt ein kleines Delay, damit es den Drag richtig erkennt
-                          // und der Longpress nicht direkt einen Klick auslöst.
-                          setTimeout(() => {
-                            if (sortableInstance && li.parentNode) {
-                              sortableInstance.scroll = {enabled: false}; // Disable scrolling during drag
-                              sortableInstance.scroll = {enabled: true, threshold: 20}; // Re-enable with a threshold
-                            }
-                          }, 100);
-                      }
-                  }, longPressThreshold);
-              }
-          });
-
-          li.addEventListener('touchmove', (e) => {
-              if (longPressTimer) {
-                  const currentX = e.touches[0].clientX;
-                  const currentY = e.touches[0].clientY;
-                  const deltaX = Math.abs(currentX - touchStartClientX);
-                  const deltaY = Math.abs(currentY - touchStartClientY);
-
-                  // Wenn sich der Finger signifikant bewegt hat, ist es kein Longpress
-                  if (deltaX > 10 || deltaY > 10) {
-                      isMoving = true;
-                      clearTimeout(longPressTimer);
-                  }
-              }
+            if (!isSortableMode) {
+              touchStartX = e.changedTouches[0].screenX;
+              longPressTimer = setTimeout(() => {
+                enableSortableMode();
+              }, longPressThreshold);
+            }
           });
 
           li.addEventListener('touchend', (e) => {
+            if (!isSortableMode) {
+              touchEndX = e.changedTouches[0].screenX;
               clearTimeout(longPressTimer);
-              if (!isSortableMode && !isMoving) { // Nur wenn kein Longpress und kein signifikantes Ziehen
-                  const deltaX = e.changedTouches[0].clientX - touchStartClientX;
-                  if (Math.abs(deltaX) > swipeThreshold) {
-                      handleSwipe(li, deltaX);
-                  } else {
-                      // KEIN SWIPE, kein Longpress -> als Klick behandeln
-                      // Navigieren zum Timer-Screen
-                      navigateToTimerScreen(timer.id);
-                  }
-              }
-              // Reset
-              touchStartClientX = 0;
-              touchStartClientY = 0;
-              isMoving = false;
+              handleSwipe(li, touchEndX, touchStartX);
+              touchStartX = 0;
+              touchEndX = 0;
+            }
           });
 
-          li.addEventListener('touchcancel', () => {
-              clearTimeout(longPressTimer);
-              touchStartClientX = 0;
-              touchStartClientY = 0;
-              isMoving = false;
-          });
-
-          // Verhindern des Kontextmenüs bei langem Drücken
-          li.addEventListener('contextmenu', (e) => {
+          li.addEventListener('selectstart', function(e) {
             e.preventDefault();
           });
 
           timerList.appendChild(li);
         });
 
-        // SortableJS nur aktivieren, wenn im Sortier-Modus
         if (isSortableMode) {
           enableSortable();
-        } else if (sortableInstance) {
-          sortableInstance.destroy(); // Sortable deaktivieren, wenn nicht im Sortier-Modus
-          sortableInstance = null;
         }
       }
-
-      // --- Swipe- und Options-Logik ---
-
-      function handleSwipe(listItem, deltaX) {
-        if (deltaX < -swipeThreshold) { // Swipe nach links
-            showOptions(listItem);
-        } else if (deltaX > swipeThreshold) { // Swipe nach rechts
-            closeOptions(listItem);
-        }
-      }
-
-      function showOptions(listItem) {
-        if (activeOptionsItem && activeOptionsItem !== listItem) {
-          closeOptions(activeOptionsItem);
-        }
-        activeOptionsItem = listItem;
-
-        let optionsElement = listItem.querySelector('.absolute');
-        if (!optionsElement) {
-          optionsElement = document.createElement('div');
-          optionsElement.classList.add('absolute', 'slide-out'); // Starte als 'slide-out'
-          optionsElement.innerHTML = `
-            <span class="text-light cursor-pointer review-button">Review</span>
-            <span class="text-light cursor-pointer modify-button">Modify</span>
-            <span class="text-light cursor-pointer clone-button">Clone</span>
-            <span class="text-warning cursor-pointer delete-button">Delete</span>
-          `;
-          listItem.appendChild(optionsElement);
-
-          // Event Listener für die Optionen
-          optionsElement.querySelector('.review-button').addEventListener('click', () => {
-            const timerId = parseInt(listItem.dataset.timerId);
-            navigateToReviewScreen(timerId);
-          });
-          optionsElement.querySelector('.modify-button').addEventListener('click', () => {
-            const timerId = parseInt(listItem.dataset.timerId);
-            navigateToTimerEditor(timerId);
-          });
-          optionsElement.querySelector('.clone-button').addEventListener('click', () => {
-            const timerId = parseInt(listItem.dataset.timerId);
-            cloneTimer(timerId);
-            closeOptions(listItem);
-          });
-          optionsElement.querySelector('.delete-button').addEventListener('click', () => {
-            const timerId = parseInt(listItem.dataset.timerId);
-            deleteTimer(timerId);
-          });
-        }
-
-        // Starte die Animation
-        setTimeout(() => {
-          optionsElement.classList.remove('slide-out');
-          optionsElement.classList.add('slide-in');
-          listItem.classList.add('options-active');
-        }, 0);
-      }
-
-      function closeOptions(listItem) {
-        const optionsElement = listItem.querySelector('.absolute');
-        if (optionsElement) {
-          optionsElement.classList.remove('slide-in');
-          optionsElement.classList.add('slide-out');
-          listItem.classList.remove('options-active');
-          setTimeout(() => {
-            if (optionsElement.parentNode === listItem) { // Überprüfen, ob das Element noch ein Kind ist
-                optionsElement.remove();
-            }
-            activeOptionsItem = null;
-          }, 300);
-        }
-      }
-
-      // --- Timer-Operationen (Clone, Delete) ---
-
-      function cloneTimer(timerId) {
-          const indexToClone = timers.findIndex(t => t.id === timerId);
-          if (indexToClone !== -1) {
-              // Tiefe Kopie des Timers und der Intervalle
-              const originalTimer = timers[indexToClone];
-              const clonedIntervals = originalTimer.intervals.map(interval => ({ ...interval, id: Date.now() + Math.random() })); // Neue IDs für geklonte Intervalle
-              const clonedTimer = {
-                  ...originalTimer,
-                  id: Date.now(), // Neue ID für den geklonten Timer
-                  name: originalTimer.name + " (Kopie)",
-                  intervals: clonedIntervals
-              };
-              timers.splice(indexToClone + 1, 0, clonedTimer);
-              saveTimers();
-              renderTimerList();
-          }
-      }
-
-      function deleteTimer(timerId) {
-          const indexToDelete = timers.findIndex(t => t.id === timerId);
-          if (indexToDelete !== -1) {
-              const timerToDelete = timers[indexToDelete];
-              if (confirm(`Möchtest du den Timer "${timerToDelete.name}" wirklich löschen?`)) {
-                  timers.splice(indexToDelete, 1);
-                  saveTimers();
-                  renderTimerList();
-              }
-          }
-      }
-
-      // --- SortableJS Logik ---
 
       function enableSortableMode() {
         isSortableMode = true;
-        addTimerButton.style.display = 'none';
-        optionsButton.style.display = 'none'; // Options-Button ausblenden
-        saveOrderButton.style.display = 'block';
-        if (activeOptionsItem) { // Optionen schließen, wenn im Sortier-Modus aktiviert
-            closeOptions(activeOptionsItem);
-        }
-        renderTimerList(); // Liste neu rendern, um Sortier-Icons zu zeigen
+        addButton.style.display = 'none';
+        saveButton.style.display = 'block';
+        renderTimerList();
       }
 
       function disableSortableMode() {
         isSortableMode = false;
-        addTimerButton.style.display = 'block';
-        optionsButton.style.display = 'block'; // Options-Button wieder einblenden
-        saveOrderButton.style.display = 'none';
-        if (sortableInstance) {
-          sortableInstance.destroy();
-          sortableInstance = null;
+        addButton.style.display = 'block';
+        saveButton.style.display = 'none';
+        if (sortable) {
+          sortable.option("disabled", true);
+          sortable = null;
         }
-        saveTimers(); // Reihenfolge speichern
-        renderTimerList(); // Liste neu rendern, um Sortier-Icons zu verstecken
+        renderTimerList();
       }
 
       function enableSortable() {
-        if (!sortableInstance) {
-          sortableInstance = new Sortable(timerList, {
+        if (!sortable) {
+          sortable = new Sortable(timerList, {
             animation: 150,
-            handle: '.sort-icon', // Nur über das '=' Zeichen ziehen
-            onEnd: function (evt) {
-              // Aktualisiere das 'timers'-Array basierend auf der neuen Reihenfolge im DOM
-              const newTimersOrder = [];
-              Array.from(timerList.children).forEach(item => {
-                const timerId = parseInt(item.dataset.timerId);
-                const originalTimer = timers.find(t => t.id === timerId);
-                if (originalTimer) {
-                  newTimersOrder.push(originalTimer);
-                }
-              });
-              timers = newTimersOrder;
-              // Speichern der neuen Reihenfolge nach dem Drag-and-Drop
-              saveTimers();
-            },
           });
         }
       }
 
-      // --- Navigation und Speichern ---
-
-      function navigateToReviewScreen(timerId) {
-        // Findet den Timer anhand der ID
-        const timerToReview = timers.find(t => t.id === timerId);
-        if (timerToReview) {
-            // Speichere den ausgewählten Timer im localStorage für die Review-Seite
-            localStorage.setItem('currentTimerForReview', JSON.stringify(timerToReview));
-            window.location.href = 'home-screen/timer-review/review.html'; // Korrekter Pfad
-        } else {
-            console.error("Timer für Review nicht gefunden:", timerId);
-        }
-      }
-
-      function navigateToTimerEditor(timerId = null) {
-        if (timerId) {
-          // Timer zum Bearbeiten finden und in localStorage speichern
-          const timerToEdit = timers.find(t => t.id === timerId);
-          if (timerToEdit) {
-            localStorage.setItem('timerToEdit', JSON.stringify(timerToEdit));
-          } else {
-            console.error("Timer zum Bearbeiten nicht gefunden:", timerId);
-            return; // Nicht navigieren, wenn Timer nicht gefunden
-          }
-        } else {
-          // Für einen neuen Timer, altes 'timerToEdit' löschen
-          localStorage.removeItem('timerToEdit');
-        }
-        window.location.href = 'timer-editor/timer-editor.html'; // Korrekter Pfad zum Timer-Editor
-      }
-
-      function navigateToTimerScreen(timerId) {
-          const timerToStart = timers.find(t => t.id === timerId);
-          if (timerToStart) {
-              // Speichere den Timer im localStorage für den Timer-Screen
-              localStorage.setItem('currentRunningTimer', JSON.stringify(timerToStart));
-              window.location.href = 'timer-screen/timer-screen.html'; // Korrekter Pfad
-          } else {
-              console.error("Timer zum Starten nicht gefunden:", timerId);
-          }
-      }
-
-      function saveTimers() {
-        localStorage.setItem('timers', JSON.stringify(timers));
-      }
-
-      function loadTimers() {
-        const savedTimers = localStorage.getItem('timers');
-        if (savedTimers) {
-          timers = JSON.parse(savedTimers);
-        } else {
-          // Initial-Daten, wenn noch keine Timer gespeichert sind
-          timers = [
-            { id: Date.now() + 1, name: "Aufwärmen (Dummy)", repeat: 1, intervals: [{ id: Date.now() + 10, name: "Aufwärmen", duration: "05:00", type: "interval" }] },
-            { id: Date.now() + 2, name: "Sparring (Dummy)", repeat: 3, intervals: [{ id: Date.now() + 20, name: "Runde", duration: "03:00", type: "interval" }, { id: Date.now() + 21, name: "Pause", duration: "01:00", type: "rest" }] }
-          ];
-          saveTimers(); // Speichere die Dummies initial
-        }
-      }
-
-      // --- Event Listener für Buttons im Header ---
-
-      optionsButton.addEventListener('click', () => {
-        window.location.href = 'options-screen/options.html'; // Korrekter Pfad
-      });
-
-      addTimerButton.addEventListener('click', () => {
-        navigateToTimerEditor(); // Ruft die Funktion ohne ID auf, für einen neuen Timer
-      });
-
-      saveOrderButton.addEventListener('click', disableSortableMode);
-
-      // --- Allgemeine UI-Verbesserungen ---
+      saveButton.addEventListener('click', disableSortableMode);
 
       window.addEventListener('scroll', () => {
         if (window.scrollY > 0) {
@@ -609,50 +375,16 @@
         }
       });
 
-      // Schließen der Optionen bei Klick außerhalb
       document.addEventListener('click', (event) => {
         const openOptions = document.querySelector('.timer-item.options-active > div.absolute');
         const targetElement = event.target;
 
-        if (openOptions && !openOptions.contains(targetElement) && !targetElement.closest('.timer-item')) {
+        if (openOptions && !openOptions.contains(targetElement) && !targetElement.classList.contains('timer-item') && !targetElement.closest('.timer-item')) {
           const activeListItem = document.querySelector('.timer-item.options-active');
           if (activeListItem) {
             closeOptions(activeListItem);
           }
         }
-      });
-
-      // **Empfangen von Nachrichten vom Timer-Editor (Popup)**
-      window.addEventListener('message', (event) => {
-          // Wichtig: Prüfe event.origin für Sicherheit in einer echten Anwendung
-          // if (event.origin !== window.location.origin) { // Oder die spezifische Origin deines timer-editors
-          //     return;
-          // }
-
-          if (event.data && event.data.type === 'saveTimer') {
-              const savedTimer = event.data.data;
-              const index = timers.findIndex(t => t.id === savedTimer.id);
-
-              if (index !== -1) {
-                  // Aktualisiere den bestehenden Timer
-                  timers[index] = savedTimer;
-              } else {
-                  // Füge einen neuen Timer hinzu (wenn keine ID vorhanden war oder nicht gefunden wurde)
-                  // Dies sollte nur passieren, wenn ein brandneuer Timer im Editor erstellt wurde
-                  // und keine ID übergeben wurde.
-                  timers.push(savedTimer);
-              }
-              saveTimers(); // Speichere die aktualisierte Liste
-              renderTimerList(); // Liste neu rendern
-              console.log("Timer vom Editor empfangen und gespeichert:", savedTimer);
-          }
-      });
-
-
-      // --- Initialisierung beim Laden der Seite ---
-      document.addEventListener('DOMContentLoaded', () => {
-        loadTimers(); // Timer aus localStorage laden
-        renderTimerList(); // Liste initial rendern
       });
     </script>
   </body>
