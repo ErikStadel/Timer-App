@@ -414,11 +414,11 @@
         // New: deltaX < -swipeThreshold (swipe left) -> close options
 
         // Swipe Right to show options
-        if (deltaX > swipeThreshold) {
+        if (deltaX < -swipeThreshold) {
           showOptions(listItem);
         }
         // Swipe Left to close options (if any are active)
-        else if (deltaX < -swipeThreshold) {
+        else if (deltaX > swipeThreshold) {
           closeOptions(listItem);
         } else {
             // If swipe was not significant enough, but an option panel was open, close it
