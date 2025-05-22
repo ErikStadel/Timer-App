@@ -119,19 +119,19 @@
       }
 
       /* Swipe Options Container */
-      .interval-item > div.swipe-options-container { /* Added new class for consistency */
+      .interval-item > div.swipe-options-container {
         transform: translateX(100%);
         transition: transform 0.3s ease-in-out;
-        position: absolute; /* Ensure it's absolutely positioned */
+        position: absolute;
         top: 0;
         left: 0;
         bottom: 0;
         background-color: #01161E;
-        width: 100%; /* Cover the whole item */
+        width: 100%;
         display: flex;
         align-items: center;
-        justify-content: space-around; /* Distribute options */
-        padding: 0 1rem; /* Padding for the options */
+        justify-content: space-around;
+        padding: 0 1rem;
       }
 
       .interval-item > div.swipe-options-container.slide-in {
@@ -147,7 +147,7 @@
         cursor: pointer;
         padding: 0.5rem 0.75rem;
         border-radius: 0.5rem;
-        white-space: nowrap; /* Prevent text wrapping */
+        white-space: nowrap;
       }
 
       .interval-item > div.swipe-options-container span:hover {
@@ -162,14 +162,17 @@
         background-color: #AEC3B0 !important;
       }
 
-      /* Handle for sortable */
+      /* Handle for sortable (now the whole item for drag) */
+      /* The sort-icon-placeholder itself doesn't need explicit width/margin if the whole item is the handle */
+      /* But we keep its styles for visual feedback when in sortable mode */
       .sort-icon-placeholder {
-        width: 1.5rem; /* Make it wider for easier grabbing */
+        width: 1.5rem;
         margin-right: 0.5rem;
         opacity: 0;
-        text-align: center; /* Center the '=' */
-        cursor: grab; /* Indicate it's draggable */
+        text-align: center;
+        cursor: grab;
         transition: opacity 0.3s ease;
+        flex-shrink: 0; /* Prevent it from shrinking */
       }
 
       .interval-item.sortable-mode .sort-icon-placeholder {
@@ -177,11 +180,16 @@
       }
 
       .interval-item.sortable-mode .sort-icon-placeholder::before {
-        content: '='; /* Unicode-Zeichen für den Sortier-Griff */
+        content: '=';
         color: #AEC3B0;
         display: inline-block;
-        /* No need for width/margin here as it's handled by .sort-icon-placeholder itself */
       }
+      
+      /* New style for when in sortable mode, making the whole item draggable */
+      .interval-item.sortable-mode > div:first-child {
+        cursor: grab; /* Change cursor for the whole item */
+      }
+
 
       /* Confirmation Dialog Styles (Copied from home-screen.html) */
       .confirmation-dialog-overlay {
@@ -350,20 +358,18 @@
       function loadTimers() {
           let storedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
           let needsUpdate = false;
-          // Ensure all timers have an ID and correct intervals/repeat structure
           storedTimers.forEach(timer => {
               if (!timer.id) {
                   timer.id = generateUniqueId();
                   needsUpdate = true;
               }
               if (!timer.intervals || !Array.isArray(timer.intervals) || timer.intervals.length === 0) {
-                  // Attempt to convert old "duration" string to new "intervals" structure
                   if (timer.duration && typeof timer.duration === 'string' && timer.duration.includes(':')) {
                       const parts = timer.duration.split(':');
                       const totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                      timer.intervals = [{ duration: totalSeconds, type: 'work' }];
+                      timer.intervals = [{ name: "Default Interval", duration: `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`, type: 'work', id: generateUniqueId() }];
                   } else {
-                      timer.intervals = [{ duration: 300, type: 'work' }]; // Default 5 minutes if no valid duration
+                      timer.intervals = [{ name: "New Interval", duration: "00:00", type: 'work', id: generateUniqueId() }]; // Default 00:00
                   }
                   needsUpdate = true;
               }
@@ -371,7 +377,6 @@
                   timer.repeat = 1;
                   needsUpdate = true;
               }
-              // Remove old `duration` property if it exists to clean up
               if (timer.duration !== undefined && typeof timer.duration === 'string') {
                   delete timer.duration;
                   needsUpdate = true;
@@ -406,26 +411,19 @@
           return formatted.join(' ') || "0 Sek";
       }
 
-      // --- Swipe Logic (Adjusted for direction) ---
+      // --- Swipe Logic (Adjusted as per user's last request) ---
       function handleSwipe(listItem, deltaX) {
-        // Original: deltaX < -swipeThreshold (swipe left) -> show options
-        // New: deltaX > swipeThreshold (swipe right) -> show options
-        // Original: deltaX > swipeThreshold (swipe right) -> close options
-        // New: deltaX < -swipeThreshold (swipe left) -> close options
-
-        // Swipe Right to show options
-        if (deltaX < -swipeThreshold) {
-          showOptions(listItem);
-        }
-        // Swipe Left to close options (if any are active)
-        else if (deltaX > swipeThreshold) {
-          closeOptions(listItem);
-        } else {
-            // If swipe was not significant enough, but an option panel was open, close it
-            if (listItem.classList.contains('options-active')) {
-                closeOptions(listItem);
-            }
-        }
+          if (deltaX < -swipeThreshold) { // Swipe Left to show options
+              showOptions(listItem);
+          }
+          else if (deltaX > swipeThreshold) { // Swipe Right to close options
+              closeOptions(listItem);
+          } else {
+              // If swipe was not significant enough, but an option panel was open, close it
+              if (listItem.classList.contains('options-active')) {
+                  closeOptions(listItem);
+              }
+          }
       }
 
       function showOptions(listItem) {
@@ -434,7 +432,7 @@
           }
           activeOptionsItem = listItem;
 
-          let optionsElement = listItem.querySelector('.swipe-options-container'); // Use new class
+          let optionsElement = listItem.querySelector('.swipe-options-container');
           if (!optionsElement) {
               optionsElement = document.createElement('div');
               optionsElement.classList.add('swipe-options-container', 'bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute', 'transform', 'translate-x-full', 'transition-transform', 'duration-300');
@@ -457,7 +455,7 @@
               deleteButton.addEventListener('click', (e) => {
                   e.stopPropagation(); // Prevent li click
                   const itemId = listItem.dataset.intervalId;
-                  showDeleteConfirmation(itemId); // Use the confirmation dialog
+                  showDeleteConfirmation(itemId);
               });
           }
 
@@ -469,7 +467,7 @@
       }
 
       function closeOptions(listItem) {
-          const optionsElement = listItem.querySelector('.swipe-options-container'); // Use new class
+          const optionsElement = listItem.querySelector('.swipe-options-container');
           if (optionsElement) {
               optionsElement.classList.remove('slide-in');
               optionsElement.classList.add('slide-out');
@@ -492,7 +490,7 @@
           }
       }
 
-      // --- Confirmation Dialog and Delete Logic (Copied from home-screen) ---
+      // --- Confirmation Dialog and Delete Logic ---
       let intervalToDeleteId = null;
 
       function showDeleteConfirmation(intervalId) {
@@ -504,19 +502,19 @@
           deleteConfirmationDialog.classList.remove('active');
           intervalToDeleteId = null;
           if (activeOptionsItem) {
-              closeOptions(activeOptionsItem); // Ensure options are closed
+              closeOptions(activeOptionsItem);
           }
       }
 
       cancelDeleteButton.addEventListener('click', hideDeleteConfirmation);
       confirmDeleteButton.addEventListener('click', () => {
           if (intervalToDeleteId) {
-              deleteIntervalConfirmed(intervalToDeleteId); // New function name
+              deleteIntervalConfirmed(intervalToDeleteId);
               hideDeleteConfirmation();
           }
       });
 
-      function deleteIntervalConfirmed(idToDelete) { // Renamed from deleteInterval
+      function deleteIntervalConfirmed(idToDelete) {
           let newIntervals = intervals.filter(item => item.id !== idToDelete);
           intervals = newIntervals;
           renderIntervalList();
@@ -536,7 +534,7 @@
 
           intervals.forEach(interval => {
               const listItem = document.createElement('div');
-              listItem.classList.add('interval-item'); // Remove 'relative', 'overflow-hidden', 'user-select-none' here as they are in the style block
+              listItem.classList.add('interval-item');
               listItem.dataset.intervalId = interval.id;
 
               if (interval.type === 'rest') {
@@ -545,7 +543,7 @@
                   listItem.classList.add('is-interval-type');
               }
               
-              if (isSortableMode) { // Apply sortable-mode class if already in that mode
+              if (isSortableMode) {
                 listItem.classList.add('sortable-mode');
               }
 
@@ -558,8 +556,11 @@
 
               // Event Listener to open the interval-editor popup
               listItem.querySelector('div:first-child').addEventListener('click', (e) => {
-                  if (activeOptionsItem === listItem) return;
-                  if (isSortableMode) return;
+                  // If in sortable mode, or if options are active, prevent opening editor
+                  if (isSortableMode || activeOptionsItem === listItem) {
+                    e.stopPropagation(); // Stop propagation to prevent default click behavior
+                    return;
+                  }
 
                   const itemId = listItem.dataset.intervalId;
                   const intervalToEdit = intervals.find(item => item.id === itemId);
@@ -580,10 +581,10 @@
 
               let startX = 0;
               let startY = 0;
-              let isSwipingOrScrolling = false; // Combined flag for any significant movement
+              let isSwipingOrScrolling = false;
               let isLongPress = false;
               let longPressTimeout;
-              let movementThreshold = 10; // Threshold for any movement (swipe or scroll)
+              let movementThreshold = 10;
 
 
               listItem.addEventListener('touchstart', (e) => {
@@ -593,20 +594,19 @@
                       isSwipingOrScrolling = false;
                       isLongPress = false;
                       
-                      // Close any active options if starting a new touch on a different item
                       if (activeOptionsItem && activeOptionsItem !== listItem) {
                           closeOptions(activeOptionsItem);
                       }
 
                       longPressTimeout = setTimeout(() => {
-                          if (!isSwipingOrScrolling) { // Only activate sortable mode if no significant movement occurred
-                              e.preventDefault(); // Prevent accidental click after long press
+                          if (!isSwipingOrScrolling) {
+                              e.preventDefault();
                               isLongPress = true;
                               enableSortableMode();
                           }
                       }, longPressThreshold);
                   }
-              }, { passive: false }); // Passive: false to allow preventDefault
+              }, { passive: false });
 
               listItem.addEventListener('touchmove', (e) => {
                   if (!isSortableMode) {
@@ -617,17 +617,18 @@
 
                       if (Math.abs(deltaX) > movementThreshold || Math.abs(deltaY) > movementThreshold) {
                           isSwipingOrScrolling = true;
-                          clearTimeout(longPressTimeout); // Cancel long press if moving
+                          clearTimeout(longPressTimeout);
 
-                          // If it's a horizontal swipe, prevent default to avoid scrolling
                           if (Math.abs(deltaX) > Math.abs(deltaY)) {
                               e.preventDefault();
-                              // Optional: Visually show the options sliding with the finger
                               const optionsElement = listItem.querySelector('.swipe-options-container');
                               if (optionsElement) {
-                                  // Clamping the value to prevent options from moving too far left/right
-                                  // Swipe right (deltaX > 0) means options slide in from right to left (transformX goes from 100% down to 0%)
-                                  const newTransformX = Math.max(0, 100 - (deltaX / listItem.offsetWidth) * 100);
+                                  // Live visual feedback for swipe:
+                                  // Swipe Left (deltaX < 0) means options slide in from right (translateX from 100% to 0%)
+                                  // Swipe Right (deltaX > 0) means options slide out to right (translateX from 0% to 100%)
+                                  // For "Swipe Left to show options":
+                                  // If deltaX is -50 (swiped left), newTransformX should be 100 + (-deltaX / width) * 100
+                                  const newTransformX = Math.max(0, Math.min(100, 100 + (deltaX / listItem.offsetWidth) * 100));
                                   optionsElement.style.transform = `translateX(${newTransformX}%)`;
                               }
                           }
@@ -638,41 +639,37 @@
               listItem.addEventListener('touchend', (e) => {
                   if (!isSortableMode) {
                       clearTimeout(longPressTimeout);
-                      if (!isLongPress && isSwipingOrScrolling) { // It was a swipe or scroll gesture
+                      if (!isLongPress && isSwipingOrScrolling) {
                           const endX = e.changedTouches[0].clientX;
-                          const deltaX = endX - touchStartX; // Swipe direction
+                          const deltaX = endX - touchStartX;
                           
-                          // If primarily horizontal movement (swipe), handle it
                           if (Math.abs(deltaX) > Math.abs(e.changedTouches[0].clientY - touchStartY)) {
-                              handleSwipe(listItem, deltaX); // Call original handleSwipe for decision
+                              handleSwipe(listItem, deltaX);
                           } else {
-                              // If primarily vertical movement (scroll), just close options if any were open
                               if (listItem.classList.contains('options-active')) {
                                   closeOptions(listItem);
                               }
                           }
-                           // Reset transform for swipe options after handling the gesture
                           const optionsElement = listItem.querySelector('.swipe-options-container');
                           if (optionsElement) {
-                              optionsElement.style.transform = ''; // Reset transform for transition
+                              optionsElement.style.transform = '';
                           }
-                      } else if (!isLongPress && !isSwipingOrScrolling) { // It was a tap (no significant movement or long press)
-                          // Already handled by the click listener on the internal div
                       }
                   }
                   isSwipingOrScrolling = false;
-                  isLongPress = false; // Reset long press state
+                  isLongPress = false;
                   touchStartX = 0;
                   touchStartY = 0;
               });
 
               listItem.addEventListener('contextmenu', (e) => {
-                  e.preventDefault(); // Prevent default context menu on long press
+                  e.preventDefault();
               });
 
               intervalContainer.appendChild(listItem);
           });
 
+          // Ensure sortable is correctly initialized or destroyed
           if (isSortableMode) {
               enableSortable();
           } else if (sortableInstance) {
@@ -686,10 +683,10 @@
           saveButton.textContent = 'Save Order';
           const listItems = intervalContainer.querySelectorAll('.interval-item');
           listItems.forEach(item => item.classList.add('sortable-mode'));
-          if (activeOptionsItem) { // If options open, close them
+          if (activeOptionsItem) {
               closeOptions(activeOptionsItem);
           }
-          enableSortable();
+          enableSortable(); // Ensure SortableJS is initialized
       }
 
       function disableSortableMode() {
@@ -698,25 +695,24 @@
           const listItems = intervalContainer.querySelectorAll('.interval-item');
           listItems.forEach(item => item.classList.remove('sortable-mode'));
           if (sortableInstance) {
-              sortableInstance.destroy(); // Destroy to clean up listeners and allow re-init on next sort
+              sortableInstance.destroy();
               sortableInstance = null;
           }
-          renderIntervalList(); // Re-render to ensure correct appearance and event listeners
+          renderIntervalList(); // Re-render to clear sortable-mode styles and re-attach proper click listeners
       }
 
       function enableSortable() {
           if (!sortableInstance) {
               sortableInstance = new Sortable(intervalContainer, {
                   animation: 150,
-                  handle: '.sort-icon-placeholder', // This is the element to drag by
+                  handle: '.interval-item > div:first-child', // Make the entire visible interval item draggable
                   filter: '.swipe-options-container', // Prevents dragging when clicking on swipe options
-                  preventOnFilter: false, // Allows click events on filtered elements
-                  dataIdAttr: 'data-interval-id', // Use data-interval-id for Sortable's internal ID management
+                  preventOnFilter: false, // Allows click events on filtered elements (important for clone/delete buttons)
+                  dataIdAttr: 'data-interval-id',
                   onEnd: function (evt) {
-                      // SortableJS automatically updates the DOM. We need to update our `intervals` array.
-                      const newOrderIds = sortableInstance.toArray(); // Get IDs in new order
+                      const newOrderIds = sortableInstance.toArray();
                       const newIntervals = newOrderIds.map(id => intervals.find(item => item.id === id));
-                      intervals = newIntervals; // Update global intervals array with new order
+                      intervals = newIntervals;
                   },
               });
           }
@@ -725,8 +721,6 @@
       saveButton.addEventListener('click', () => {
           if (isSortableMode) {
               disableSortableMode();
-              // When disabling sortable mode, the intervals array is already updated by onEnd,
-              // and renderIntervalList is called, so data is in sync.
           } else {
               const timerName = timerNameInput.value.trim();
               const repeatCount = parseInt(repeatInput.value, 10);
@@ -746,41 +740,38 @@
 
               let allTimers = loadTimers();
               let timerToSave = {
-                  id: currentTimerId || generateUniqueId(), // Use existing ID or generate new
+                  id: currentTimerId || generateUniqueId(),
                   name: timerName,
                   repeat: repeatCount,
-                  intervals: intervals.map(interval => ({ // Ensure durations are numbers for saving
+                  intervals: intervals.map(interval => ({
                       id: interval.id,
                       name: interval.name,
-                      duration: interval.duration, // Keep as MM:SS string for consistency
+                      duration: interval.duration,
                       type: interval.type
                   }))
               };
 
               if (currentTimerId) {
-                  // Editing existing timer
                   const index = allTimers.findIndex(t => t.id === currentTimerId);
                   if (index !== -1) {
                       allTimers[index] = timerToSave;
                   } else {
-                      // This path should ideally not be taken if currentTimerId is managed correctly
                       console.warn("Attempted to update a timer that was not found. Adding as new.");
                       allTimers.push(timerToSave);
                   }
               } else {
-                  // Adding new timer
                   allTimers.push(timerToSave);
               }
 
               saveTimers(allTimers);
-              localStorage.removeItem('selectedTimerId'); // Clear selected ID after saving
-              window.location.href = '../home-screen/index.html'; // Navigate back to home
+              localStorage.removeItem('selectedTimerId');
+              window.location.href = '../home-screen/index.html';
           }
       });
 
       addIntervalButton.addEventListener('click', () => {
           const newId = generateUniqueId();
-          intervals.push({ id: newId, name: `New Interval`, duration: "00:00", type: "work" }); // Default type "work"
+          intervals.push({ id: newId, name: `New Interval`, duration: "00:00", type: "work" });
           renderIntervalList();
           intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
       });
@@ -794,8 +785,9 @@
       });
 
       document.addEventListener('click', (event) => {
-          const openOptions = document.querySelector('.interval-item.options-active .swipe-options-container'); // Check for the options container
-          if (openOptions && !event.target.closest('.interval-item')) { // If options are open AND the click was outside the item
+          const openOptions = document.querySelector('.interval-item.options-active .swipe-options-container');
+          // Check if options are open and the click target is NOT part of the currently active interval item (its main content or options)
+          if (openOptions && !event.target.closest('.interval-item.options-active')) {
               const activeListItem = document.querySelector('.interval-item.options-active');
               if (activeListItem) {
                   closeOptions(activeListItem);
@@ -803,7 +795,6 @@
           }
       });
 
-      // Receive updates from interval-editor popup
       window.addEventListener('message', (event) => {
           if (event.data && event.data.type === 'saveInterval') {
               const updatedInterval = event.data.data;
@@ -813,14 +804,11 @@
                   intervals[index] = { ...intervals[index], ...updatedInterval };
               } else {
                   console.warn("Received update for unknown interval ID:", updatedInterval.id);
-                  // Optionally add if this is a new interval being created from popup (not current workflow)
-                  // intervals.push(updatedInterval);
               }
-              renderIntervalList(); // Re-render to show updated interval name/duration/type
+              renderIntervalList();
           }
       });
 
-      // Initialization logic for Timer Editor
       document.addEventListener('DOMContentLoaded', () => {
           const selectedTimerId = localStorage.getItem('selectedTimerId');
           if (selectedTimerId) {
@@ -832,17 +820,16 @@
               if (timerToLoad) {
                   timerNameInput.value = timerToLoad.name;
                   repeatInput.value = timerToLoad.repeat;
-                  // Deep copy intervals to ensure modifications don't affect the loaded object directly
                   intervals = JSON.parse(JSON.stringify(timerToLoad.intervals)); 
               } else {
                   console.warn(`Timer with ID ${selectedTimerId} not found. Starting a new timer.`);
-                  currentTimerId = null; // Reset to add new if not found
-                  intervals = []; // Start with empty intervals for a new timer
+                  currentTimerId = null;
+                  intervals = [];
               }
           } else {
               headerTitle.textContent = 'Add Timer';
               currentTimerId = null;
-              intervals = []; // Start with empty intervals for a new timer
+              intervals = [];
           }
           renderIntervalList();
       });
