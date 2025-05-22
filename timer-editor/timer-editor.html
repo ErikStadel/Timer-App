@@ -564,16 +564,8 @@
                   const intervalToEdit = intervals.find(item => item.id === itemId);
 
                   if (intervalToEdit) {
-                      const popupWindow = window.open('interval-editor.html', '_blank', 'width=400,height=600');
-
-                      popupWindow.addEventListener('load', () => {
-                          if (popupWindow && !popupWindow.closed) {
-                              popupWindow.postMessage({
-                                  type: 'loadInterval',
-                                  data: intervalToEdit
-                              }, window.location.origin);
-                          }
-                      }, { once: true });
+                      localStorage.setItem('selectedIntervalId', itemId);
+                      window.location.href = '../interval-editor/interval-editor.html';
                   }
               });
 
