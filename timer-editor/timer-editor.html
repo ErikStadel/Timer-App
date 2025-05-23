@@ -267,61 +267,561 @@
       }
     </style>
   </head>
-              type: interval.type
-            }))
-          };
 
-          if (currentTimerId) {
-            const index = allTimers.findIndex(t => t.id === currentTimerId);
-            if (index !== -1) {
-              allTimers[index] = timerToSave;
-            } else {
-              allTimers.push(timerToSave);
-            }
+  <body class="text-light">
+    <header id="header" class="text-light shadow-md">
+      <div class="w-full flex justify-between items-center">
+        <button class="text-accent font-semibold hover:underline" onclick="window.location.href='../home-screen/index.html';">Back</button>
+        <h1 id="headerTitle" class="text-xl font-bold text-accent tracking-wide">Add Timer</h1>
+        <button
+          id="saveButton"
+          class="text-accent font-semibold hover:underline"
+        >
+          Save
+        </button>
+      </div>
+    </header>
+
+    <div class="editor-content pt-4">
+      <div>
+        <label class="block text-accent font-semibold mb-1">Timer Name</label>
+        <input
+          type="text"
+          id="timerNameInput"
+          placeholder="z.B. Boxrunde"
+          class="w-full px-4 py-2 rounded-xl bg-light text-dark placeholder:text-dark/50 focus:outline-none focus:ring-2 focus:ring-accent"
+        />
+      </div>
+
+      <div class="mt-6">
+        <label class="block text-accent font-semibold mb-1">Repeat</label>
+        <input
+          type="number"
+          id="repeatInput"
+          min="1"
+          value="1"
+          class="w-full px-4 py-2 rounded-xl bg-light text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+        />
+      </div>
+
+      <div class="interval-list mt-6">
+        <h2 class="text-accent font-semibold text-lg">Intervals</h2>
+        <div id="intervalContainer"></div>
+      </div>
+
+      <button
+        id="addIntervalButton"
+        class="w-full bg-secondary text-dark rounded-xl py-2 font-semibold hover:bg-secondary/80 transition-all mt-6"
+      >
+        + Add Interval
+      </button>
+    </div>
+
+    <div class="confirmation-dialog-overlay" id="deleteConfirmationDialog">
+        <div class="confirmation-dialog">
+            <p>Delete Interval?</p>
+            <div class="confirmation-dialog-buttons">
+                <button class="btn-cancel" id="cancelDelete">Cancel</button>
+                <button class="btn-confirm" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      const header = document.getElementById('header');
+      const headerTitle = document.getElementById('headerTitle');
+      const saveButton = document.getElementById('saveButton');
+      const intervalContainer = document.getElementById('intervalContainer');
+      const addIntervalButton = document.getElementById('addIntervalButton');
+      const timerNameInput = document.getElementById('timerNameInput');
+      const repeatInput = document.getElementById('repeatInput');
+
+      const deleteConfirmationDialog = document.getElementById('deleteConfirmationDialog');
+      const cancelDeleteButton = document.getElementById('cancelDelete');
+      const confirmDeleteButton = document.getElementById('confirmDelete');
+
+      let activeOptionsItem = null;
+      let sortableInstance = null;
+      let longPressTimer = null;
+      const longPressThreshold = 500;
+      let isSortableMode = false;
+      let touchStartX = 0;
+      let touchStartY = 0;
+      const swipeThreshold = 50;
+      let currentListItem = null;
+
+      let currentTimerId = null;
+      let intervals = [];
+
+      // --- Helper Functions for Data Management (consistent with home-screen) ---
+      function generateUniqueId() {
+          return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      }
+
+      function loadTimers() {
+          let storedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
+          let needsUpdate = false;
+          storedTimers.forEach(timer => {
+              if (!timer.id) {
+                  timer.id = generateUniqueId();
+                  needsUpdate = true;
+              }
+              if (!timer.intervals || !Array.isArray(timer.intervals) || timer.intervals.length === 0) {
+                  if (timer.duration && typeof timer.duration === 'string' && timer.duration.includes(':')) {
+                      const parts = timer.duration.split(':');
+                      const totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                      timer.intervals = [{ name: "Default Interval", duration: `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`, type: 'work', id: generateUniqueId() }];
+                  } else {
+                      timer.intervals = [{ name: "New Interval", duration: "00:00", type: 'work', id: generateUniqueId() }];
+                  }
+                  needsUpdate = true;
+              }
+              if (timer.repeat === undefined) {
+                  timer.repeat = 1;
+                  needsUpdate = true;
+              }
+              if (timer.duration !== undefined && typeof timer.duration === 'string') {
+                  delete timer.duration;
+                  needsUpdate = true;
+              }
+          });
+          if (needsUpdate) {
+              saveTimers(storedTimers);
+          }
+          return storedTimers;
+      }
+
+      function saveTimers(currentTimers) {
+          localStorage.setItem('timers', JSON.stringify(currentTimers));
+      }
+      // --- End Helper Functions ---
+
+      function formatTimeForEditor(durationString) {
+          if (!durationString || !durationString.includes(':')) {
+              return "0 Sek";
+          }
+          const parts = durationString.split(':');
+          const minutes = parseInt(parts[0], 10);
+          const seconds = parseInt(parts[1], 10);
+          let formatted = [];
+          if (minutes > 0) {
+              formatted.push(`${minutes} Min`);
+          }
+          if (seconds > 0) {
+              formatted.push(`${seconds} Sek`);
+          }
+          return formatted.join(' ') || "0 Sek";
+      }
+
+      // --- Swipe Logic ---
+      function handleSwipe(listItem, deltaX) {
+          if (deltaX < -swipeThreshold) { // Swipe Left to show options
+              showOptions(listItem);
+          }
+          else if (deltaX > swipeThreshold) { // Swipe Right to close options
+              closeOptions(listItem);
           } else {
-            allTimers.push(timerToSave);
+              if (listItem.classList.contains('options-active')) {
+                  closeOptions(listItem);
+              }
+          }
+      }
+
+      function showOptions(listItem) {
+          if (activeOptionsItem && activeOptionsItem !== listItem) {
+              closeOptions(activeOptionsItem);
+          }
+          activeOptionsItem = listItem;
+
+          let optionsElement = listItem.querySelector('.swipe-options-container');
+          if (!optionsElement) {
+              optionsElement = document.createElement('div');
+              optionsElement.classList.add('swipe-options-container', 'bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute', 'transform', 'translate-x-full', 'transition-transform', 'duration-300');
+              optionsElement.innerHTML = `
+                  <span class="text-light cursor-pointer clone-button">Clone</span>
+                  <span class="text-warning cursor-pointer delete-button ml-4">Delete</span>
+              `;
+              listItem.appendChild(optionsElement);
+
+              const cloneButton = optionsElement.querySelector('.clone-button');
+              const deleteButton = optionsElement.querySelector('.delete-button');
+
+              cloneButton.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  const itemId = listItem.dataset.intervalId;
+                  cloneInterval(itemId);
+                  closeOptions(listItem);
+              });
+
+              deleteButton.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  const itemId = listItem.dataset.intervalId;
+                  showDeleteConfirmation(itemId);
+              });
           }
 
-          saveTimers(allTimers);
-          localStorage.removeItem('selectedTimerId');
-          window.location.href = '../home-screen/index.html';
-        });
+          setTimeout(() => {
+              optionsElement.classList.remove('translate-x-full');
+              optionsElement.classList.add('slide-in');
+              listItem.classList.add('options-active');
+          }, 0);
       }
-    });
 
-    addIntervalButton.addEventListener('click', () => {
-      if (isSortableMode) return;
-      const newId = generateUniqueId();
-      intervals.push({ id: newId, name: `New Interval`, duration: "00:00", type: "work" });
-      renderIntervalList();
-      intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    });
+      function closeOptions(listItem) {
+          const optionsElement = listItem.querySelector('.swipe-options-container');
+          if (optionsElement) {
+              optionsElement.classList.remove('slide-in');
+              optionsElement.classList.add('slide-out');
+              listItem.classList.remove('options-active');
+              setTimeout(() => {
+                  if (optionsElement && optionsElement.parentNode === listItem) {
+                      optionsElement.remove();
+                  }
+                  activeOptionsItem = null;
+              }, 300);
+          }
+      }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const selectedTimerId = localStorage.getItem('selectedTimerId');
-      if (selectedTimerId) {
-        headerTitle.textContent = 'Edit Timer';
-        currentTimerId = selectedTimerId;
-        loadTimers().then(allTimers => {
-          const timerToLoad = allTimers.find(t => t.id === selectedTimerId);
-          if (timerToLoad) {
-            timerNameInput.value = timerToLoad.name;
-            repeatInput.value = timerToLoad.repeat;
-            intervals = JSON.parse(JSON.stringify(timerToLoad.intervals));
-          } else {
-            console.warn(`Timer with ID ${selectedTimerId} not found. Starting a new timer.`);
-            currentTimerId = null;
-            intervals = [];
+      function cloneInterval(itemId) {
+          const indexToClone = intervals.findIndex(item => item.id === itemId);
+          if (indexToClone !== -1) {
+              const clonedInterval = { ...intervals[indexToClone], id: generateUniqueId() };
+              intervals.splice(indexToClone + 1, 0, clonedInterval);
+              renderIntervalList();
+          }
+      }
+
+      // --- Confirmation Dialog and Delete Logic ---
+      let intervalToDeleteId = null;
+
+      function showDeleteConfirmation(intervalId) {
+          intervalToDeleteId = intervalId;
+          deleteConfirmationDialog.classList.add('active');
+      }
+
+      function hideDeleteConfirmation() {
+          deleteConfirmationDialog.classList.remove('active');
+          intervalToDeleteId = null;
+          if (activeOptionsItem) {
+              closeOptions(activeOptionsItem);
+          }
+      }
+
+      cancelDeleteButton.addEventListener('click', hideDeleteConfirmation);
+      confirmDeleteButton.addEventListener('click', () => {
+          if (intervalToDeleteId) {
+              deleteIntervalConfirmed(intervalToDeleteId);
+              hideDeleteConfirmation();
+          }
+      });
+
+      function deleteIntervalConfirmed(idToDelete) {
+          let newIntervals = intervals.filter(item => item.id !== idToDelete);
+          intervals = newIntervals;
+          renderIntervalList();
+      }
+      // --- End Confirmation Dialog and Delete Logic ---
+
+      function renderIntervalList() {
+          intervalContainer.innerHTML = '';
+          if (intervals.length === 0) {
+              const noIntervalsMessage = document.createElement('div');
+              noIntervalsMessage.classList.add('text-center', 'text-secondary', 'mt-4', 'p-4', 'rounded-xl', 'bg-background');
+              noIntervalsMessage.textContent = 'No intervals yet. Tap "+ Add Interval" to create one.';
+              intervalContainer.appendChild(noIntervalsMessage);
+              return;
+          }
+
+          intervals.forEach(interval => {
+              const listItem = document.createElement('div');
+              listItem.classList.add('interval-item');
+              listItem.dataset.intervalId = interval.id;
+
+              if (interval.type === 'rest') {
+                  listItem.classList.add('is-rest-type');
+              } else {
+                  listItem.classList.add('is-interval-type');
+              }
+
+              if (isSortableMode) {
+                listItem.classList.add('sortable-mode');
+              }
+
+              listItem.innerHTML = `
+                  <div class="bg-background border border-light/10 rounded-xl px-4 py-3 flex justify-between items-center transition-opacity duration-300">
+                      <span class="sort-icon-placeholder"></span><span class="interval-name-display">${interval.name}</span>
+                      <span class="text-sm text-accent">${formatTimeForEditor(interval.duration)}</span>
+                  </div>
+              `;
+
+              listItem.querySelector('div:first-child').addEventListener('click', (e) => {
+                  if (isSortableMode || activeOptionsItem === listItem) {
+                    e.stopPropagation();
+                    return;
+                  }
+
+                  const itemId = listItem.dataset.intervalId;
+                  const intervalToEdit = intervals.find(item => item.id === itemId);
+
+                  if (intervalToEdit) {
+                      localStorage.setItem('selectedIntervalId', itemId);
+                      window.location.href = 'https://erikstadel.github.io/Timer-App/interval-editor/interval-editor.html';
+                  }
+              });
+
+              let startX = 0;
+              let startY = 0;
+              let isSwipingOrScrolling = false;
+              let isLongPress = false;
+              let longPressTimeout;
+              let movementThreshold = 10;
+
+              listItem.addEventListener('touchstart', (e) => {
+                  if (!isSortableMode) {
+                      touchStartX = e.touches[0].clientX;
+                      touchStartY = e.touches[0].clientY;
+                      isSwipingOrScrolling = false;
+                      isLongPress = false;
+
+                      if (activeOptionsItem && activeOptionsItem !== listItem) {
+                          closeOptions(activeOptionsItem);
+                      }
+
+                      longPressTimeout = setTimeout(() => {
+                          if (!isSwipingOrScrolling) {
+                              e.preventDefault();
+                              isLongPress = true;
+                              enableSortableMode();
+                          }
+                      }, longPressThreshold);
+                  }
+              }, { passive: false });
+
+              listItem.addEventListener('touchmove', (e) => {
+                  if (!isSortableMode) {
+                      const currentX = e.touches[0].clientX;
+                      const currentY = e.touches[0].clientY;
+                      const deltaX = currentX - touchStartX;
+                      const deltaY = currentY - touchStartY;
+
+                      if (Math.abs(deltaX) > movementThreshold || Math.abs(deltaY) > movementThreshold) {
+                          isSwipingOrScrolling = true;
+                          clearTimeout(longPressTimeout);
+
+                          if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                              e.preventDefault();
+                              const optionsElement = listItem.querySelector('.swipe-options-container');
+                              if (optionsElement) {
+                                  const newTransformX = Math.max(0, Math.min(100, 100 + (deltaX / listItem.offsetWidth) * 100));
+                                  optionsElement.style.transform = `translateX(${newTransformX}%)`;
+                              }
+                          }
+                      }
+                  }
+              }, { passive: false });
+
+              listItem.addEventListener('touchend', (e) => {
+                  if (!isSortableMode) {
+                      clearTimeout(longPressTimeout);
+                      if (!isLongPress && isSwipingOrScrolling) {
+                          const endX = e.changedTouches[0].clientX;
+                          const deltaX = endX - touchStartX;
+
+                          if (Math.abs(deltaX) > Math.abs(e.changedTouches[0].clientY - touchStartY)) {
+                              handleSwipe(listItem, deltaX);
+                          } else {
+                              if (listItem.classList.contains('options-active')) {
+                                  closeOptions(listItem);
+                              }
+                          }
+                          const optionsElement = listItem.querySelector('.swipe-options-container');
+                          if (optionsElement) {
+                              optionsElement.style.transform = '';
+                          }
+                      }
+                  }
+                  isSwipingOrScrolling = false;
+                  isLongPress = false;
+                  touchStartX = 0;
+                  touchStartY = 0;
+              });
+
+              listItem.addEventListener('contextmenu', (e) => {
+                  e.preventDefault();
+              });
+
+              intervalContainer.appendChild(listItem);
+          });
+
+          if (isSortableMode) {
+              enableSortable();
+          } else if (sortableInstance) {
+              sortableInstance.destroy();
+              sortableInstance = null;
+          }
+      }
+
+      function enableSortableMode() {
+          isSortableMode = true;
+          saveButton.textContent = 'Save Order';
+          addIntervalButton.classList.add('disabled'); // Disable add button
+          addIntervalButton.setAttribute('disabled', 'true');
+          const listItems = intervalContainer.querySelectorAll('.interval-item');
+          listItems.forEach(item => item.classList.add('sortable-mode'));
+          if (activeOptionsItem) {
+              closeOptions(activeOptionsItem);
+          }
+          enableSortable();
+      }
+
+      function disableSortableMode() {
+          isSortableMode = false;
+          saveButton.textContent = 'Save';
+          addIntervalButton.classList.remove('disabled'); // Enable add button
+          addIntervalButton.removeAttribute('disabled');
+          const listItems = intervalContainer.querySelectorAll('.interval-item');
+          listItems.forEach(item => item.classList.remove('sortable-mode'));
+          if (sortableInstance) {
+              sortableInstance.destroy();
+              sortableInstance = null;
           }
           renderIntervalList();
-        });
-      } else {
-        headerTitle.textContent = 'Add Timer';
-        currentTimerId = null;
-        intervals = [];
-        renderIntervalList();
       }
-    });
-  </script>
-</body>
+
+      function enableSortable() {
+          if (!sortableInstance) {
+              sortableInstance = new Sortable(intervalContainer, {
+                  animation: 150,
+                  handle: '.interval-item > div:first-child',
+                  filter: '.swipe-options-container',
+                  preventOnFilter: false,
+                  dataIdAttr: 'data-interval-id',
+                  onEnd: function (evt) {
+                      const newOrderIds = sortableInstance.toArray();
+                      const newIntervals = newOrderIds.map(id => intervals.find(item => item.id === id));
+                      intervals = newIntervals;
+                  },
+              });
+          }
+      }
+
+      saveButton.addEventListener('click', () => {
+          if (isSortableMode) {
+              disableSortableMode();
+          } else {
+              const timerName = timerNameInput.value.trim();
+              const repeatCount = parseInt(repeatInput.value, 10);
+
+              if (!timerName) {
+                  alert('Timer name cannot be empty.');
+                  return;
+              }
+              if (isNaN(repeatCount) || repeatCount < 1) {
+                  alert('Repeat count must be at least 1.');
+                  return;
+              }
+              if (intervals.length === 0) {
+                  alert('A timer must have at least one interval.');
+                  return;
+              }
+
+              let allTimers = loadTimers();
+              let timerToSave = {
+                  id: currentTimerId || generateUniqueId(),
+                  name: timerName,
+                  repeat: repeatCount,
+                  intervals: intervals.map(interval => ({
+                      id: interval.id,
+                      name: interval.name,
+                      duration: interval.duration,
+                      type: interval.type
+                  }))
+              };
+
+              if (currentTimerId) {
+                  const index = allTimers.findIndex(t => t.id === currentTimerId);
+                  if (index !== -1) {
+                      allTimers[index] = timerToSave;
+                  } else {
+                      console.warn("Attempted to update a timer that was not found. Adding as new.");
+                      allTimers.push(timerToSave);
+                  }
+              } else {
+                  allTimers.push(timerToSave);
+              }
+
+              saveTimers(allTimers);
+              localStorage.removeItem('selectedTimerId');
+              window.location.href = '../home-screen/index.html';
+          }
+      });
+
+      addIntervalButton.addEventListener('click', () => {
+          if (isSortableMode) { // Prevent adding if in sortable mode
+              return;
+          }
+          const newId = generateUniqueId();
+          intervals.push({ id: newId, name: `New Interval`, duration: "00:00", type: "work" });
+          renderIntervalList();
+          intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      });
+
+      window.addEventListener('scroll', () => {
+          if (window.scrollY > 0) {
+              header.classList.add('scrolled');
+          } else {
+              header.classList.remove('scrolled');
+          }
+      });
+
+      document.addEventListener('click', (event) => {
+          const openOptions = document.querySelector('.interval-item.options-active .swipe-options-container');
+          if (openOptions && !event.target.closest('.interval-item.options-active')) {
+              const activeListItem = document.querySelector('.interval-item.options-active');
+              if (activeListItem) {
+                  closeOptions(activeListItem);
+              }
+          }
+      });
+
+      window.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'saveInterval') {
+              const updatedInterval = event.data.data;
+              const index = intervals.findIndex(item => item.id === updatedInterval.id);
+
+              if (index !== -1) {
+                  intervals[index] = { ...intervals[index], ...updatedInterval };
+              } else {
+                  console.warn("Received update for unknown interval ID:", updatedInterval.id);
+              }
+              renderIntervalList();
+          }
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+          const selectedTimerId = localStorage.getItem('selectedTimerId');
+          if (selectedTimerId) {
+              headerTitle.textContent = 'Edit Timer';
+              currentTimerId = selectedTimerId;
+              const allTimers = loadTimers();
+              const timerToLoad = allTimers.find(t => t.id === selectedTimerId);
+
+              if (timerToLoad) {
+                  timerNameInput.value = timerToLoad.name;
+                  repeatInput.value = timerToLoad.repeat;
+                  intervals = JSON.parse(JSON.stringify(timerToLoad.intervals));
+              } else {
+                  console.warn(`Timer with ID ${selectedTimerId} not found. Starting a new timer.`);
+                  currentTimerId = null;
+                  intervals = [];
+              }
+          } else {
+              headerTitle.textContent = 'Add Timer';
+              currentTimerId = null;
+              intervals = [];
+          }
+          renderIntervalList();
+      });
+    </script>
+  </body>
 </html>
