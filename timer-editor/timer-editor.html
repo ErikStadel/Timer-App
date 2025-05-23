@@ -267,6 +267,348 @@
       }
     </style>
   </head>
+<body class="text-light">
+  <header id="header" class="text-light shadow-md">
+    <div class="w-full flex justify-between items-center">
+      <button class="text-accent font-semibold hover:underline" onclick="window.location.href='../home-screen/index.html';">Back</button>
+      <h1 id="headerTitle" class="text-xl font-bold text-accent tracking-wide">Add Timer</h1>
+      <button id="saveButton" class="text-accent font-semibold hover:underline">Save</button>
+    </div>
+  </header>
+
+  <div class="editor-content pt-4 px-4">
+    <div class="mb-4">
+      <label class="block text-accent font-semibold mb-1">Timer Name</label>
+      <input type="text" id="timerNameInput" class="w-full bg-background border border-light/20 rounded-xl px-4 py-2 text-light focus:outline-none focus:ring-2 focus:ring-accent" />
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-accent font-semibold mb-1">Repeat</label>
+      <input type="number" id="repeatInput" class="w-full bg-background border border-light/20 rounded-xl px-4 py-2 text-light focus:outline-none focus:ring-2 focus:ring-accent" value="1" min="1" />
+    </div>
+
+    <div id="intervalContainer" class="mt-6 space-y-3"></div>
+
+    <button id="addIntervalButton" class="mt-6 w-full bg-primary text-dark py-2 rounded-xl font-bold hover:bg-primary/90 transition-all">
+      + Add Interval
+    </button>
+  </div>
+
+  <div class="confirmation-dialog-overlay" id="deleteConfirmationDialog">
+    <div class="confirmation-dialog">
+      <p>Delete Timer?</p>
+      <div class="confirmation-dialog-buttons mt-4">
+        <button class="btn-cancel" id="cancelDelete">Cancel</button>
+        <button class="btn-confirm" id="confirmDelete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Einbindung der zentralen Datenlogik -->
+  <script src="../js/dataStorage.js"></script>
+
+  <script>
+    const headerTitle = document.getElementById('headerTitle');
+    const saveButton = document.getElementById('saveButton');
+    const intervalContainer = document.getElementById('intervalContainer');
+    const addIntervalButton = document.getElementById('addIntervalButton');
+    const timerNameInput = document.getElementById('timerNameInput');
+    const repeatInput = document.getElementById('repeatInput');
+
+    let activeOptionsItem = null;
+    let sortableInstance = null;
+    let longPressTimer = null;
+    const longPressThreshold = 500;
+    let isSortableMode = false;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let movementThreshold = 10;
+    let currentListItem = null;
+    let currentTimerId = null;
+    let intervals = [];
+
+    function generateUniqueId() {
+      return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    function formatTimeForEditor(durationString) {
+      if (!durationString || !durationString.includes(':')) {
+        return "0 Sek";
+      }
+      const parts = durationString.split(':');
+      const minutes = parseInt(parts[0], 10);
+      const seconds = parseInt(parts[1], 10);
+      let formatted = [];
+      if (minutes > 0) {
+        formatted.push(`${minutes} Min`);
+      }
+      if (seconds > 0) {
+        formatted.push(`${seconds} Sek`);
+      }
+      return formatted.join(' ') || "0 Sek";
+    }
+
+    function showOptions(listItem) {
+      if (activeOptionsItem && activeOptionsItem !== listItem) {
+        closeOptions(activeOptionsItem);
+      }
+      activeOptionsItem = listItem;
+      let optionsElement = listItem.querySelector('.swipe-options-container');
+      if (!optionsElement) {
+        optionsElement = document.createElement('div');
+        optionsElement.classList.add('bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute', 'swipe-options-container');
+        optionsElement.style.padding = '1rem';
+        listItem.appendChild(optionsElement);
+      }
+      optionsElement.innerHTML = '';
+      const optionsConfig = [
+        { text: 'Review', action: 'review' },
+        { text: 'Modify', action: 'modify' },
+        { text: 'Clone', action: 'clone' },
+        { text: 'Delete', action: 'delete' }
+      ];
+      optionsConfig.forEach(option => {
+        const optionSpan = document.createElement('span');
+        optionSpan.classList.add('text-light', 'cursor-pointer');
+        optionSpan.textContent = option.text;
+        optionSpan.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeOptions(listItem);
+          const itemId = listItem.dataset.intervalId;
+          localStorage.setItem('selectedIntervalId', itemId);
+          window.location.href = '../interval-editor/interval-editor.html';
+        });
+        optionsElement.appendChild(optionSpan);
+      });
+      listItem.style.position = 'relative';
+      setTimeout(() => {
+        optionsElement.classList.add('slide-in');
+        listItem.classList.add('options-active');
+      }, 0);
+    }
+
+    function closeOptions(listItem) {
+      const optionsElement = listItem.querySelector('.swipe-options-container');
+      if (optionsElement) {
+        optionsElement.classList.remove('slide-in');
+        optionsElement.classList.add('slide-out');
+        listItem.classList.remove('options-active');
+        setTimeout(() => {
+          optionsElement.remove();
+          activeOptionsItem = null;
+        }, 300);
+      }
+    }
+
+    function cloneInterval(itemId) {
+      const indexToClone = intervals.findIndex(item => item.id === itemId);
+      if (indexToClone !== -1) {
+        const clonedInterval = { ...intervals[indexToClone], id: generateUniqueId() };
+        intervals.splice(indexToClone + 1, 0, clonedInterval);
+        renderIntervalList();
+      }
+    }
+
+    function deleteIntervalConfirmed(idToDelete) {
+      intervals = intervals.filter(item => item.id !== idToDelete);
+      renderIntervalList();
+    }
+
+    function renderIntervalList() {
+      intervalContainer.innerHTML = '';
+      if (intervals.length === 0) {
+        const noIntervalsMessage = document.createElement('div');
+        noIntervalsMessage.classList.add('text-center', 'text-secondary', 'mt-4', 'p-4', 'rounded-xl', 'bg-background');
+        noIntervalsMessage.textContent = 'No intervals yet. Tap "+ Add Interval" to create one.';
+        intervalContainer.appendChild(noIntervalsMessage);
+        return;
+      }
+      intervals.forEach(interval => {
+        const listItem = document.createElement('div');
+        listItem.classList.add('interval-item');
+        listItem.dataset.intervalId = interval.id;
+        if (interval.type === 'rest') {
+          listItem.classList.add('is-rest-type');
+        } else {
+          listItem.classList.add('is-interval-type');
+        }
+        if (isSortableMode) {
+          listItem.classList.add('sortable-mode');
+        }
+        listItem.innerHTML = `
+          <div class="bg-background border border-light/10 rounded-xl px-4 py-3 flex justify-between items-center transition-opacity duration-300">
+            <span class="sort-icon-placeholder"></span><span class="interval-name-display">${interval.name}</span>
+            <span class="text-sm text-accent">${formatTimeForEditor(interval.duration)}</span>
+          </div>
+        `;
+        listItem.querySelector('div:first-child').addEventListener('click', (e) => {
+          if (isSortableMode || activeOptionsItem === listItem) {
+            e.stopPropagation();
+            return;
+          }
+          const itemId = listItem.dataset.intervalId = interval.id;
+          const intervalToEdit = intervals.find(item => item.id === itemId);
+          if (intervalToEdit) {
+            localStorage.setItem('selectedIntervalId', itemId);
+            window.location.href = '../interval-editor/interval-editor.html';
+          }
+        });
+
+        let startX = 0;
+        let startY = 0;
+        let isSwipingOrScrolling = false;
+        let isLongPress = false;
+
+        listItem.addEventListener('touchstart', (e) => {
+          if (!isSortableMode) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isSwipingOrScrolling = false;
+            isLongPress = false;
+            if (activeOptionsItem && activeOptionsItem !== listItem) {
+              closeOptions(activeOptionsItem);
+            }
+            longPressTimer = setTimeout(() => {
+              if (!isSwipingOrScrolling) {
+                e.preventDefault();
+                isLongPress = true;
+                enableSortableMode();
+              }
+            }, longPressThreshold);
+          }
+        }, { passive: false });
+
+        listItem.addEventListener('touchmove', (e) => {
+          if (!isSortableMode) {
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+            const deltaX = currentX - touchStartX;
+            const deltaY = currentY - touchStartY;
+            if (Math.abs(deltaX) > movementThreshold || Math.abs(deltaY) > movementThreshold) {
+              isSwipingOrScrolling = true;
+              clearTimeout(longPressTimer);
+              if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                e.preventDefault();
+                const optionsElement = listItem.querySelector('.swipe-options-container');
+                if (optionsElement) {
+                  const newTransformX = Math.max(0, Math.min(100, 100 + (deltaX / listItem.offsetWidth) * 100));
+                  optionsElement.style.transform = `translateX(${newTransformX}%)`;
+                }
+              }
+            }
+          }
+        }, { passive: false });
+
+        listItem.addEventListener('touchend', (e) => {
+          if (!isSortableMode) {
+            clearTimeout(longPressTimer);
+            if (!isLongPress && isSwipingOrScrolling) {
+              const endX = e.changedTouches[0].clientX;
+              const deltaX = endX - touchStartX;
+              const deltaY = e.changedTouches[0].clientY - touchStartY;
+              if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                handleSwipe(listItem, endX, touchStartX);
+              } else {
+                if (listItem.classList.contains('options-active')) {
+                  closeOptions(listItem);
+                }
+              }
+              const optionsElement = listItem.querySelector('.swipe-options-container');
+              if (optionsElement) {
+                optionsElement.style.transform = '';
+              }
+            }
+            isSwipingOrScrolling = false;
+            isLongPress = false;
+            touchStartX = 0;
+            touchStartY = 0;
+          }
+        });
+
+        intervalContainer.appendChild(listItem);
+      });
+
+      if (isSortableMode) {
+        enableSortable();
+      }
+    }
+
+    function enableSortableMode() {
+      isSortableMode = true;
+      saveButton.textContent = 'Save Order';
+      addIntervalButton.classList.add('disabled');
+      addIntervalButton.setAttribute('disabled', 'true');
+      const listItems = intervalContainer.querySelectorAll('.interval-item');
+      listItems.forEach(item => item.classList.add('sortable-mode'));
+      enableSortable();
+    }
+
+    function disableSortableMode() {
+      isSortableMode = false;
+      saveButton.textContent = 'Save';
+      addIntervalButton.classList.remove('disabled');
+      addIntervalButton.removeAttribute('disabled');
+      const listItems = intervalContainer.querySelectorAll('.interval-item');
+      listItems.forEach(item => item.classList.remove('sortable-mode'));
+      if (sortableInstance) {
+        const newOrderIds = sortableInstance.toArray();
+        loadTimers().then(allTimers => {
+          const timerToLoad = allTimers.find(t => t.id === currentTimerId);
+          if (timerToLoad) {
+            const newIntervals = newOrderIds.map(id => intervals.find(i => i.id === id)).filter(Boolean);
+            timerToLoad.intervals = newIntervals;
+            const updatedTimers = allTimers.map(t => t.id === currentTimerId ? timerToLoad : t);
+            saveTimers(updatedTimers);
+            intervals = timerToLoad.intervals;
+          }
+          renderIntervalList();
+        });
+        sortableInstance.destroy();
+        sortableInstance = null;
+      }
+    }
+
+    function enableSortable() {
+      if (!sortableInstance) {
+        sortableInstance = new Sortable(intervalContainer, {
+          animation: 150,
+          handle: '.interval-item > div:first-child',
+          filter: '.swipe-options-container',
+          preventOnFilter: false,
+          dataIdAttr: 'data-interval-id',
+          onEnd: function (evt) {}
+        });
+      }
+    }
+
+    saveButton.addEventListener('click', () => {
+      if (isSortableMode) {
+        disableSortableMode();
+      } else {
+        const timerName = timerNameInput.value.trim();
+        const repeatCount = parseInt(repeatInput.value, 10);
+        if (!timerName) {
+          alert('Timer name cannot be empty.');
+          return;
+        }
+        if (isNaN(repeatCount) || repeatCount < 1) {
+          alert('Repeat count must be at least 1.');
+          return;
+        }
+        if (intervals.length === 0) {
+          alert('A timer must have at least one interval.');
+          return;
+        }
+
+        loadTimers().then(allTimers => {
+          let timerToSave = {
+            id: currentTimerId || generateUniqueId(),
+            name: timerName,
+            repeat: repeatCount,
+            intervals: intervals.map(interval => ({
+              id: interval.id,
+              name: interval.name,
+              duration: interval.duration,
               type: interval.type
             }))
           };
