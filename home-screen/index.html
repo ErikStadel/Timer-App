@@ -353,11 +353,20 @@
         if (!sortable) {
           sortable = new Sortable(timerList, {
             animation: 150,
+            onEnd: function (evt) {
+              const newTimers = Array.from(timerList.children).map((item, index) => {
+                return timers[evt.oldIndex];
+              });
+              timers = newTimers;
+            }
           });
         }
       }
 
-      saveButton.addEventListener('click', disableSortableMode);
+      saveButton.addEventListener('click', function() {
+        disableSortableMode();
+        saveTimers(timers);
+      });
 
       window.addEventListener('scroll', () => {
         if (window.scrollY > 0) {
