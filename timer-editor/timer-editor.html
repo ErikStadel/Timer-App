@@ -8,6 +8,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <script src="../js/dataStorage.js"></script>
 
     <script>
       tailwind.config = {
@@ -177,12 +178,6 @@
         opacity: 1;
       }
 
-      .interval-item.sortable-mode .sort-icon-placeholder::before {
-        content: '=';
-        color: #AEC3B0;
-        display: inline-block;
-      }
-
       .interval-item.sortable-mode > div:first-child {
         cursor: grab;
       }
@@ -343,7 +338,7 @@
       let activeOptionsItem = null;
       let sortableInstance = null;
       let longPressTimer = null;
-      const longPressThreshold = 500;
+      let longPressThreshold = 500;
       let isSortableMode = false;
       let touchStartX = 0;
       let touchStartY = 0;
@@ -358,42 +353,6 @@
           return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       }
 
-      function loadTimers() {
-          let storedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
-          let needsUpdate = false;
-          storedTimers.forEach(timer => {
-              if (!timer.id) {
-                  timer.id = generateUniqueId();
-                  needsUpdate = true;
-              }
-              if (!timer.intervals || !Array.isArray(timer.intervals) || timer.intervals.length === 0) {
-                  if (timer.duration && typeof timer.duration === 'string' && timer.duration.includes(':')) {
-                      const parts = timer.duration.split(':');
-                      const totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                      timer.intervals = [{ name: "Default Interval", duration: `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`, type: 'work', id: generateUniqueId() }];
-                  } else {
-                      timer.intervals = [{ name: "New Interval", duration: "00:00", type: 'work', id: generateUniqueId() }];
-                  }
-                  needsUpdate = true;
-              }
-              if (timer.repeat === undefined) {
-                  timer.repeat = 1;
-                  needsUpdate = true;
-              }
-              if (timer.duration !== undefined && typeof timer.duration === 'string') {
-                  delete timer.duration;
-                  needsUpdate = true;
-              }
-          });
-          if (needsUpdate) {
-              saveTimers(storedTimers);
-          }
-          return storedTimers;
-      }
-
-      function saveTimers(currentTimers) {
-          localStorage.setItem('timers', JSON.stringify(currentTimers));
-      }
       // --- End Helper Functions ---
 
       function formatTimeForEditor(durationString) {
@@ -565,7 +524,7 @@
 
                   if (intervalToEdit) {
                       localStorage.setItem('selectedIntervalId', itemId);
-                      window.location.href = 'https://erikstadel.github.io/Timer-App/interval-editor/interval-editor.html';
+                      window.location.href = '../interval-editor/interval-editor.html';
                   }
               });
 
