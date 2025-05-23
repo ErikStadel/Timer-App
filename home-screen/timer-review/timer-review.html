@@ -1,357 +1,318 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#01161E" />
-    <title>Timer Review</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#94d1be',
-                        interval: '#e76f51',
-                        warning: '#fc814a',
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    }
-                }
-            }
-        };
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
-
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            padding-top: env(safe-area-inset-top);
-            background-color: #01161E;
-            font-family: 'Karla', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior: none;
-            scroll-padding-top: 4rem;
-            scroll-behavior: smooth;
-            color: #EFF6E0;
-            display: flex;
-            flex-direction: column;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#01161E" />
+  <title>Timer Review</title>
+  <script src="https://cdn.tailwindcss.com "></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#01161E',
+            background: '#124559',
+            primary: '#598392',
+            secondary: '#AEC3B0',
+            light: '#EFF6E0',
+            accent: '#83c5be',
+            rest: '#94d1be',
+            interval: '#e76f51',
+            warning: '#fc814a',
+          },
+          fontFamily: {
+            karla: ['Karla', 'sans-serif'],
+          }
         }
+      }
+    };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Karla :wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      padding-top: env(safe-area-inset-top);
+      background-color: #01161E;
+      font-family: 'Karla', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overscroll-behavior: none;
+      scroll-padding-top: 4rem;
+      scroll-behavior: smooth;
+      color: #EFF6E0;
+      display: flex;
+      flex-direction: column;
+    }
 
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            padding: 1rem;
-            background-color: #01161E;
-            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
-            flex-shrink: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1rem;
+      background-color: #01161E;
+      transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        header::before {
-            content: "";
-            position: absolute;
-            top: -100vh;
-            left: 0;
-            right: 0;
-            height: 100vh;
-            background-color: #01161E;
-            z-index: -1;
-        }
+    header::before {
+      content: "";
+      position: absolute;
+      top: -100vh;
+      left: 0;
+      right: 0;
+      height: 100vh;
+      background-color: #01161E;
+      z-index: -1;
+    }
 
-        .header-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #83c5be;
-            text-align: center;
-            letter-spacing: 0.025em;
-            flex-grow: 1; /* Allows title to take available space */
-        }
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #83c5be;
+      text-align: center;
+      letter-spacing: 0.025em;
+      flex-grow: 1;
+    }
 
-        .header-link {
-            color: #83c5be;
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.2s;
-            padding: 0.5rem 0.75rem;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        }
+    .header-link {
+      color: #83c5be;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.2s;
+      padding: 0.5rem 0.75rem;
+      user-select: none;
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    }
 
-        .header-link:hover {
-            text-decoration: underline;
-        }
+    .header-link:hover {
+      text-decoration: underline;
+    }
 
-        .header-placeholder {
-            width: 70px; /* Adjust based on 'Back' button width */
-        }
+    .header-placeholder {
+      width: 70px;
+    }
 
-        .review-content {
-            padding: 1rem;
-            flex-grow: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        .review-content::-webkit-scrollbar {
-            display: none;
-        }
+    .review-content {
+      padding: 1rem;
+      flex-grow: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
 
-        /* Styling for the "Repeat" display */
-        .repeat-display-card {
-            background-color: #124559;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: space-between; /* Aligns "Repeat" left and number right */
-            align-items: center;
-        }
+    .review-content::-webkit-scrollbar {
+      display: none;
+    }
 
-        .repeat-display-card .label {
-            color: #AEC3B0;
-            font-size: 1.1rem; /* Adjust font size to match input label */
-            font-weight: 600; /* Adjust font weight to match input label */
-        }
+    .repeat-display-card {
+      background-color: #124559;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        .repeat-display-card .value {
-            color: #EFF6E0;
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
+    .repeat-display-card .label {
+      color: #AEC3B0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
 
-        .intervals-list-container {
-            margin-top: 1rem;
-        }
+    .repeat-display-card .value {
+      color: #EFF6E0;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
 
-        .intervals-list-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #83c5be; /* Using accent color directly */
-            margin-bottom: 1rem;
-            text-align: center;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(131, 197, 190, 0.3);
-        }
+    .intervals-list-container {
+      margin-top: 1rem;
+    }
 
-        .interval-item-review {
-            background-color: #124559;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
+    .intervals-list-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #83c5be;
+      margin-bottom: 1rem;
+      text-align: center;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(131, 197, 190, 0.3);
+    }
 
-        .interval-item-review.rest-item {
-            background-color: #598392; /* primary color for rest items */
-        }
+    .interval-item-review {
+      background-color: #124559;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
 
-        .interval-name-review {
-            font-size: 1.05rem;
-            color: #EFF6E0;
-            flex-grow: 1;
-        }
+    .interval-item-review.rest-item {
+      background-color: #598392;
+    }
 
-        .interval-duration-review {
-            font-size: 1.05rem;
-            font-weight: bold;
-            color: #AEC3B0; /* secondary color for duration */
-        }
+    .interval-name-review {
+      font-size: 1.05rem;
+      color: #EFF6E0;
+      flex-grow: 1;
+    }
 
-        .start-timer-button {
-            width: 100%;
-            background-color: #e76f51; /* Using interval/warning color for emphasis */
-            color: #EFF6E0;
-            border-radius: 0.75rem;
-            padding: 1rem 1.5rem;
-            font-size: 1.25rem;
-            font-weight: bold;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-            margin-top: 1.5rem; /* Space above the button */
-            margin-bottom: 1.5rem; /* Space below the button */
-            border: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            flex-shrink: 0; /* Prevents button from shrinking */
-        }
+    .interval-duration-review {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: #AEC3B0;
+    }
 
-        .start-timer-button:hover {
-            background-color: #fc814a;
-        }
-    </style>
+    .start-timer-button {
+      width: 100%;
+      background-color: #e76f51;
+      color: #EFF6E0;
+      border-radius: 0.75rem;
+      padding: 1rem 1.5rem;
+      font-size: 1.25rem;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+
+    .start-timer-button:hover {
+      background-color: #fc814a;
+    }
+  </style>
 </head>
-
 <body>
+  <header id="header">
+    <a href="../home-screen/index.html" class="header-link">Back</a>
+    <h1 class="header-title" id="timer-name-display">Timer Name</h1>
+    <div class="header-placeholder"></div>
+  </header>
+  <main class="review-content">
+    <div class="repeat-display-card">
+      <div class="label">Repeat</div>
+      <div class="value" id="repeat-display">1</div>
+    </div>
+    <div class="intervals-list-container" id="intervals-container">
+      <h2 class="intervals-list-title">Sequence</h2>
+    </div>
+  </main>
+  <button id="start-timer-button" class="start-timer-button">
+    Start Timer
+  </button>
 
-    <header id="header">
-        <a href="https://erikstadel.github.io/Timer-App/home-screen/index.html" class="header-link">Back</a>
-        <h1 class="header-title" id="timer-name-display">Timer Name</h1>
-        <div class="header-placeholder"></div>
-    </header>
+  <!-- Einbindung der zentralen Datenlogik -->
+  <script src="../js/dataStorage.js"></script>
 
-    <main class="review-content">
-        <div class="repeat-display-card">
-            <div class="label">Repeat</div>
-            <div class="value" id="repeat-display">1</div>
-        </div>
+  <script>
+    const timerNameDisplay = document.getElementById('timer-name-display');
+    const repeatDisplay = document.getElementById('repeat-display');
+    const intervalsContainer = document.getElementById('intervals-container');
+    const startTimerButton = document.getElementById('start-timer-button');
 
-        <div class="intervals-list-container" id="intervals-container">
-            <h2 class="intervals-list-title">Sequence</h2>
-        </div>
-    </main>
+    // --- Helper Functions ---
 
-    <button id="start-timer-button" class="start-timer-button">
-        Start Timer
-    </button>
+    function formatTime(durationString) {
+      if (!durationString || !durationString.includes(':')) {
+        return "0 Sek";
+      }
+      const parts = durationString.split(':');
+      const minutes = parseInt(parts[0], 10);
+      const seconds = parseInt(parts[1], 10);
+      let formatted = [];
+      if (minutes > 0) {
+        formatted.push(`${minutes} Min`);
+      }
+      if (seconds > 0) {
+        formatted.push(`${seconds} Sek`);
+      }
+      return formatted.join(' ') || "0 Sek";
+    }
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const timerNameDisplay = document.getElementById('timer-name-display');
-            const repeatDisplay = document.getElementById('repeat-display');
-            const intervalsContainer = document.getElementById('intervals-container');
-            const startTimerButton = document.getElementById('start-timer-button');
+    // --- Render Logic ---
 
-            // --- Helper Functions for Data Management (re-used from timer-editor) ---
-            function loadTimers() {
-                let storedTimers = JSON.parse(localStorage.getItem('timers') || '[]');
-                // Ensure unique IDs and intervals structure for older timers if needed
-                let needsUpdate = false;
-                storedTimers.forEach(timer => {
-                    if (!timer.id) {
-                        timer.id = `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                        needsUpdate = true;
-                    }
-                    if (!timer.intervals || !Array.isArray(timer.intervals)) {
-                        timer.intervals = []; // Ensure it's an array
-                        needsUpdate = true;
-                    }
-                    // Migrate old 'duration' field to 'intervals' if it exists and intervals is empty
-                    if (timer.duration !== undefined && typeof timer.duration === 'string' && timer.intervals.length === 0) {
-                        const parts = timer.duration.split(':');
-                        const totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                        timer.intervals = [{ name: "Default Interval", duration: `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`, type: 'work', id: `interval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` }];
-                        delete timer.duration; // Remove old field
-                        needsUpdate = true;
-                    }
-                    if (timer.repeat === undefined) {
-                        timer.repeat = 1;
-                        needsUpdate = true;
-                    }
-                    timer.intervals.forEach(interval => {
-                        if (!interval.id) {
-                             interval.id = `interval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                             needsUpdate = true;
-                        }
-                    });
-                });
-                if (needsUpdate) {
-                    localStorage.setItem('timers', JSON.stringify(storedTimers));
-                }
-                return storedTimers;
-            }
+    function renderFullSequence(timerData) {
+      intervalsContainer.innerHTML = '<h2 class="intervals-list-title">Sequence</h2>';
+      if (!timerData || !timerData.intervals || timerData.intervals.length === 0) {
+        const noIntervalsMessage = document.createElement('div');
+        noIntervalsMessage.classList.add('text-center', 'text-secondary', 'mt-4', 'p-4', 'rounded-xl', 'bg-background');
+        noIntervalsMessage.textContent = 'No intervals defined for this timer.';
+        intervalsContainer.appendChild(noIntervalsMessage);
+        return;
+      }
 
-            // --- Time Formatting Helper ---
-            function formatTime(durationString) {
-                if (!durationString || !durationString.includes(':')) {
-                    return "0 Sek";
-                }
-                const parts = durationString.split(':');
-                const minutes = parseInt(parts[0], 10);
-                const seconds = parseInt(parts[1], 10);
-                let formatted = [];
-                if (minutes > 0) {
-                    formatted.push(`${minutes} Min`);
-                }
-                if (seconds > 0) {
-                    formatted.push(`${seconds} Sek`);
-                }
-                return formatted.join(' ') || "0 Sek";
-            }
+      for (let r = 0; r < timerData.repeat; r++) {
+        timerData.intervals.forEach((interval, index) => {
+          const intervalItem = document.createElement('div');
+          intervalItem.classList.add('interval-item-review');
+          if (interval.type === 'rest') {
+            intervalItem.classList.add('rest-item');
+          }
 
-            // --- Render Logic ---
-            function renderFullSequence(timerData) {
-                intervalsContainer.innerHTML = '<h2 class="intervals-list-title">Sequence</h2>'; // Reset title
+          const nameSpan = document.createElement('span');
+          nameSpan.classList.add('interval-name-review');
+          nameSpan.textContent = interval.name;
 
-                if (!timerData || !timerData.intervals || timerData.intervals.length === 0) {
-                    const noIntervalsMessage = document.createElement('div');
-                    noIntervalsMessage.classList.add('text-center', 'text-secondary', 'mt-4', 'p-4', 'rounded-xl', 'bg-background');
-                    noIntervalsMessage.textContent = 'No intervals defined for this timer.';
-                    intervalsContainer.appendChild(noIntervalsMessage);
-                    return;
-                }
+          const durationSpan = document.createElement('span');
+          durationSpan.classList.add('interval-duration-review');
+          durationSpan.textContent = formatTime(interval.duration);
 
-                for (let r = 0; r < timerData.repeat; r++) {
-                    timerData.intervals.forEach((interval, index) => {
-                        const intervalItem = document.createElement('div');
-                        intervalItem.classList.add('interval-item-review');
-
-                        if (interval.type === 'rest') {
-                            intervalItem.classList.add('rest-item');
-                        }
-
-                        const nameSpan = document.createElement('span');
-                        nameSpan.classList.add('interval-name-review');
-                        nameSpan.textContent = interval.name;
-
-                        const durationSpan = document.createElement('span');
-                        durationSpan.classList.add('interval-duration-review');
-                        durationSpan.textContent = formatTime(interval.duration);
-
-                        intervalItem.appendChild(nameSpan);
-                        intervalItem.appendChild(durationSpan);
-                        intervalsContainer.appendChild(intervalItem);
-                    });
-                }
-            }
-
-            // --- Main Load Logic ---
-            const selectedTimerId = localStorage.getItem('selectedTimerId');
-            let timerToDisplay = null;
-
-            if (selectedTimerId) {
-                const allTimers = loadTimers();
-                timerToDisplay = allTimers.find(t => t.id === selectedTimerId);
-            }
-
-            if (timerToDisplay) {
-                timerNameDisplay.textContent = timerToDisplay.name;
-                repeatDisplay.textContent = timerToDisplay.repeat;
-                renderFullSequence(timerToDisplay);
-            } else {
-                timerNameDisplay.textContent = 'Timer Not Found';
-                repeatDisplay.textContent = 'N/A';
-                intervalsContainer.innerHTML = '<h2 class="intervals-list-title">Sequence</h2><div class="text-center text-warning mt-4 p-4 rounded-xl bg-background">Could not load timer details. Please go back to the home screen.</div>';
-                startTimerButton.style.display = 'none'; // Hide start button if no timer
-            }
-
-            // --- Start Timer Button Event Listener ---
-            startTimerButton.addEventListener('click', () => {
-                if (timerToDisplay) {
-                    // Save the timer ID to localStorage for the countdown screen
-                    localStorage.setItem('currentRunningTimerId', timerToDisplay.id);
-                    // Navigate to the countdown screen (assuming its path is 'countdown-screen/index.html')
-                    window.location.href = '../countdown-screen/index.html';
-                }
-            });
+          intervalItem.appendChild(nameSpan);
+          intervalItem.appendChild(durationSpan);
+          intervalsContainer.appendChild(intervalItem);
         });
-    </script>
+      }
+    }
+
+    // --- Main Load Logic ---
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const selectedTimerId = localStorage.getItem('selectedTimerId');
+      let timerToDisplay = null;
+
+      loadTimers().then(allTimers => {
+        if (selectedTimerId) {
+          timerToDisplay = allTimers.find(t => t.id === selectedTimerId);
+        }
+
+        if (timerToDisplay) {
+          timerNameDisplay.textContent = timerToDisplay.name;
+          repeatDisplay.textContent = timerToDisplay.repeat;
+          renderFullSequence(timerToDisplay);
+        } else {
+          timerNameDisplay.textContent = 'Timer Not Found';
+          repeatDisplay.textContent = 'N/A';
+          intervalsContainer.innerHTML = `
+            <h2 class="intervals-list-title">Sequence</h2>
+            <div class="text-center text-warning mt-4 p-4 rounded-xl bg-background">
+              Could not load timer details. Please go back to the home screen.
+            </div>`;
+          startTimerButton.style.display = 'none';
+        }
+      });
+
+      // --- Start Timer Button Event Listener ---
+      startTimerButton.addEventListener('click', () => {
+        if (timerToDisplay) {
+          localStorage.setItem('currentRunningTimerId', timerToDisplay.id);
+          window.location.href = '../timer-screen/timer-screen.html';
+        }
+      });
+    });
+  </script>
 </body>
 </html>
