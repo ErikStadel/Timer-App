@@ -47,7 +47,7 @@
     }
 
     .tab-btn.active {
-      background-color: #83c5be;
+      background-color: #83c5be; /* Ursprüngliche Farbe */
       color: #124559;
       font-weight: 700;
       transform: scale(1.1);
@@ -311,61 +311,66 @@
     const contentRest = document.getElementById('content-rest');
     const saveIntervalButton = document.getElementById('saveIntervalButton');
 
+    // Aktuell bearbeitetes Intervall (zum Speichern der ID)
     let currentIntervalId = null;
-    let parentTimerId = null;
 
+    // --- Wheel-Funktionalität ---
     wheels.forEach((wheel) => {
-      setTimeout(() => updateWheel(wheel), 10);
-      wheel.addEventListener('scroll', () => updateWheel(wheel));
+        setTimeout(() => updateWheel(wheel), 10);
+        wheel.addEventListener('scroll', () => updateWheel(wheel));
     });
 
     function updateWheel(wheel) {
-      const items = wheel.getElementsByClassName('wheel-item');
-      clearTimeout(wheel.scrollTimeout);
+        const items = wheel.getElementsByClassName('wheel-item');
+        clearTimeout(wheel.scrollTimeout);
 
-      wheel.scrollTimeout = setTimeout(() => {
-        const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
-        let closestItem = null;
-        let minDistance = Infinity;
+        wheel.scrollTimeout = setTimeout(() => {
+            const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
+            let closestItem = null;
+            let minDistance = Infinity;
 
-        Array.from(items).forEach((item) => {
-          const rect = item.getBoundingClientRect();
-          const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
+            Array.from(items).forEach((item) => {
+                const rect = item.getBoundingClientRect();
+                const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
 
-          item.classList.remove('selected');
-
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestItem = item;
-          }
-        });
-
-        if (closestItem) {
-          closestItem.classList.add('selected');
-          const currentScrollTop = wheel.scrollTop;
-          const targetScrollTop = closestItem.offsetTop - wheel.offsetHeight / 2 + closestItem.offsetHeight / 2;
-          if (Math.abs(currentScrollTop - targetScrollTop) > 1) {
-            wheel.scrollTo({
-              top: targetScrollTop,
-              behavior: 'smooth'
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestItem = item;
+                }
+                item.classList.remove('selected'); // Alle Selektionen entfernen
             });
-          }
-        }
-      }, 50);
+
+            if (closestItem) {
+                closestItem.classList.add('selected'); // Das nächste Element auswählen
+                // Optional: Scrollen zum nächsten ausgewählten Element, wenn es nicht genau in der Mitte ist
+                const currentScrollTop = wheel.scrollTop;
+                const targetScrollTop = closestItem.offsetTop - wheel.offsetHeight / 2 + closestItem.offsetHeight / 2;
+                if (Math.abs(currentScrollTop - targetScrollTop) > 1) { // Nur scrollen, wenn nötig
+                     wheel.scrollTo({
+                        top: targetScrollTop,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        }, 50); // Etwas längeres Timeout, um Scroll-Ende besser zu erkennen
     }
 
+    // Hilfsfunktion zum Setzen des Wheel-Wertes
     function setWheelValue(wheelId, value) {
-      const wheel = document.getElementById(wheelId);
-      if (wheel) {
-        const items = Array.from(wheel.querySelectorAll('.wheel-item'));
-        const itemToSelect = items.find(item => parseInt(item.textContent, 10) === value);
-        if (itemToSelect) {
-          wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
-          setTimeout(() => updateWheel(wheel), 100);
+        const wheel = document.getElementById(wheelId);
+        if (wheel) {
+            const items = Array.from(wheel.querySelectorAll('.wheel-item'));
+            const itemToSelect = items.find(item => item.textContent === value);
+            if (itemToSelect) {
+                // Sofort scrollen
+                wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
+                // Timeout, um sicherzustellen, dass die Auswahl nach dem Scrollen aktualisiert wird
+                setTimeout(() => updateWheel(wheel), 100);
+            }
         }
-      }
     }
 
+    // --- Tab-Funktionalität ---
     tabInterval.addEventListener('click', function() {
       tabInterval.classList.add('active');
       tabInterval.classList.remove('inactive');
@@ -375,8 +380,9 @@
       contentInterval.classList.add('active');
       contentRest.classList.remove('active');
 
+      // Nach Tab-Wechsel Wheels aktualisieren
       setTimeout(() => {
-        document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
+          document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
       }, 0);
     });
 
@@ -389,136 +395,131 @@
       contentRest.classList.add('active');
       contentInterval.classList.remove('active');
 
+      // Nach Tab-Wechsel Wheels aktualisieren
       setTimeout(() => {
-        document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
+          document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
       }, 0);
     });
 
+    // --- Speichern-Funktionalität ---
     saveIntervalButton.addEventListener('click', () => {
-      const name = intervalNameInput.value.trim();
-      const type = tabInterval.classList.contains('active') ? "interval" : "rest";
+        const name = intervalNameInput.value.trim();
+        const type = tabInterval.classList.contains('active') ? "interval" : "rest";
 
-      let minutesElement;
-      let secondsElement;
+        let minutesElement;
+        let secondsElement;
 
-      if (type === "interval") {
-        minutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
-        secondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
-      } else {
-        minutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
-        secondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
-      }
-
-      const minutes = parseInt(minutesElement ? minutesElement.textContent : "0", 10);
-      const seconds = parseInt(secondsElement ? secondsElement.textContent : "0", 10);
-
-      const duration = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-      if (!name) {
-        alert("Interval name cannot be empty.");
-        return;
-      }
-      if (minutes === 0 && seconds === 0) {
-        alert("Interval duration cannot be 00:00.");
-        return;
-      }
-
-      const intervalData = {
-        id: currentIntervalId,
-        name: name,
-        duration: duration,
-        type: type
-      };
-
-      let allTimers = loadTimers();
-      const timerIndex = allTimers.findIndex(timer => timer.id === parentTimerId);
-
-      if (timerIndex !== -1) {
-        const intervalIndex = allTimers[timerIndex].intervals.findIndex(
-          interval => interval.id === currentIntervalId
-        );
-        if (intervalIndex !== -1) {
-          allTimers[timerIndex].intervals[intervalIndex] = intervalData;
-        } else {
-          console.warn("Intervall-ID im Timer nicht gefunden, füge als neues hinzu.");
-          allTimers[timerIndex].intervals.push(intervalData);
+        if (type === "interval") {
+            minutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
+            secondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
+        } else { // type === "rest"
+            minutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
+            secondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
         }
-        saveTimers(allTimers);
-      } else {
-        console.error("Parent Timer nicht gefunden. Intervall konnte nicht gespeichert werden.");
-        alert("Fehler: Timer konnte nicht gefunden werden. Bitte versuchen Sie es erneut.");
-        return;
-      }
 
-      if (window.opener) {
-        window.opener.postMessage({ type: 'saveInterval', data: intervalData }, window.location.origin);
-      } else {
-        console.warn("No opener window found. Interval data not sent via postMessage.");
-      }
-      localStorage.removeItem('selectedIntervalId');
-      localStorage.removeItem('selectedTimerId');
-      window.location.href = '../timer-editor/timer-editor.html';
+        const minutes = minutesElement ? minutesElement.textContent : "00";
+        const seconds = secondsElement ? secondsElement.textContent : "00";
+        const duration = `${minutes}:${seconds}`;
+
+        const intervalData = {
+            id: currentIntervalId || generateUniqueId(), // Verwende die vorhandene ID oder generiere eine neue
+            name: name,
+            duration: duration,
+            type: type
+        };
+
+        // Speichere die Daten in localStorage
+        let allTimers = loadTimers();
+        let timerIndex = -1;
+        let intervalIndex = -1;
+
+        // Finde den Timer und das Intervall, das bearbeitet wird
+        allTimers.forEach((timer, tIndex) => {
+            timer.intervals.forEach((interval, iIndex) => {
+                if (interval.id === currentIntervalId) {
+                    timerIndex = tIndex;
+                    intervalIndex = iIndex;
+                }
+            });
+        });
+
+        if (timerIndex !== -1 && intervalIndex !== -1) {
+            allTimers[timerIndex].intervals[intervalIndex] = intervalData;
+            saveTimers(allTimers);
+        } else {
+            // Wenn kein bestehendes Intervall gefunden wurde, füge ein neues hinzu
+            const selectedTimerId = localStorage.getItem('selectedTimerId');
+            if (selectedTimerId) {
+                const timerIndex = allTimers.findIndex(timer => timer.id === selectedTimerId);
+                if (timerIndex !== -1) {
+                    allTimers[timerIndex].intervals.push(intervalData);
+                    saveTimers(allTimers);
+                }
+            }
+        }
+
+        // Sende die Daten an den Timer-Editor zurück
+        if (window.opener) {
+            window.opener.postMessage({ type: 'saveInterval', data: intervalData }, window.location.origin);
+        } else {
+            console.warn("No opener window found. Interval data not sent.");
+        }
+        window.location.href = '../timer-editor/timer-editor.html'; // Navigiere zurück zum Timer Editor
     });
 
+    // --- Initialisierung beim Laden (Empfang von Daten vom Timer-Editor) ---
     document.addEventListener('DOMContentLoaded', () => {
-      wheels.forEach((wheel) => {
-        updateWheel(wheel);
-      });
+        // Initial alle Wheels aktualisieren, um die "selected"-Klasse zu setzen
+        wheels.forEach((wheel) => {
+            updateWheel(wheel);
+        });
 
-      const intervalIdFromStorage = localStorage.getItem('selectedIntervalId');
-      const timerIdFromStorage = localStorage.getItem('selectedTimerId');
+        // Event-Listener für Nachrichten vom Elternfenster (Timer-Editor)
+        window.addEventListener('message', (event) => {
+            // Wichtig: Prüfe event.origin für Sicherheit in einer echten Anwendung
+            // if (event.origin !== "http://deine-timer-editor-domain.de") {
+            //     return;
+            // }
 
-      if (intervalIdFromStorage && timerIdFromStorage) {
-        currentIntervalId = intervalIdFromStorage;
-        parentTimerId = timerIdFromStorage;
+            if (event.data && event.data.type === 'loadInterval') {
+                const intervalToLoad = event.data.data;
+                currentIntervalId = intervalToLoad.id; // Speichere die ID des zu bearbeitenden Intervalls
 
-        const allTimers = loadTimers();
-        const parentTimer = allTimers.find(t => t.id === parentTimerId);
+                intervalNameInput.value = intervalToLoad.name;
 
-        if (parentTimer) {
-          const intervalToLoad = parentTimer.intervals.find(i => i.id === currentIntervalId);
-          if (intervalToLoad) {
-            intervalNameInput.value = intervalToLoad.name;
+                // Tab basierend auf dem Typ setzen
+                if (intervalToLoad.type === 'rest') {
+                    tabRest.click(); // Simuliert Klick auf den Rest-Tab
+                } else {
+                    tabInterval.click(); // Simuliert Klick auf den Interval-Tab
+                }
 
-            if (intervalToLoad.type === 'rest') {
-              tabRest.click();
-            } else {
-              tabInterval.click();
+                // Dauer auf den Wheels einstellen
+                const [initialMinutes, initialSeconds] = intervalToLoad.duration.split(':');
+
+                // Setze die Werte auf den korrekten Wheels, abhängig vom Typ
+                if (intervalToLoad.type === 'interval') {
+                    setWheelValue('minutes-wheel', initialMinutes);
+                    setWheelValue('seconds-wheel', initialSeconds);
+                } else { // type === 'rest'
+                    setWheelValue('minutes-wheel-rest', initialMinutes);
+                    setWheelValue('seconds-wheel-rest', initialSeconds);
+                }
             }
+        });
 
-            const [initialMinutes, initialSeconds] = intervalToLoad.duration.split(':').map(Number);
-
-            if (intervalToLoad.type === 'interval') {
-              setWheelValue('minutes-wheel', initialMinutes);
-              setWheelValue('seconds-wheel', initialSeconds);
-            } else {
-              setWheelValue('minutes-wheel-rest', initialMinutes);
-              setWheelValue('seconds-wheel-rest', initialSeconds);
-            }
-          } else {
-            console.warn(`Interval with ID ${currentIntervalId} not found in parent timer ${parentTimerId}. Initializing new interval.`);
-            currentIntervalId = generateUniqueId();
-            setWheelValue('minutes-wheel', 0);
-            setWheelValue('seconds-wheel', 0);
-            intervalNameInput.value = 'New Interval';
-            tabInterval.click();
-          }
-        } else {
-          console.error(`Parent Timer with ID ${parentTimerId} not found. Cannot load interval.`);
-          window.location.href = '../timer-editor/timer-editor.html';
+        // Wenn das Popup ohne übergebene Daten geöffnet wird, setze Standardwerte
+        if (!window.opener) {
+             // Setze die Standardwerte für ein neues Intervall (z.B. "00:00" und "Interval")
+             setWheelValue('minutes-wheel', '00');
+             setWheelValue('seconds-wheel', '00');
+             intervalNameInput.value = 'Intervall'; // Standardname für neue Intervalle
+             tabInterval.click(); // Standardmäßig den Interval-Tab aktiv
         }
-      } else {
-        console.warn("No interval or timer ID found in localStorage. Initializing as a new interval.");
-        currentIntervalId = generateUniqueId();
-        setWheelValue('minutes-wheel', 0);
-        setWheelValue('seconds-wheel', 0);
-        intervalNameInput.value = 'New Interval';
-        tabInterval.click();
-      }
     });
 
     function generateUniqueId() {
-      return `interval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        return `interval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
   </script>
 </body>
