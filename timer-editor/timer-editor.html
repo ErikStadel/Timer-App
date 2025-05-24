@@ -334,7 +334,7 @@
       let isSortableMode = false;
       let intervalToDeleteId = null;
       let currentTimerId = null;
-      let intervals = loadIntervals() || [];
+      let intervals = [];
 
       // Helper Functions
       function formatIntervalDuration(seconds) {
@@ -655,7 +655,6 @@
           }
       }
 
-      // Speichern des Timers
       saveButton.addEventListener('click', () => {
           if (isSortableMode) {
               disableSortableMode();
@@ -712,21 +711,20 @@
           }
       });
 
-      // Intervall hinzufügen
       addIntervalButton.addEventListener('click', () => {
           if (isSortableMode) return;
-          localStorage.setItem('selectedIntervalId', '');
-          window.location.href = '../interval-editor/interval-editor.html';
+          const newId = generateUniqueId();
+          intervals.push({ id: newId, name: 'Neues Intervall', duration: 0, type: 'interval', signalId: null });
+          renderIntervalList();
+          intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
       });
 
-      // Abbrechen
       cancelButton.addEventListener('click', () => {
           localStorage.removeItem('selectedTimerId');
           localStorage.removeItem('selectedIntervalId');
           window.location.href = '../home-screen/index.html';
       });
 
-      // Header-Scroll-Effekt
       window.addEventListener('scroll', () => {
           if (window.scrollY > 0) {
               header.classList.add('scrolled');
@@ -735,7 +733,6 @@
           }
       });
 
-      // Schließen von Swipe-Optionen bei Klick außerhalb
       document.addEventListener('click', (event) => {
           const openOptions = document.querySelector('.interval-item.options-active .swipe-options-container');
           if (openOptions && !event.target.closest('.interval-item.options-active')) {
@@ -746,9 +743,20 @@
           }
       });
 
-      // Initialisierung
+      window.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'saveInterval') {
+              const updatedInterval = event.data.data;
+              const index = intervals.findIndex(item => item.id === updatedInterval.id);
+              if (index !== -1) {
+                  intervals[index] = { ...intervals[index], ...updatedInterval };
+              } else {
+                  console.warn('Update für unbekannte Intervall-ID erhalten:', updatedInterval.id);
+              }
+              renderIntervalList();
+          }
+      });
+
       document.addEventListener('DOMContentLoaded', () => {
-          // Lade Timer-Daten
           const selectedTimerId = localStorage.getItem('selectedTimerId');
           if (selectedTimerId) {
               headerTitle.textContent = 'Timer bearbeiten';
@@ -770,34 +778,8 @@
               currentTimerId = generateUniqueId();
               intervals = [];
           }
-
-          // Prüfe, ob ein Intervall hinzugefügt oder bearbeitet wurde
-          const selectedIntervalId = localStorage.getItem('selectedIntervalId');
-          if (selectedIntervalId !== null) {
-              // Lade aktualisierte Intervall-Liste aus localStorage
-              const updatedIntervals = loadIntervals() || [];
-              if (selectedIntervalId === '') {
-                  // Neues Intervall wurde hinzugefügt
-                  intervals = updatedIntervals;
-              } else {
-                  // Bestehendes Intervall wurde bearbeitet
-                  const updatedInterval = updatedIntervals.find(i => i.id === selectedIntervalId);
-                  if (updatedInterval) {
-                      const index = intervals.findIndex(i => i.id === selectedIntervalId);
-                      if (index !== -1) {
-                          intervals[index] = updatedInterval;
-                      } else {
-                          intervals.push(updatedInterval);
-                      }
-                  }
-              }
-              // Bereinige selectedIntervalId
-              localStorage.removeItem('selectedIntervalId');
-          }
-
-          // Render Intervall-Liste
           renderIntervalList();
       });
-</script>
+    </script>
   </body>
 </html>
