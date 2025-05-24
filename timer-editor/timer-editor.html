@@ -266,14 +266,9 @@
   <body class="text-light">
     <header id="header" class="text-light shadow-md">
       <div class="w-full flex justify-between items-center">
-        <button class="text-accent font-semibold hover:underline" onclick="window.location.href='../home-screen/index.html';">Back</button>
+        <button class="text-accent font-semibold hover:underline" id="cancelButton">Cancel</button>
         <h1 id="headerTitle" class="text-xl font-bold text-accent tracking-wide">Add Timer</h1>
-        <button
-          id="saveButton"
-          class="text-accent font-semibold hover:underline"
-        >
-          Save
-        </button>
+        <button id="saveButton" class="text-accent font-semibold hover:underline">Save</button>
       </div>
     </header>
 
@@ -330,6 +325,7 @@
       const addIntervalButton = document.getElementById('addIntervalButton');
       const timerNameInput = document.getElementById('timerNameInput');
       const repeatInput = document.getElementById('repeatInput');
+      const cancelButton = document.getElementById('cancelButton');
 
       const deleteConfirmationDialog = document.getElementById('deleteConfirmationDialog');
       const cancelDeleteButton = document.getElementById('cancelDelete');
@@ -349,27 +345,38 @@
       let intervals = [];
 
       // --- Helper Functions for Data Management (consistent with home-screen) ---
-      function generateUniqueId() {
-          return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      function secondsToTimeString(seconds) {
+          const mins = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          return `${mins} Min ${secs} Sek`;
+      }
+
+      function timeStringToSeconds(timeString) {
+          const parts = timeString.split(' ');
+          let seconds = 0;
+          for (let i = 0; i < parts.length; i += 2) {
+              const value = parseInt(parts[i], 10);
+              if (parts[i + 1].includes('Min')) {
+                  seconds += value * 60;
+              } else if (parts[i + 1].includes('Sek')) {
+                  seconds += value;
+              }
+          }
+          return seconds;
+      }
+
+      function isValidTimer(timer) {
+          return timer.intervals.every(interval =>
+              interval.name && interval.name.trim() !== '' &&
+              interval.duration > 0
+          );
       }
 
       // --- End Helper Functions ---
 
-      function formatTimeForEditor(durationString) {
-          if (!durationString || !durationString.includes(':')) {
-              return "0 Sek";
-          }
-          const parts = durationString.split(':');
-          const minutes = parseInt(parts[0], 10);
-          const seconds = parseInt(parts[1], 10);
-          let formatted = [];
-          if (minutes > 0) {
-              formatted.push(`${minutes} Min`);
-          }
-          if (seconds > 0) {
-              formatted.push(`${seconds} Sek`);
-          }
-          return formatted.join(' ') || "0 Sek";
+      function formatTimeForEditor(seconds) {
+          return secondsToTimeString(seconds);
       }
 
       // --- Swipe Logic ---
@@ -686,23 +693,27 @@
 
               let allTimers = loadTimers();
               let timerToSave = {
-                  id: currentTimerId, // Verwende die bereits generierte ID
+                  id: currentTimerId,
                   name: timerName,
                   repeat: repeatCount,
                   intervals: intervals.map(interval => ({
                       id: interval.id,
                       name: interval.name,
-                      duration: interval.duration,
-                      type: interval.type
+                      duration: typeof interval.duration === 'string' ? timeStringToSeconds(interval.duration) : interval.duration,
+                      type: interval.type === 'work' ? 'interval' : interval.type
                   }))
               };
+
+              if (!isValidTimer(timerToSave)) {
+                  alert('Invalid timer data. Ensure all intervals have valid names and durations.');
+                  return;
+              }
 
               if (currentTimerId) {
                   const index = allTimers.findIndex(t => t.id === currentTimerId);
                   if (index !== -1) {
                       allTimers[index] = timerToSave;
                   } else {
-                      console.warn("Attempted to update a timer that was not found. Adding as new.");
                       allTimers.push(timerToSave);
                   }
               } else {
@@ -716,13 +727,19 @@
       });
 
       addIntervalButton.addEventListener('click', () => {
-          if (isSortableMode) { // Prevent adding if in sortable mode
-              return;
-          }
-          const newId = generateUniqueId();
-          intervals.push({ id: newId, name: `New Interval`, duration: "00:00", type: "work" });
-          renderIntervalList();
-          intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    if (isSortableMode) {
+        return;
+    }
+    const newId = generateUniqueId();
+    intervals.push({ id: newId, name: `New Interval`, duration: 0, type: "interval" });
+    renderIntervalList();
+    intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+});
+
+      cancelButton.addEventListener('click', () => {
+          localStorage.removeItem('selectedTimerId');
+          localStorage.removeItem('selectedIntervalId');
+          window.location.href = '../home-screen/index.html';
       });
 
       window.addEventListener('scroll', () => {

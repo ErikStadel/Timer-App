@@ -406,65 +406,42 @@
         const name = intervalNameInput.value.trim();
         const type = tabInterval.classList.contains('active') ? "interval" : "rest";
 
-        let minutesElement;
-        let secondsElement;
-
+        let minutesElement, secondsElement;
         if (type === "interval") {
             minutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
             secondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
-        } else { // type === "rest"
+        } else {
             minutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
             secondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
         }
 
-        const minutes = minutesElement ? minutesElement.textContent : "00";
-        const seconds = secondsElement ? secondsElement.textContent : "00";
-        const duration = `${minutes}:${seconds}`;
+        const minutes = minutesElement ? parseInt(minutesElement.textContent, 10) : 0;
+        const seconds = secondsElement ? parseInt(secondsElement.textContent, 10) : 0;
+        const duration = (minutes * 60) + seconds;
+
+        if (!name) {
+            alert('Interval name cannot be empty.');
+            return;
+        }
+        if (duration < 0) {
+            alert('Interval duration must be non-negative.');
+            return;
+        }
 
         const intervalData = {
-            id: currentIntervalId || generateUniqueId(), // Verwende die vorhandene ID oder generiere eine neue
+            id: currentIntervalId || generateUniqueId(),
             name: name,
             duration: duration,
             type: type
         };
 
-        // Speichere die Daten in localStorage
-        let allTimers = loadTimers();
-        let timerIndex = -1;
-        let intervalIndex = -1;
-
-        // Finde den Timer und das Intervall, das bearbeitet wird
-        allTimers.forEach((timer, tIndex) => {
-            timer.intervals.forEach((interval, iIndex) => {
-                if (interval.id === currentIntervalId) {
-                    timerIndex = tIndex;
-                    intervalIndex = iIndex;
-                }
-            });
-        });
-
-        if (timerIndex !== -1 && intervalIndex !== -1) {
-            allTimers[timerIndex].intervals[intervalIndex] = intervalData;
-            saveTimers(allTimers);
-        } else {
-            // Wenn kein bestehendes Intervall gefunden wurde, füge ein neues hinzu
-            const selectedTimerId = localStorage.getItem('selectedTimerId');
-            if (selectedTimerId) {
-                const timerIndex = allTimers.findIndex(timer => timer.id === selectedTimerId);
-                if (timerIndex !== -1) {
-                    allTimers[timerIndex].intervals.push(intervalData);
-                    saveTimers(allTimers);
-                }
-            }
-        }
-
-        // Sende die Daten an den Timer-Editor zurück
+        // Sende die Daten an den Timer Editor
         if (window.opener) {
             window.opener.postMessage({ type: 'saveInterval', data: intervalData }, window.location.origin);
         } else {
             console.warn("No opener window found. Interval data not sent.");
         }
-        window.location.href = '../timer-editor/timer-editor.html'; // Navigiere zurück zum Timer Editor
+        window.location.href = '../timer-editor/timer-editor.html';
     });
 
     // --- Initialisierung beim Laden (Empfang von Daten vom Timer-Editor) ---
@@ -476,34 +453,26 @@
 
         // Event-Listener für Nachrichten vom Elternfenster (Timer-Editor)
         window.addEventListener('message', (event) => {
-            // Wichtig: Prüfe event.origin für Sicherheit in einer echten Anwendung
-            // if (event.origin !== "http://deine-timer-editor-domain.de") {
-            //     return;
-            // }
-
             if (event.data && event.data.type === 'loadInterval') {
                 const intervalToLoad = event.data.data;
-                currentIntervalId = intervalToLoad.id; // Speichere die ID des zu bearbeitenden Intervalls
-
+                currentIntervalId = intervalToLoad.id;
                 intervalNameInput.value = intervalToLoad.name;
 
-                // Tab basierend auf dem Typ setzen
                 if (intervalToLoad.type === 'rest') {
-                    tabRest.click(); // Simuliert Klick auf den Rest-Tab
+                    tabRest.click();
                 } else {
-                    tabInterval.click(); // Simuliert Klick auf den Interval-Tab
+                    tabInterval.click();
                 }
 
-                // Dauer auf den Wheels einstellen
-                const [initialMinutes, initialSeconds] = intervalToLoad.duration.split(':');
+                const minutes = Math.floor(intervalToLoad.duration / 60).toString().padStart(2, '0');
+                const seconds = (intervalToLoad.duration % 60).toString().padStart(2, '0');
 
-                // Setze die Werte auf den korrekten Wheels, abhängig vom Typ
                 if (intervalToLoad.type === 'interval') {
-                    setWheelValue('minutes-wheel', initialMinutes);
-                    setWheelValue('seconds-wheel', initialSeconds);
-                } else { // type === 'rest'
-                    setWheelValue('minutes-wheel-rest', initialMinutes);
-                    setWheelValue('seconds-wheel-rest', initialSeconds);
+                    setWheelValue('minutes-wheel', minutes);
+                    setWheelValue('seconds-wheel', seconds);
+                } else {
+                    setWheelValue('minutes-wheel-rest', minutes);
+                    setWheelValue('seconds-wheel-rest', seconds);
                 }
             }
         });
@@ -518,9 +487,6 @@
         }
     });
 
-    function generateUniqueId() {
-        return `interval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    }
   </script>
 </body>
 </html>

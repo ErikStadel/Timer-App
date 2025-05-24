@@ -238,7 +238,6 @@
         </button>
         <button
           id="addButton"
-          onclick="window.location.href='../timer-editor/timer-editor.html'"
           class="text-accent font-bold text-2xl leading-none hover:scale-110 transition-transform duration-150"
         >
           +
@@ -275,6 +274,18 @@
       let timerToDeleteId = null;
 
       renderTimerList();
+
+      function calculateTimerDuration(timer) {
+          return timer.intervals.reduce((total, interval) => total + interval.duration, 0) * timer.repeat;
+      }
+
+      function secondsToTimeString(seconds) {
+          const hours = Math.floor(seconds / 3600);
+          const minutes = Math.floor((seconds % 3600) / 60);
+          const secs = seconds % 60;
+
+          return `${hours}h ${minutes}m ${secs}s`;
+      }
 
       function handleSwipe(listItem, endX, startX) {
         const deltaX = endX - startX;
@@ -359,11 +370,11 @@
       }
 
       function cloneTimer(indexToClone) {
-        const timerToClone = { ...timers[indexToClone], id: generateUniqueId() };
-        timers.splice(indexToClone + 1, 0, timerToClone);
-        saveTimers(timers);
-        renderTimerList();
-      }
+    const timerToClone = { ...timers[indexToClone], id: generateUniqueId() };
+    timers.splice(indexToClone + 1, 0, timerToClone);
+    saveTimers(timers);
+    renderTimerList();
+}
 
       function deleteTimerConfirmed() {
         if (timerToDeleteId) {
@@ -396,7 +407,7 @@
 
           const durationSpan = document.createElement('span');
           durationSpan.classList.add('timer-duration');
-          durationSpan.textContent = timer.duration;
+          durationSpan.textContent = secondsToTimeString(calculateTimerDuration(timer));
 
           li.appendChild(sortIcon);
           li.appendChild(nameSpan);
@@ -478,6 +489,11 @@
         saveTimers(timers);
       });
 
+      addButton.addEventListener('click', () => {
+          localStorage.removeItem('selectedTimerId'); // Entferne alte Timer-ID
+          window.location.href = '../timer-editor/timer-editor.html';
+      });
+
       cancelDeleteButton.addEventListener('click', hideDeleteConfirmation);
       confirmDeleteButton.addEventListener('click', deleteTimerConfirmed);
 
@@ -500,10 +516,6 @@
           }
         }
       });
-
-      function generateUniqueId() {
-        return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      }
     </script>
   </body>
 </html>

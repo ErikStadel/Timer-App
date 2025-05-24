@@ -9,6 +9,8 @@
     <title>Timer Screen</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../js/dataStorage.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -314,266 +316,277 @@
     </div>
 
     <script>
-        const body = document.body;
-        const mainCircle = document.getElementById('main-circle'); // Der Hauptkreis
-        const circleText = document.getElementById('circle-text'); // Text im Kreis ("START")
-        const circleCountdown = document.getElementById('circle-countdown'); // Countdown im Kreis
-        const circleTotalCountdown = document.getElementById('circle-total-countdown'); // Gesamtzeit im Kreis (unter dem Countdown)
-        
-        const currentIntervalNumberDisplay = document.getElementById('current-interval-number'); // Intervall-Nummer unter dem Kreis
-        const totalCountdownBelowCircle = document.getElementById('total-countdown-below-circle'); // Gesamtzeit unter dem Kreis
+    const body = document.body;
+    const mainCircle = document.getElementById('main-circle');
+    const circleText = document.getElementById('circle-text');
+    const circleCountdown = document.getElementById('circle-countdown');
+    const circleTotalCountdown = document.getElementById('circle-total-countdown');
+    const currentIntervalNumberDisplay = document.getElementById('current-interval-number');
+    const totalCountdownBelowCircle = document.getElementById('total-countdown-below-circle');
+    const endButton = document.getElementById('end-button');
+    const endConfirmationDialog = document.getElementById('end-confirmation-dialog');
+    const cancelEndButton = document.getElementById('cancel-end');
+    const confirmEndButton = document.getElementById('confirm-end');
+    const intervalListContainer = document.getElementById('interval-list-container');
 
-        const endButton = document.getElementById('end-button');
-        const endConfirmationDialog = document.getElementById('end-confirmation-dialog');
-        const cancelEndButton = document.getElementById('cancel-end');
-        const confirmEndButton = document.getElementById('confirm-end');
-        const intervalListContainer = document.getElementById('interval-list-container');
-        let intervalItems = []; // Wird nach DOM-Load aktualisiert
+    let timerData = null;
+    let intervalItems = [];
+    let signals = []; // Array für geladene Signale
+    let isTimerRunning = false;
+    let isTimerPaused = false;
+    let currentIntervalIndex = 0;
+    let currentRepeat = 1;
+    let totalRepeats = 1;
+    let currentIntervalTimeRemaining = 0;
+    let totalTimeRemaining = 0;
+    let timerIntervalId;
 
-        let isTimerRunning = false;
-        let isTimerPaused = false;
-        let currentIntervalIndex = 0; // Startet bei 0
-        let currentIntervalTimeRemaining = 0; // Aktuelle Zeit des Intervalls in Sekunden
-        let totalTimeRemaining = 0; // Gesamt verbleibende Zeit in Sekunden
-        let timerIntervalId; // Speichert den Interval-ID für clearInterval
+    function updateBackgroundAndCircleColor(type, isWarning = false) {
+        body.classList.remove('bg-interval', 'bg-rest', 'bg-warning', 'bg-initial');
+        mainCircle.classList.remove('circle-interval', 'circle-rest', 'circle-warning', 'circle-initial');
 
-        // Dummy-Daten für Timer-Intervalle (später dynamisch)
-        // Dauer in Sekunden (wie im Input gewünscht, nicht 5s für Test)
-        const timerIntervalsData = [
-            { type: 'interval', name: 'Warm-up', duration: 10 },
-            { type: 'rest', name: 'Rest', duration: 10 },
-            { type: 'interval', name: 'Set 1', duration: 10 }, // 3 Minuten
-            { type: 'rest', name: 'Rest', duration: 10 },
-            { type: 'interval', name: 'Set 2', duration: 10 }, // 2 Minuten
-            { type: 'rest', name: 'Rest', duration: 10 },
-            { type: 'interval', name: 'Cool-down', duration: 10 }, // 1 Minute
-        ];
-
-        // --- Hilfsfunktionen ---
-
-        function formatTime(seconds) {
-            const m = Math.floor(seconds / 60);
-            const s = seconds % 60;
-            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        if (isWarning) {
+            body.classList.add('bg-warning');
+            mainCircle.classList.add('circle-warning');
+        } else if (type === 'interval') {
+            body.classList.add('bg-interval');
+            mainCircle.classList.add('circle-interval');
+        } else if (type === 'rest') {
+            body.classList.add('bg-rest');
+            mainCircle.classList.add('circle-rest');
+        } else {
+            body.classList.add('bg-initial');
+            mainCircle.classList.add('circle-initial');
         }
+    }
 
-        function updateBackgroundAndCircleColor(type, isWarning = false) {
-            // Entfernt alle bg- und circle-Klassen
-            body.classList.remove('bg-interval', 'bg-rest', 'bg-warning', 'bg-initial');
-            mainCircle.classList.remove('circle-interval', 'circle-rest', 'circle-warning', 'circle-initial');
-
-            if (isWarning) {
-                body.classList.add('bg-warning');
-                mainCircle.classList.add('circle-warning');
-            } else if (type === 'interval') {
-                body.classList.add('bg-interval');
-                mainCircle.classList.add('circle-interval');
-            } else if (type === 'rest') {
-                body.classList.add('bg-rest');
-                mainCircle.classList.add('circle-rest');
-            } else { // 'initial' oder 'stopped'
-                body.classList.add('bg-initial');
-                mainCircle.classList.add('circle-initial');
+    function highlightCurrentInterval() {
+        intervalItems.forEach((item, index) => {
+            item.classList.remove('active');
+            if (index === currentIntervalIndex) {
+                item.classList.add('active');
+                item.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-        }
+        });
+    }
 
-        function highlightCurrentInterval() {
-            intervalItems.forEach((item, index) => {
-                item.classList.remove('active');
-                if (index === currentIntervalIndex) {
-                    item.classList.add('active');
-                    item.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Für iOS optimiertes Scrollen
-                }
-            });
-        }
-
-        function updateCircleContent() {
-            if (isTimerRunning && !isTimerPaused) {
-                // Timer läuft, zeige Countdown im Kreis
-                circleText.classList.add('hidden');
-                circleCountdown.textContent = formatTime(currentIntervalTimeRemaining);
-                circleCountdown.classList.remove('hidden');
-                circleTotalCountdown.classList.add('hidden'); // Gesamtzeit im Kreis ausblenden (nicht gewünscht)
-            } else if (isTimerPaused) {
-                // Timer pausiert, zeige "START" im Kreis
-                circleText.textContent = 'START';
-                circleText.classList.remove('hidden');
-                circleCountdown.classList.add('hidden');
-                circleTotalCountdown.classList.add('hidden'); // Gesamtzeit im Kreis ausblenden
-            } else {
-                // Timer nicht gestartet (Initialzustand) oder beendet
-                circleText.textContent = 'START';
-                circleText.classList.remove('hidden');
-                circleCountdown.classList.add('hidden');
-                circleTotalCountdown.classList.add('hidden'); // Gesamtzeit im Kreis ausblenden
-            }
-        }
-
-        function updateSecondaryDisplays() {
-             // Aktualisiere die Anzeigen unter dem Kreis
-            currentIntervalNumberDisplay.textContent = `${(currentIntervalIndex + 1).toString().padStart(2, '0')}`;
-            totalCountdownBelowCircle.textContent = `Gesamt: ${formatTime(totalTimeRemaining)}`;
-        }
-
-        // --- Timer-Logik ---
-
-        function startTimer() {
-            // Initialisiere Interval und Gesamtzeit nur, wenn Timer neu startet oder von "End" kommt
-            if (!isTimerRunning && !isTimerPaused) { // Timer ist komplett gestoppt
-                currentIntervalIndex = 0;
-                totalTimeRemaining = timerIntervalsData.reduce((sum, item) => sum + item.duration, 0);
-                currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
-            } else if (isTimerPaused) {
-                // Timer war pausiert, jetzt fortsetzen
-                // currentIntervalTimeRemaining und totalTimeRemaining behalten ihre Werte
-            }
-
-
-            isTimerRunning = true;
-            isTimerPaused = false;
-            
-            // Initiales Update der Anzeigen
-            updateCircleContent();
-            updateSecondaryDisplays();
-            highlightCurrentInterval();
-            updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
-
-
-            timerIntervalId = setInterval(() => {
-                if (isTimerPaused) return; // Nichts tun, wenn pausiert
-
-                currentIntervalTimeRemaining--;
-                totalTimeRemaining--;
-
-                // Farbwechsel für Warnung (letzte 5 Sekunden)
-                if (currentIntervalTimeRemaining <= 5 && currentIntervalTimeRemaining > 0) {
-                    updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type, true); // True für Warnung
-                } else {
-                    updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
-                }
-                
-                updateCircleContent(); // Aktualisiert den Countdown im Kreis
-                updateSecondaryDisplays(); // Aktualisiert die Zeiten unter dem Kreis
-
-                if (currentIntervalTimeRemaining <= 0) {
-                    // Intervall beendet, zum nächsten wechseln oder Timer beenden
-                    currentIntervalIndex++;
-                    if (currentIntervalIndex < timerIntervalsData.length) {
-                        currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
-                        updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
-                        highlightCurrentInterval();
-                    } else {
-                        // Alle Intervalle durchlaufen, Timer beenden
-                        clearInterval(timerIntervalId);
-                        isTimerRunning = false;
-                        isTimerPaused = false;
-                        resetTimerDisplay();
-                        console.log('Timer beendet!');
-                        // Hier könnte eine "Timer beendet" Meldung oder Aktion erfolgen
-                    }
-                }
-
-                // Wenn Gesamtzeit 0 erreicht, Timer beenden (zusätzliche Sicherheit)
-                if (totalTimeRemaining <= 0) {
-                    clearInterval(timerIntervalId);
-                    isTimerRunning = false;
-                    isTimerPaused = false;
-                    resetTimerDisplay();
-                    console.log('Gesamtzeit abgelaufen!');
-                }
-            }, 1000); // Jede Sekunde aktualisieren
-        }
-
-        function pauseTimer() {
-            isTimerPaused = true;
-            clearInterval(timerIntervalId);
-            updateCircleContent(); // Aktualisiert den Kreis auf "START"
-        }
-
-        function resetTimer() {
-            clearInterval(timerIntervalId);
-            isTimerRunning = false;
-            isTimerPaused = false;
-            currentIntervalIndex = 0;
-            totalTimeRemaining = 0; // Wird beim nächsten Start neu berechnet
-            currentIntervalTimeRemaining = 0; // Wird beim nächsten Start neu gesetzt
-
-            resetTimerDisplay(); // Setzt alle Anzeigen zurück
-            updateBackgroundAndCircleColor('initial'); // Setzt Hintergrund auf initial
-            intervalItems.forEach(item => item.classList.remove('active')); // Alle Highlights entfernen
-        }
-
-        function resetTimerDisplay() {
-            // Setzt die Anzeige im Kreis zurück
+    function updateCircleContent() {
+        if (isTimerRunning && !isTimerPaused) {
+            circleText.classList.add('hidden');
+            circleCountdown.textContent = secondsToTimeString(currentIntervalTimeRemaining);
+            circleCountdown.classList.remove('hidden');
+            circleTotalCountdown.classList.add('hidden');
+        } else if (isTimerPaused) {
             circleText.textContent = 'START';
             circleText.classList.remove('hidden');
             circleCountdown.classList.add('hidden');
             circleTotalCountdown.classList.add('hidden');
+        } else {
+            circleText.textContent = 'START';
+            circleText.classList.remove('hidden');
+            circleCountdown.classList.add('hidden');
+            circleTotalCountdown.classList.add('hidden');
+        }
+    }
 
-            // Setzt die Anzeigen unter dem Kreis zurück
-            currentIntervalNumberDisplay.textContent = '00';
-            totalCountdownBelowCircle.textContent = 'Gesamt: 00:00';
+    function updateSecondaryDisplays() {
+        currentIntervalNumberDisplay.textContent = `${(currentIntervalIndex + 1).toString().padStart(2, '0')} / ${currentRepeat}/${totalRepeats}`;
+        totalCountdownBelowCircle.textContent = `Gesamt: ${secondsToTimeString(totalTimeRemaining)}`;
+    }
+
+    function playIntervalSound(signalId) {
+        if (!signalId) return; // Kein Sound, wenn kein signalId vorhanden
+        try {
+            const signal = signals.find(s => s.id === signalId);
+            if (signal && signal.filePath) {
+                const audio = new Audio(signal.filePath);
+                audio.play().catch(e => console.error('Fehler beim Abspielen des Signals:', e));
+            }
+        } catch (e) {
+            console.error('Fehler beim Verarbeiten des Signals:', e);
+        }
+    }
+
+    function startTimer() {
+        if (!isTimerRunning && !isTimerPaused) {
+            currentIntervalIndex = 0;
+            currentRepeat = 1;
+            totalTimeRemaining = timerData.intervals.reduce((sum, item) => sum + item.duration, 0) * timerData.repeat;
+            currentIntervalTimeRemaining = timerData.intervals[currentIntervalIndex].duration;
+            // Spiele Sound des ersten Intervalls
+            playIntervalSound(timerData.intervals[currentIntervalIndex].signalId);
+        } else if (isTimerPaused) {
+            // Fortsetzen, kein Sound erforderlich
         }
 
+        isTimerRunning = true;
+        isTimerPaused = false;
 
-        // --- Event Listener ---
+        updateCircleContent();
+        updateSecondaryDisplays();
+        highlightCurrentInterval();
+        updateBackgroundAndCircleColor(timerData.intervals[currentIntervalIndex].type);
 
-        mainCircle.addEventListener('click', () => {
-            if (isTimerRunning && !isTimerPaused) {
-                // Timer läuft, Kreis klick = Pause
-                pauseTimer();
+        timerIntervalId = setInterval(() => {
+            if (isTimerPaused) return;
+
+            currentIntervalTimeRemaining--;
+            totalTimeRemaining--;
+
+            if (currentIntervalTimeRemaining <= 5 && currentIntervalTimeRemaining > 0) {
+                updateBackgroundAndCircleColor(timerData.intervals[currentIntervalIndex].type, true);
             } else {
-                // Timer pausiert oder nicht gestartet, Kreis klick = Start / Fortsetzen
-                startTimer();
+                updateBackgroundAndCircleColor(timerData.intervals[currentIntervalIndex].type);
+            }
+
+            updateCircleContent();
+            updateSecondaryDisplays();
+
+            if (currentIntervalTimeRemaining <= 0) {
+                currentIntervalIndex++;
+                if (currentIntervalIndex < timerData.intervals.length) {
+                    currentIntervalTimeRemaining = timerData.intervals[currentIntervalIndex].duration;
+                    updateBackgroundAndCircleColor(timerData.intervals[currentIntervalIndex].type);
+                    highlightCurrentInterval();
+                    // Spiele Sound des neuen Intervalls
+                    playIntervalSound(timerData.intervals[currentIntervalIndex].signalId);
+                } else if (currentRepeat < totalRepeats) {
+                    currentIntervalIndex = 0;
+                    currentRepeat++;
+                    currentIntervalTimeRemaining = timerData.intervals[currentIntervalIndex].duration;
+                    updateBackgroundAndCircleColor(timerData.intervals[currentIntervalIndex].type);
+                    highlightCurrentInterval();
+                    // Spiele Sound des ersten Intervalls der neuen Wiederholung
+                    playIntervalSound(timerData.intervals[currentIntervalIndex].signalId);
+                } else {
+                    clearInterval(timerIntervalId);
+                    isTimerRunning = false;
+                    isTimerPaused = false;
+                    resetTimerDisplay();
+                    localStorage.removeItem('selectedTimerId');
+                    window.location.href = '../home-screen/index.html';
+                }
+            }
+
+            if (totalTimeRemaining <= 0) {
+                clearInterval(timerIntervalId);
+                isTimerRunning = false;
+                isTimerPaused = false;
+                resetTimerDisplay();
+                localStorage.removeItem('selectedTimerId');
+                window.location.href = '../home-screen/index.html';
+            }
+        }, 1000);
+    }
+
+    function pauseTimer() {
+        isTimerPaused = true;
+        clearInterval(timerIntervalId);
+        updateCircleContent();
+    }
+
+    function resetTimer() {
+        clearInterval(timerIntervalId);
+        isTimerRunning = false;
+        isTimerPaused = false;
+        currentIntervalIndex = 0;
+        currentRepeat = 1;
+        totalTimeRemaining = 0;
+        currentIntervalTimeRemaining = 0;
+
+        resetTimerDisplay();
+        updateBackgroundAndCircleColor('initial');
+        intervalItems.forEach(item => item.classList.remove('active'));
+    }
+
+    function resetTimerDisplay() {
+        circleText.textContent = 'START';
+        circleText.classList.remove('hidden');
+        circleCountdown.classList.add('hidden');
+        circleTotalCountdown.classList.add('hidden');
+        currentIntervalNumberDisplay.textContent = '00';
+        totalCountdownBelowCircle.textContent = 'Gesamt: 00:00';
+    }
+
+    mainCircle.addEventListener('click', () => {
+        if (isTimerRunning && !isTimerPaused) {
+            pauseTimer();
+        } else {
+            startTimer();
+        }
+    });
+
+    endButton.addEventListener('click', () => {
+        endConfirmationDialog.classList.add('active');
+        pauseTimer();
+    });
+
+    cancelEndButton.addEventListener('click', () => {
+        endConfirmationDialog.classList.remove('active');
+    });
+
+    confirmEndButton.addEventListener('click', () => {
+        endConfirmationDialog.classList.remove('active');
+        resetTimer();
+        localStorage.removeItem('selectedTimerId');
+        window.location.href = '../home-screen/index.html';
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const selectedTimerId = localStorage.getItem('selectedTimerId');
+        if (!selectedTimerId) {
+            console.error('Kein Timer ausgewählt. Navigiere zurück zum Home Screen.');
+            window.location.href = '../home-screen/index.html';
+            return;
+        }
+
+        const allTimers = loadTimers();
+        timerData = allTimers.find(t => t.id === selectedTimerId);
+        if (!timerData) {
+            console.error(`Timer mit ID ${selectedTimerId} nicht gefunden.`);
+            window.location.href = '../home-screen/index.html';
+            return;
+        }
+
+        // Lade Signale
+        signals = loadSignals();
+
+        document.querySelector('header h1').textContent = timerData.name || 'Mein Timer';
+        totalRepeats = timerData.repeat || 1;
+
+        const listContainer = document.getElementById('interval-list-container');
+        listContainer.innerHTML = '';
+        timerData.intervals.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.classList.add('interval-item');
+            div.setAttribute('data-type', item.type);
+            div.setAttribute('data-duration', item.duration);
+            div.setAttribute('data-name', item.name);
+            div.setAttribute('data-id', item.id);
+
+            const itemName = item.type === 'rest' ? 'Rest' : (item.name || `Intervall ${index + 1}`);
+            div.innerHTML = `
+                <span class="interval-item-name">${itemName}</span>
+                <span class="interval-item-time">${secondsToTimeString(item.duration)}</span>
+            `;
+            listContainer.appendChild(div);
+        });
+
+        intervalItems = Array.from(document.querySelectorAll('.interval-item'));
+
+        const backButton = document.getElementById('back-button');
+        backButton.addEventListener('click', () => {
+            if (isTimerRunning || isTimerPaused) {
+                endConfirmationDialog.classList.add('active');
+            } else {
+                localStorage.removeItem('selectedTimerId');
+                window.location.href = '../home-screen/index.html';
             }
         });
 
-        endButton.addEventListener('click', () => {
-            endConfirmationDialog.classList.add('active');
-            pauseTimer(); // Pausiert den Timer, wenn Dialog geöffnet wird
-        });
-
-        cancelEndButton.addEventListener('click', () => {
-            endConfirmationDialog.classList.remove('active');
-            // Timer bleibt pausiert, Benutzer kann entscheiden, ob er fortfahren will
-        });
-
-        confirmEndButton.addEventListener('click', () => {
-            endConfirmationDialog.classList.remove('active');
-            resetTimer(); // Timer vollständig zurücksetzen
-        });
-
-        // --- Initialisierung beim Laden ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Die Intervall-Liste dynamisch aus den Dummy-Daten erstellen
-            const listContainer = document.getElementById('interval-list-container');
-            listContainer.innerHTML = ''; // Vorhandene Dummy-Items entfernen
-            timerIntervalsData.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.classList.add('interval-item');
-                // Daten-Attribute hinzufügen, um sie später zu nutzen
-                div.setAttribute('data-type', item.type);
-                div.setAttribute('data-duration', item.duration);
-                if (item.name) div.setAttribute('data-name', item.name);
-
-                // `data-name` wird verwendet, `Rest` ist statisch, sonst der Name
-                const itemName = item.type === 'rest' ? 'Rest' : (item.name || `Intervall ${index + 1}`);
-
-                div.innerHTML = `
-                    <span class="interval-item-name">${itemName}</span>
-                    <span class="interval-item-time">${formatTime(item.duration)}</span>
-                `;
-                listContainer.appendChild(div);
-            });
-
-            // Wichtig: intervalItems muss NACH dem (Neu-)Rendern der Liste aktualisiert werden
-            intervalItems = Array.from(document.querySelectorAll('.interval-item'));
-
-            // Setzt den initialen Hintergrund auf die Startfarbe des Home-Screens
-            updateBackgroundAndCircleColor('initial');
-            resetTimerDisplay(); // Sicherstellen, dass alle Anzeigen auf 00:00 sind
-        });
-
-    </script>
+        updateBackgroundAndCircleColor('initial');
+        resetTimerDisplay();
+    });
+</script>
 </body>
 </html>
