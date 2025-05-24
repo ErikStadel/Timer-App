@@ -776,7 +776,7 @@
               }
           } else {
               headerTitle.textContent = 'Add Timer';
-              currentTimerId = null;
+              currentTimerId = generateUniqueId(); // Generiere eine neue ID für den Timer
               intervals = [];
           }
           renderIntervalList();
