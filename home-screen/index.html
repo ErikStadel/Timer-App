@@ -460,8 +460,13 @@
             animation: 150,
             onEnd: function (evt) {
               const newTimers = Array.from(timerList.children).map((item, index) => {
-                return timers[evt.oldIndex];
+                return timers[index];
               });
+              const oldIndex = evt.oldIndex;
+              const newIndex = evt.newIndex;
+              const movedItem = newTimers[oldIndex];
+              newTimers.splice(oldIndex, 1);
+              newTimers.splice(newIndex, 0, movedItem);
               timers = newTimers;
             }
           });
