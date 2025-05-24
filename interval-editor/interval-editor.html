@@ -6,9 +6,10 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>Intervall Popup</title>
+  <title>Intervall Editor</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../js/dataStorage.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -426,6 +427,26 @@
             duration: duration,
             type: type
         };
+
+        // Speichere die Daten in localStorage
+        let allTimers = loadTimers();
+        let timerIndex = -1;
+        let intervalIndex = -1;
+
+        // Finde den Timer und das Intervall, das bearbeitet wird
+        allTimers.forEach((timer, tIndex) => {
+            timer.intervals.forEach((interval, iIndex) => {
+                if (interval.id === currentIntervalId) {
+                    timerIndex = tIndex;
+                    intervalIndex = iIndex;
+                }
+            });
+        });
+
+        if (timerIndex !== -1 && intervalIndex !== -1) {
+            allTimers[timerIndex].intervals[intervalIndex] = intervalData;
+            saveTimers(allTimers);
+        }
 
         // Sende die Daten an den Timer-Editor zurück
         if (window.opener) {
