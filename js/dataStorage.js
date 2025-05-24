@@ -3,14 +3,6 @@
 const TIMER_STORAGE_KEY = 'martialArtsTimers';
 const SIGNAL_STORAGE_KEY = 'martialArtsSignals';
 
-/**
- * Generiert eine eindeutige ID für Timer oder Intervalle.
- * @returns {string} Eindeutige ID im Format "timestamp-randomString".
- */
-function generateUniqueId() {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
 // --- Definition der Datenstrukturen und Beispiel-Daten ---
 
 /**
@@ -68,53 +60,6 @@ const defaultTimers = [
     }
 ];
 
-/**
- * Konvertiert Sekunden in MM:SS-Format.
- * @param {number} seconds - Dauer in Sekunden.
- * @returns {string} Formatierte Zeit im MM:SS-Format.
- */
-function secondsToTimeString(seconds) {
-    const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const secs = (seconds % 60).toString().padStart(2, '0');
-    return `${minutes}:${secs}`;
-}
-
-/**
- * Konvertiert MM:SS-Format in Sekunden.
- * @param {string} timeString - Zeit im Format MM:SS.
- * @returns {number} Dauer in Sekunden.
- */
-function timeStringToSeconds(timeString) {
-    if (!timeString || !timeString.includes(':')) return 0;
-    const [minutes, seconds] = timeString.split(':').map(Number);
-    return (minutes * 60) + seconds;
-}
-
-/**
- * Validiert ein Timer-Objekt.
- * @param {Timer} timer - Zu validierender Timer.
- * @returns {boolean} True, wenn der Timer gültig ist.
- */
-function isValidTimer(timer) {
-    return (
-        timer &&
-        typeof timer.name === 'string' &&
-        timer.name.trim() !== '' &&
-        Number.isInteger(timer.repeat) &&
-        timer.repeat >= 1 &&
-        Array.isArray(timer.intervals) &&
-        timer.intervals.length > 0 &&
-        timer.intervals.every(interval =>
-            interval &&
-            typeof interval.name === 'string' &&
-            interval.name.trim() !== '' &&
-            typeof interval.duration === 'number' &&
-            interval.duration >= 0 &&
-            ['interval', 'rest'].includes(interval.type)
-        )
-    );
-}
-
 // --- Lokale Speicher-Funktionen ---
 
 /**
@@ -141,8 +86,7 @@ function loadTimers() {
  */
 function saveTimers(timers) {
     try {
-        const validTimers = timers.filter(isValidTimer);
-        localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(validTimers));
+        localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(timers));
     } catch (e) {
         console.error("Fehler beim Speichern der Timer in localStorage:", e);
     }
