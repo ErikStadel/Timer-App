@@ -148,6 +148,78 @@
       .timer-item.sortable-mode .sort-icon {
         opacity: 1;
       }
+
+      /* Confirmation Dialog Styles */
+      .confirmation-dialog-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.6);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 100;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+
+      .confirmation-dialog-overlay.active {
+          opacity: 1;
+          visibility: visible;
+      }
+
+      .confirmation-dialog {
+          background-color: #124559;
+          color: #EFF6E0;
+          padding: 1.5rem;
+          border-radius: 0.75rem;
+          text-align: center;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+          max-width: 80%;
+          min-width: 280px;
+      }
+
+      .confirmation-dialog p {
+          font-size: 1.1rem;
+          margin-bottom: 1.5rem;
+      }
+
+      .confirmation-dialog-buttons {
+          display: flex;
+          justify-content: space-around;
+          gap: 1rem;
+      }
+
+      .btn-cancel, .btn-confirm {
+          padding: 0.75rem 1.5rem;
+          border-radius: 0.5rem;
+          font-weight: bold;
+          cursor: pointer;
+          border: none;
+          font-size: 1rem;
+          flex-grow: 1;
+      }
+
+      .btn-cancel {
+          background-color: #598392;
+          color: #EFF6E0;
+      }
+
+      .btn-cancel:hover {
+          background-color: #AEC3B0;
+      }
+
+      .btn-confirm {
+          background-color: #e76f51;
+          color: #EFF6E0;
+      }
+
+      .btn-confirm:hover {
+          background-color: #fc814a;
+      }
     </style>
   </head>
   <body class="text-light">
@@ -174,11 +246,25 @@
       </div>
     </header>
     <ul class="timer-list"></ul>
+
+    <div class="confirmation-dialog-overlay" id="deleteConfirmationDialog">
+        <div class="confirmation-dialog">
+            <p>Delete Timer?</p>
+            <div class="confirmation-dialog-buttons">
+                <button class="btn-cancel" id="cancelDelete">Cancel</button>
+                <button class="btn-confirm" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <script>
       const header = document.getElementById('header');
       const timerList = document.querySelector('.timer-list');
       const addButton = document.getElementById('addButton');
       const saveButton = document.getElementById('saveButton');
+      const deleteConfirmationDialog = document.getElementById('deleteConfirmationDialog');
+      const cancelDeleteButton = document.getElementById('cancelDelete');
+      const confirmDeleteButton = document.getElementById('confirmDelete');
       let activeOptionsItem = null;
       let sortable = null;
       let longPressTimer = null;
@@ -186,6 +272,7 @@
       let isSortableMode = false;
 
       let timers = loadTimers();
+      let timerToDeleteId = null;
 
       renderTimerList();
 
@@ -229,7 +316,7 @@
             } else if (optionText === 'Clone') {
               cloneTimer(timerIndex);
             } else if (optionText === 'Delete') {
-              deleteTimer(timerToDelete, timerIndex);
+              showDeleteConfirmation(timerToDelete.id);
             }
           });
           optionsElement.appendChild(optionSpan);
@@ -258,6 +345,19 @@
         }
       }
 
+      function showDeleteConfirmation(timerId) {
+        timerToDeleteId = timerId;
+        deleteConfirmationDialog.classList.add('active');
+      }
+
+      function hideDeleteConfirmation() {
+        deleteConfirmationDialog.classList.remove('active');
+        timerToDeleteId = null;
+        if (activeOptionsItem) {
+          closeOptions(activeOptionsItem);
+        }
+      }
+
       function cloneTimer(indexToClone) {
         const timerToClone = { ...timers[indexToClone], id: generateUniqueId() };
         timers.splice(indexToClone + 1, 0, timerToClone);
@@ -265,11 +365,15 @@
         renderTimerList();
       }
 
-      function deleteTimer(timerToDelete, indexToDelete) {
-        if (confirm(`Möchtest du den Timer "${timerToDelete.name}" wirklich löschen?`)) {
-          timers.splice(indexToDelete, 1);
-          saveTimers(timers);
-          renderTimerList();
+      function deleteTimerConfirmed() {
+        if (timerToDeleteId) {
+          const indexToDelete = timers.findIndex(timer => timer.id === timerToDeleteId);
+          if (indexToDelete !== -1) {
+            timers.splice(indexToDelete, 1);
+            saveTimers(timers);
+            renderTimerList();
+          }
+          hideDeleteConfirmation();
         }
       }
 
@@ -368,6 +472,9 @@
         disableSortableMode();
         saveTimers(timers);
       });
+
+      cancelDeleteButton.addEventListener('click', hideDeleteConfirmation);
+      confirmDeleteButton.addEventListener('click', deleteTimerConfirmed);
 
       window.addEventListener('scroll', () => {
         if (window.scrollY > 0) {
