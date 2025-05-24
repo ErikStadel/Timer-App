@@ -391,239 +391,241 @@
     const signalSelect = document.getElementById('signalSelect');
 
     let currentIntervalId = null;
-    let selectedSignalId = null;
 
-    // Wheel-Funktionalität
+    // Wheel-Funktionalität (unverändert)
     wheels.forEach((wheel) => {
-      setTimeout(() => updateWheel(wheel), 10);
-      wheel.addEventListener('scroll', () => updateWheel(wheel));
-      wheel.addEventListener('keydown', (e) => handleWheelKeyboard(e, wheel));
+        setTimeout(() => updateWheel(wheel), 10);
+        wheel.addEventListener('scroll', () => updateWheel(wheel));
+        wheel.addEventListener('keydown', (e) => handleWheelKeyboard(e, wheel));
     });
 
     function updateWheel(wheel) {
-      const items = wheel.getElementsByClassName('wheel-item');
-      clearTimeout(wheel.scrollTimeout);
+        const items = wheel.getElementsByClassName('wheel-item');
+        clearTimeout(wheel.scrollTimeout);
 
-      wheel.scrollTimeout = setTimeout(() => {
-        const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
-        let closestItem = null;
-        let minDistance = Infinity;
+        wheel.scrollTimeout = setTimeout(() => {
+            const叀wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
+            let closestItem = null;
+            let minDistance = Infinity;
 
-        Array.from(items).forEach((item) => {
-          const rect = item.getBoundingClientRect();
-          const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
+            Array.from(items).forEach((item) => {
+                const rect = item.getBoundingClientRect();
+                const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
 
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestItem = item;
-          }
-          item.classList.remove('selected');
-          item.setAttribute('aria-selected', 'false');
-        });
-
-        if (closestItem) {
-          closestItem.classList.add('selected');
-          closestItem.setAttribute('aria-selected', 'true');
-          const currentScrollTop = wheel.scrollTop;
-          const targetScrollTop = closestItem.offsetTop - wheel.offsetHeight / 2 + closestItem.offsetHeight / 2;
-          if (Math.abs(currentScrollTop - targetScrollTop) > 1) {
-            wheel.scrollTo({
-              top: targetScrollTop,
-              behavior: 'smooth'
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestItem = item;
+                }
+                item.classList.remove('selected');
+                item.setAttribute('aria-selected', 'false');
             });
-          }
-        }
-      }, 50);
+
+            if (closestItem) {
+                closestItem.classList.add('selected');
+                closestItem.setAttribute('aria-selected', 'true');
+                const currentScrollTop = wheel.scrollTop;
+                const targetScrollTop = closestItem.offsetTop - wheel.offsetHeight / 2 + closestItem.offsetHeight / 2;
+                if (Math.abs(currentScrollTop - targetScrollTop) > 1) {
+                    wheel.scrollTo({
+                        top: targetScrollTop,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        }, 50);
     }
 
     function handleWheelKeyboard(e, wheel) {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const items = Array.from(wheel.querySelectorAll('.wheel-item'));
-        const selectedIndex = items.findIndex(item => item.classList.contains('selected'));
-        let newIndex = selectedIndex;
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const items = Array.from(wheel.querySelectorAll('.wheel-item'));
+            const selectedIndex = items.findIndex(item => item.classList.contains('selected'));
+            let newIndex = selectedIndex;
 
-        if (e.key === 'ArrowUp' && selectedIndex > 0) {
-          newIndex = selectedIndex - 1;
-        } else if (e.key === 'ArrowDown' && selectedIndex < items.length - 1) {
-          newIndex = selectedIndex + 1;
-        }
+            if (e.key === 'ArrowUp' && selectedIndex > 0) {
+                newIndex = selectedIndex - 1;
+            } else if (e.key === 'ArrowDown' && selectedIndex < items.length - 1) {
+                newIndex = selectedIndex + 1;
+            }
 
-        if (newIndex !== selectedIndex) {
-          const targetItem = items[newIndex];
-          wheel.scrollTo({
-            top: targetItem.offsetTop - wheel.offsetHeight / 2 + targetItem.offsetHeight / 2,
-            behavior: 'smooth'
-          });
-          setTimeout(() => updateWheel(wheel), 100);
+            if (newIndex !== selectedIndex) {
+                const targetItem = items[newIndex];
+                wheel.scrollTo({
+                    top: targetItem.offsetTop - wheel.offsetHeight / 2 + targetItem.offsetHeight / 2,
+                    behavior: 'smooth'
+                });
+                setTimeout(() => updateWheel(wheel), 100);
+            }
         }
-      }
     }
 
     function setWheelValue(wheelId, value) {
-      const wheel = document.getElementById(wheelId);
-      if (wheel) {
-        const items = Array.from(wheel.querySelectorAll('.wheel-item'));
-        const itemToSelect = items.find(item => item.textContent === value);
-        if (itemToSelect) {
-          wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
-          setTimeout(() => updateWheel(wheel), 100);
+        const wheel = document.getElementById(wheelId);
+        if (wheel) {
+            const items = Array.from(wheel.querySelectorAll('.wheel-item'));
+            const itemToSelect = items.find(item => item.textContent === value);
+            if (itemToSelect) {
+                wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
+                setTimeout(() => updateWheel(wheel), 100);
+            }
         }
-      }
     }
 
-    // Tab-Funktionalität
+    // Tab-Funktionalität (unverändert)
     tabInterval.addEventListener('click', function() {
-      tabInterval.classList.add('active');
-      tabInterval.classList.remove('inactive');
-      tabRest.classList.add('inactive');
-      tabRest.classList.remove('active');
-      tabInterval.setAttribute('aria-selected', 'true');
-      tabRest.setAttribute('aria-selected', 'false');
+        tabInterval.classList.add('active');
+        tabInterval.classList.remove('inactive');
+        tabRest.classList.add('inactive');
+        tabRest.classList.remove('active');
+        tabInterval.setAttribute('aria-selected', 'true');
+        tabRest.setAttribute('aria-selected', 'false');
 
-      contentInterval.classList.add('active');
-      contentRest.classList.remove('active');
+        contentInterval.classList.add('active');
+        contentRest.classList.remove('active');
 
-      setTimeout(() => {
-        document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
-      }, 0);
+        setTimeout(() => {
+            document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
+        }, 0);
     });
 
     tabRest.addEventListener('click', function() {
-      tabRest.classList.add('active');
-      tabRest.classList.remove('inactive');
-      tabInterval.classList.add('inactive');
-      tabInterval.classList.remove('active');
-      tabRest.setAttribute('aria-selected', 'true');
-      tabInterval.setAttribute('aria-selected', 'false');
+        tabRest.classList.add('active');
+        tabRest.classList.remove('inactive');
+        tabInterval.classList.add('inactive');
+        tabInterval.classList.remove('active');
+        tabRest.setAttribute('aria-selected', 'true');
+        tabInterval.setAttribute('aria-selected', 'false');
 
-      contentRest.classList.add('active');
-      contentInterval.classList.remove('active');
+        contentRest.classList.add('active');
+        contentInterval.classList.remove('active');
 
-      setTimeout(() => {
-        document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
-      }, 0);
+        setTimeout(() => {
+            document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
+        }, 0);
     });
 
-    // Signal-Dropdown füllen
+    // Signal-Dropdown füllen (unverändert)
     function populateSignalSelect(signals) {
-      signalSelect.innerHTML = '<option value="">Kein Signal</option>';
-      signals.forEach(signal => {
-        const option = document.createElement('option');
-        option.value = signal.id;
-        option.textContent = signal.name;
-        signalSelect.appendChild(option);
-      });
+        signalSelect.innerHTML = '<option value="">Kein Signal</option>';
+        signals.forEach(signal => {
+            const option = document.createElement('option');
+            option.value = signal.id;
+            option.textContent = signal.name;
+            signalSelect.appendChild(option);
+        });
     }
 
-    // Speichern-Funktionalität
+    // Speichern-Funktionalität (angepasst)
     saveIntervalButton.addEventListener('click', () => {
-      const name = intervalNameInput.value.trim();
-      const type = tabInterval.classList.contains('active') ? 'interval' : 'rest';
+        const name = intervalNameInput.value.trim();
+        const type = tabInterval.classList.contains('active') ? 'interval' : 'rest';
 
-      let minutesElement, secondsElement;
-      if (type === 'interval') {
-        minutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
-        secondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
-      } else {
-        minutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
-        secondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
-      }
-
-      if (!minutesElement || !secondsElement) {
-        alert('Bitte wähle eine gültige Zeit aus.');
-        return;
-      }
-
-      const minutes = parseInt(minutesElement.textContent, 10);
-      const seconds = parseInt(secondsElement.textContent, 10);
-      const duration = (minutes * 60) + seconds;
-
-      if (!name) {
-        alert('Intervallname darf nicht leer sein.');
-        return;
-      }
-      if (duration <= 0) {
-        alert('Intervall-Dauer muss größer als 0 Sekunden sein.');
-        return;
-      }
-
-      const intervalData = {
-        id: currentIntervalId || generateUniqueId(),
-        name: name,
-        duration: duration,
-        type: type,
-        signalId: signalSelect.value || null
-      };
-
-      if (window.opener && window.location.origin === window.opener.location.origin) {
-        window.opener.postMessage({ type: 'saveInterval', data: intervalData }, window.location.origin);
-        window.close();
-      } else {
-        alert('Fehler: Kein Elternfenster gefunden. Intervall wird nicht gespeichert.');
-        console.warn('No opener window found or origin mismatch. Interval data not sent.');
-      }
-    });
-
-    cancelButton.addEventListener('click', () => {
-      window.close();
-    });
-
-    // Initialisierung
-    document.addEventListener('DOMContentLoaded', () => {
-      // Signal-Dropdown füllen
-      const signals = loadSignals();
-      populateSignalSelect(signals);
-
-      // Initial alle Wheels aktualisieren
-      wheels.forEach((wheel) => {
-        updateWheel(wheel);
-      });
-
-      // Standardwerte für neue Intervalle
-      const selectedIntervalId = localStorage.getItem('selectedIntervalId');
-      if (!selectedIntervalId) {
-        setWheelValue('minutes-wheel', '00');
-        setWheelValue('seconds-wheel', '00');
-        intervalNameInput.value = 'Intervall';
-        tabInterval.click();
-        signalSelect.value = '';
-      }
-
-      // Daten vom Timer Editor laden
-      window.addEventListener('message', (event) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data && event.data.type === 'loadInterval') {
-          const intervalToLoad = event.data.data;
-          currentIntervalId = intervalToLoad.id;
-          intervalNameInput.value = intervalToLoad.name;
-
-          if (intervalToLoad.type === 'rest') {
-            tabRest.click();
-          } else {
-            tabInterval.click();
-          }
-
-          const minutes = Math.floor(intervalToLoad.duration / 60).toString().padStart(2, '0');
-          const seconds = (intervalToLoad.duration % 60).toString().padStart(2, '0');
-
-          if (intervalToLoad.type === 'interval') {
-            setWheelValue('minutes-wheel', minutes);
-            setWheelValue('seconds-wheel', seconds);
-          } else {
-            setWheelValue('minutes-wheel-rest', minutes);
-            setWheelValue('seconds-wheel-rest', seconds);
-          }
-
-          signalSelect.value = intervalToLoad.signalId || '';
+        let minutesElement, secondsElement;
+        if (type === 'interval') {
+            minutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
+            secondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
+        } else {
+            minutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
+            secondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
         }
-      });
 
-      // Nachricht an Timer Editor senden, um Intervall-Daten anzufordern
-      if (window.opener && localStorage.getItem('selectedIntervalId')) {
-        window.opener.postMessage({ type: 'requestInterval', intervalId: localStorage.getItem('selectedIntervalId') }, window.location.origin);
-      }
+        if (!minutesElement || !secondsElement) {
+            alert('Bitte wähle eine gültige Zeit aus.');
+            return;
+        }
+
+        const minutes = parseInt(minutesElement.textContent, 10);
+        const seconds = parseInt(secondsElement.textContent, 10);
+        const duration = (minutes * 60) + seconds;
+
+        if (!name) {
+            alert('Intervallname darf nicht leer sein.');
+            return;
+        }
+        if (duration <= 0) {
+            alert('Intervall-Dauer muss größer als 0 Sekunden sein.');
+            return;
+        }
+
+        const intervalData = {
+            id: currentIntervalId || generateUniqueId(),
+            name: name,
+            duration: duration,
+            type: type,
+            signalId: signalSelect.value || null
+        };
+
+        // Speichere Intervall-Daten in localStorage
+        let intervals = loadIntervals() || [];
+        const index = intervals.findIndex(i => i.id === intervalData.id);
+        if (index !== -1) {
+            intervals[index] = intervalData;
+        } else {
+            intervals.push(intervalData);
+        }
+        saveIntervals(intervals);
+
+        // Navigiere zurück zum Timer Editor
+        window.location.href = '../timer-editor/timer-editor.html';
     });
-  </script>
+
+    // Abbrechen-Funktionalität (angepasst)
+    cancelButton.addEventListener('click', () => {
+        window.location.href = '../timer-editor/timer-editor.html';
+    });
+
+    // Initialisierung (angepasst)
+    document.addEventListener('DOMContentLoaded', () => {
+        // Signal-Dropdown füllen
+        const signals = loadSignals();
+        populateSignalSelect(signals);
+
+        // Initial alle Wheels aktualisieren
+        wheels.forEach((wheel) => {
+            updateWheel(wheel);
+        });
+
+        // Standardwerte für neue Intervalle
+        const selectedIntervalId = localStorage.getItem('selectedIntervalId');
+        if (!selectedIntervalId) {
+            setWheelValue('minutes-wheel', '00');
+            setWheelValue('seconds-wheel', '00');
+            intervalNameInput.value = 'Intervall';
+            tabInterval.click();
+            signalSelect.value = '';
+        } else {
+            // Lade bestehendes Intervall
+            const intervals = loadIntervals() || [];
+            const intervalToLoad = intervals.find(i => i.id === selectedIntervalId);
+            if (intervalToLoad) {
+                currentIntervalId = intervalToLoad.id;
+                intervalNameInput.value = intervalToLoad.name;
+
+                if (intervalToLoad.type === 'rest') {
+                    tabRest.click();
+                } else {
+                    tabInterval.click();
+                }
+
+                const minutes = Math.floor(intervalToLoad.duration / 60).toString().padStart(2, '0');
+                const seconds = (intervalToLoad.duration % 60).toString().padStart(2, '0');
+
+                if (intervalToLoad.type === 'interval') {
+                    setWheelValue('minutes-wheel', minutes);
+                    setWheelValue('seconds-wheel', seconds);
+                } else {
+                    setWheelValue('minutes-wheel-rest', minutes);
+                    setWheelValue('seconds-wheel-rest', seconds);
+                }
+
+                signalSelect.value = intervalToLoad.signalId || '';
+            } else {
+                // Fallback: Kein Intervall gefunden
+                alert('Intervall nicht gefunden. Kehre zum Timer Editor zurück.');
+                window.location.href = '../timer-editor/timer-editor.html';
+            }
+        }
+    });
+</script>
 </body>
 </html>
