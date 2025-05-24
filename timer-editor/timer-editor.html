@@ -686,7 +686,7 @@
 
               let allTimers = loadTimers();
               let timerToSave = {
-                  id: currentTimerId || generateUniqueId(),
+                  id: currentTimerId, // Verwende die bereits generierte ID
                   name: timerName,
                   repeat: repeatCount,
                   intervals: intervals.map(interval => ({
@@ -771,7 +771,7 @@
                   intervals = JSON.parse(JSON.stringify(timerToLoad.intervals));
               } else {
                   console.warn(`Timer with ID ${selectedTimerId} not found. Starting a new timer.`);
-                  currentTimerId = null;
+                  currentTimerId = generateUniqueId(); // Generiere eine neue ID für den Timer
                   intervals = [];
               }
           } else {
