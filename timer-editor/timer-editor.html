@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#01161E" />
-    <title>Add Timer</title>
+    <title>Timer Editor</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
@@ -348,12 +348,9 @@
       let currentTimerId = null;
       let intervals = [];
 
-      // --- Helper Functions for Data Management (consistent with home-screen) ---
       function generateUniqueId() {
           return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       }
-
-      // --- End Helper Functions ---
 
       function formatTimeForEditor(durationString) {
           if (!durationString || !durationString.includes(':')) {
@@ -372,12 +369,10 @@
           return formatted.join(' ') || "0 Sek";
       }
 
-      // --- Swipe Logic ---
       function handleSwipe(listItem, deltaX) {
-          if (deltaX < -swipeThreshold) { // Swipe Left to show options
+          if (deltaX < -swipeThreshold) {
               showOptions(listItem);
-          }
-          else if (deltaX > swipeThreshold) { // Swipe Right to close options
+          } else if (deltaX > swipeThreshold) {
               closeOptions(listItem);
           } else {
               if (listItem.classList.contains('options-active')) {
@@ -450,9 +445,6 @@
           }
       }
 
-      // --- Confirmation Dialog and Delete Logic ---
-      let intervalToDeleteId = null;
-
       function showDeleteConfirmation(intervalId) {
           intervalToDeleteId = intervalId;
           deleteConfirmationDialog.classList.add('active');
@@ -466,20 +458,11 @@
           }
       }
 
-      cancelDeleteButton.addEventListener('click', hideDeleteConfirmation);
-      confirmDeleteButton.addEventListener('click', () => {
-          if (intervalToDeleteId) {
-              deleteIntervalConfirmed(intervalToDeleteId);
-              hideDeleteConfirmation();
-          }
-      });
-
       function deleteIntervalConfirmed(idToDelete) {
           let newIntervals = intervals.filter(item => item.id !== idToDelete);
           intervals = newIntervals;
           renderIntervalList();
       }
-      // --- End Confirmation Dialog and Delete Logic ---
 
       function renderIntervalList() {
           intervalContainer.innerHTML = '';
@@ -623,7 +606,7 @@
       function enableSortableMode() {
           isSortableMode = true;
           saveButton.textContent = 'Save Order';
-          addIntervalButton.classList.add('disabled'); // Disable add button
+          addIntervalButton.classList.add('disabled');
           addIntervalButton.setAttribute('disabled', 'true');
           const listItems = intervalContainer.querySelectorAll('.interval-item');
           listItems.forEach(item => item.classList.add('sortable-mode'));
@@ -636,7 +619,7 @@
       function disableSortableMode() {
           isSortableMode = false;
           saveButton.textContent = 'Save';
-          addIntervalButton.classList.remove('disabled'); // Enable add button
+          addIntervalButton.classList.remove('disabled');
           addIntervalButton.removeAttribute('disabled');
           const listItems = intervalContainer.querySelectorAll('.interval-item');
           listItems.forEach(item => item.classList.remove('sortable-mode'));
@@ -686,7 +669,7 @@
 
               let allTimers = loadTimers();
               let timerToSave = {
-                  id: currentTimerId, // Verwende die bereits generierte ID
+                  id: currentTimerId || generateUniqueId(),
                   name: timerName,
                   repeat: repeatCount,
                   intervals: intervals.map(interval => ({
@@ -716,7 +699,7 @@
       });
 
       addIntervalButton.addEventListener('click', () => {
-          if (isSortableMode) { // Prevent adding if in sortable mode
+          if (isSortableMode) {
               return;
           }
           const newId = generateUniqueId();
@@ -771,12 +754,12 @@
                   intervals = JSON.parse(JSON.stringify(timerToLoad.intervals));
               } else {
                   console.warn(`Timer with ID ${selectedTimerId} not found. Starting a new timer.`);
-                  currentTimerId = generateUniqueId(); // Generiere eine neue ID für den Timer
+                  currentTimerId = generateUniqueId();
                   intervals = [];
               }
           } else {
               headerTitle.textContent = 'Add Timer';
-              currentTimerId = generateUniqueId(); // Generiere eine neue ID für den Timer
+              currentTimerId = generateUniqueId();
               intervals = [];
           }
           renderIntervalList();
