@@ -259,7 +259,7 @@
       }
 
       function cloneTimer(indexToClone) {
-        const timerToClone = { ...timers[indexToClone] };
+        const timerToClone = { ...timers[indexToClone], id: generateUniqueId() };
         timers.splice(indexToClone + 1, 0, timerToClone);
         saveTimers(timers);
         renderTimerList();
@@ -388,6 +388,10 @@
           }
         }
       });
+
+      function generateUniqueId() {
+        return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      }
     </script>
   </body>
 </html>
