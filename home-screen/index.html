@@ -224,6 +224,7 @@
             if (optionText === 'Review') {
               window.location.href = '../home-screen/timer-review/timer-review.html';
             } else if (optionText === 'Modify') {
+              localStorage.setItem('selectedTimerId', timerToDelete.id);
               window.location.href = '../timer-editor/timer-editor.html';
             } else if (optionText === 'Clone') {
               cloneTimer(timerIndex);
