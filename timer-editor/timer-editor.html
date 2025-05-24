@@ -49,7 +49,7 @@
         font-family: 'Karla', sans-serif;
         overscroll-behavior: none;
         scroll-padding-top: 4rem;
-        color: #EFF6E0; /* Added for general text color */
+        color: #EFF6E0;
       }
 
       header {
@@ -92,8 +92,8 @@
 
       .interval-item {
         margin-bottom: 1rem;
-        position: relative; /* For swipe options positioning */
-        overflow: hidden; /* To hide overflow of swipe options */
+        position: relative;
+        overflow: hidden;
       }
 
       .interval-item > div:first-child {
@@ -119,7 +119,6 @@
         opacity: 0.5;
       }
 
-      /* Swipe Options Container */
       .interval-item > div.swipe-options-container {
         transform: translateX(100%);
         transition: transform 0.3s ease-in-out;
@@ -163,7 +162,6 @@
         background-color: #AEC3B0 !important;
       }
 
-      /* Handle for sortable (now the whole item for drag) */
       .sort-icon-placeholder {
         width: 1.5rem;
         margin-right: 0.5rem;
@@ -182,14 +180,12 @@
         cursor: grab;
       }
 
-      /* Styles for disabled add interval button */
       #addIntervalButton.disabled {
           opacity: 0.5;
           cursor: not-allowed;
-          background-color: #598392; /* Slightly different color for disabled state */
+          background-color: #598392;
       }
 
-      /* Confirmation Dialog Styles (Copied from home-screen.html) */
       .confirmation-dialog-overlay {
           position: fixed;
           top: 0;
@@ -266,9 +262,9 @@
   <body class="text-light">
     <header id="header" class="text-light shadow-md">
       <div class="w-full flex justify-between items-center">
-        <button class="text-accent font-semibold hover:underline" id="cancelButton">Cancel</button>
-        <h1 id="headerTitle" class="text-xl font-bold text-accent tracking-wide">Add Timer</h1>
-        <button id="saveButton" class="text-accent font-semibold hover:underline">Save</button>
+        <button class="text-accent font-semibold hover:underline" id="cancelButton">Abbrechen</button>
+        <h1 id="headerTitle" class="text-xl font-bold text-accent tracking-wide">Timer hinzufügen</h1>
+        <button id="saveButton" class="text-accent font-semibold hover:underline">Speichern</button>
       </div>
     </header>
 
@@ -284,18 +280,19 @@
       </div>
 
       <div class="mt-6">
-        <label class="block text-accent font-semibold mb-1">Repeat</label>
+        <label class="block text-accent font-semibold mb-1">Wiederholungen</label>
         <input
           type="number"
           id="repeatInput"
           min="1"
+          max="100"
           value="1"
           class="w-full px-4 py-2 rounded-xl bg-light text-dark focus:outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 
       <div class="interval-list mt-6">
-        <h2 class="text-accent font-semibold text-lg">Intervals</h2>
+        <h2 class="text-accent font-semibold text-lg">Intervalle</h2>
         <div id="intervalContainer"></div>
       </div>
 
@@ -303,16 +300,16 @@
         id="addIntervalButton"
         class="w-full bg-secondary text-dark rounded-xl py-2 font-semibold hover:bg-secondary/80 transition-all mt-6"
       >
-        + Add Interval
+        + Intervall hinzufügen
       </button>
     </div>
 
     <div class="confirmation-dialog-overlay" id="deleteConfirmationDialog">
         <div class="confirmation-dialog">
-            <p>Delete Interval?</p>
+            <p>Intervall löschen?</p>
             <div class="confirmation-dialog-buttons">
-                <button class="btn-cancel" id="cancelDelete">Cancel</button>
-                <button class="btn-confirm" id="confirmDelete">Delete</button>
+                <button class="btn-cancel" id="cancelDelete">Abbrechen</button>
+                <button class="btn-confirm" id="confirmDelete">Löschen</button>
             </div>
         </div>
     </div>
@@ -333,26 +330,20 @@
 
       let activeOptionsItem = null;
       let sortableInstance = null;
-      let longPressTimer = null;
       let longPressThreshold = 500;
       let isSortableMode = false;
-      let touchStartX = 0;
-      let touchStartY = 0;
-      const swipeThreshold = 50;
-      let currentListItem = null;
-
+      let intervalToDeleteId = null;
       let currentTimerId = null;
       let intervals = [];
 
-      // --- Helper Functions for Data Management (consistent with home-screen) ---
-
-      function secondsToTimeString(seconds) {
+      // Helper Functions
+      function formatIntervalDuration(seconds) {
           const mins = Math.floor(seconds / 60);
           const secs = seconds % 60;
           return `${mins} Min ${secs} Sek`;
       }
 
-      function timeStringToSeconds(timeString) {
+      function parseIntervalDuration(timeString) {
           const parts = timeString.split(' ');
           let seconds = 0;
           for (let i = 0; i < parts.length; i += 2) {
@@ -367,24 +358,22 @@
       }
 
       function isValidTimer(timer) {
-          return timer.intervals.every(interval =>
-              interval.name && interval.name.trim() !== '' &&
-              interval.duration > 0
-          );
+          return timer.name && timer.name.trim() !== '' &&
+                 timer.repeat >= 1 && timer.repeat <= 100 &&
+                 timer.intervals.length > 0 &&
+                 timer.intervals.every(interval =>
+                     interval.name && interval.name.trim() !== '' &&
+                     interval.duration > 0 &&
+                     ['interval', 'rest'].includes(interval.type)
+                 );
       }
 
-      // --- End Helper Functions ---
-
-      function formatTimeForEditor(seconds) {
-          return secondsToTimeString(seconds);
-      }
-
-      // --- Swipe Logic ---
+      // Swipe Logic
       function handleSwipe(listItem, deltaX) {
-          if (deltaX < -swipeThreshold) { // Swipe Left to show options
+          const swipeThreshold = 50;
+          if (deltaX < -swipeThreshold) {
               showOptions(listItem);
-          }
-          else if (deltaX > swipeThreshold) { // Swipe Right to close options
+          } else if (deltaX > swipeThreshold) {
               closeOptions(listItem);
           } else {
               if (listItem.classList.contains('options-active')) {
@@ -402,10 +391,10 @@
           let optionsElement = listItem.querySelector('.swipe-options-container');
           if (!optionsElement) {
               optionsElement = document.createElement('div');
-              optionsElement.classList.add('swipe-options-container', 'bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute', 'transform', 'translate-x-full', 'transition-transform', 'duration-300');
+              optionsElement.classList.add('swipe-options-container', 'bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute');
               optionsElement.innerHTML = `
-                  <span class="text-light cursor-pointer clone-button">Clone</span>
-                  <span class="text-warning cursor-pointer delete-button ml-4">Delete</span>
+                  <span class="text-light cursor-pointer clone-button">Klonen</span>
+                  <span class="text-warning cursor-pointer delete-button ml-4">Löschen</span>
               `;
               listItem.appendChild(optionsElement);
 
@@ -457,9 +446,7 @@
           }
       }
 
-      // --- Confirmation Dialog and Delete Logic ---
-      let intervalToDeleteId = null;
-
+      // Confirmation Dialog and Delete Logic
       function showDeleteConfirmation(intervalId) {
           intervalToDeleteId = intervalId;
           deleteConfirmationDialog.classList.add('active');
@@ -482,18 +469,17 @@
       });
 
       function deleteIntervalConfirmed(idToDelete) {
-          let newIntervals = intervals.filter(item => item.id !== idToDelete);
-          intervals = newIntervals;
+          intervals = intervals.filter(item => item.id !== idToDelete);
           renderIntervalList();
       }
-      // --- End Confirmation Dialog and Delete Logic ---
 
+      // Interval List Rendering
       function renderIntervalList() {
           intervalContainer.innerHTML = '';
           if (intervals.length === 0) {
               const noIntervalsMessage = document.createElement('div');
               noIntervalsMessage.classList.add('text-center', 'text-secondary', 'mt-4', 'p-4', 'rounded-xl', 'bg-background');
-              noIntervalsMessage.textContent = 'No intervals yet. Tap "+ Add Interval" to create one.';
+              noIntervalsMessage.textContent = 'Noch keine Intervalle. Tippe auf "+ Intervall hinzufügen".';
               intervalContainer.appendChild(noIntervalsMessage);
               return;
           }
@@ -510,20 +496,21 @@
               }
 
               if (isSortableMode) {
-                listItem.classList.add('sortable-mode');
+                  listItem.classList.add('sortable-mode');
               }
 
               listItem.innerHTML = `
                   <div class="bg-background border border-light/10 rounded-xl px-4 py-3 flex justify-between items-center transition-opacity duration-300">
-                      <span class="sort-icon-placeholder"></span><span class="interval-name-display">${interval.name}</span>
-                      <span class="text-sm text-accent">${formatTimeForEditor(interval.duration)}</span>
+                      <span class="sort-icon-placeholder">=</span>
+                      <span class="interval-name-display">${interval.name}</span>
+                      <span class="text-sm text-accent">${formatIntervalDuration(interval.duration)}</span>
                   </div>
               `;
 
               listItem.querySelector('div:first-child').addEventListener('click', (e) => {
                   if (isSortableMode || activeOptionsItem === listItem) {
-                    e.stopPropagation();
-                    return;
+                      e.stopPropagation();
+                      return;
                   }
 
                   const itemId = listItem.dataset.intervalId;
@@ -535,28 +522,21 @@
                   }
               });
 
-              let startX = 0;
-              let startY = 0;
-              let isSwipingOrScrolling = false;
-              let isLongPress = false;
-              let longPressTimeout;
-              let movementThreshold = 10;
-
               listItem.addEventListener('touchstart', (e) => {
                   if (!isSortableMode) {
-                      touchStartX = e.touches[0].clientX;
-                      touchStartY = e.touches[0].clientY;
-                      isSwipingOrScrolling = false;
-                      isLongPress = false;
+                      listItem.dataset.startX = e.touches[0].clientX;
+                      listItem.dataset.startY = e.touches[0].clientY;
+                      listItem.dataset.isSwiping = 'false';
+                      listItem.dataset.isLongPress = 'false';
 
                       if (activeOptionsItem && activeOptionsItem !== listItem) {
                           closeOptions(activeOptionsItem);
                       }
 
-                      longPressTimeout = setTimeout(() => {
-                          if (!isSwipingOrScrolling) {
+                      listItem.longPressTimeout = setTimeout(() => {
+                          if (listItem.dataset.isSwiping === 'false') {
                               e.preventDefault();
-                              isLongPress = true;
+                              listItem.dataset.isLongPress = 'true';
                               enableSortableMode();
                           }
                       }, longPressThreshold);
@@ -567,12 +547,15 @@
                   if (!isSortableMode) {
                       const currentX = e.touches[0].clientX;
                       const currentY = e.touches[0].clientY;
-                      const deltaX = currentX - touchStartX;
-                      const deltaY = currentY - touchStartY;
+                      const startX = parseFloat(listItem.dataset.startX);
+                      const startY = parseFloat(listItem.dataset.startY);
+                      const deltaX = currentX - startX;
+                      const deltaY = currentY - startY;
+                      const movementThreshold = 10;
 
                       if (Math.abs(deltaX) > movementThreshold || Math.abs(deltaY) > movementThreshold) {
-                          isSwipingOrScrolling = true;
-                          clearTimeout(longPressTimeout);
+                          listItem.dataset.isSwiping = 'true';
+                          clearTimeout(listItem.longPressTimeout);
 
                           if (Math.abs(deltaX) > Math.abs(deltaY)) {
                               e.preventDefault();
@@ -588,12 +571,13 @@
 
               listItem.addEventListener('touchend', (e) => {
                   if (!isSortableMode) {
-                      clearTimeout(longPressTimeout);
-                      if (!isLongPress && isSwipingOrScrolling) {
+                      clearTimeout(listItem.longPressTimeout);
+                      if (listItem.dataset.isLongPress === 'false' && listItem.dataset.isSwiping === 'true') {
                           const endX = e.changedTouches[0].clientX;
-                          const deltaX = endX - touchStartX;
+                          const startX = parseFloat(listItem.dataset.startX);
+                          const deltaX = endX - startX;
 
-                          if (Math.abs(deltaX) > Math.abs(e.changedTouches[0].clientY - touchStartY)) {
+                          if (Math.abs(deltaX) > Math.abs(e.changedTouches[0].clientY - parseFloat(listItem.dataset.startY))) {
                               handleSwipe(listItem, deltaX);
                           } else {
                               if (listItem.classList.contains('options-active')) {
@@ -606,10 +590,10 @@
                           }
                       }
                   }
-                  isSwipingOrScrolling = false;
-                  isLongPress = false;
-                  touchStartX = 0;
-                  touchStartY = 0;
+                  listItem.dataset.isSwiping = 'false';
+                  listItem.dataset.isLongPress = 'false';
+                  delete listItem.dataset.startX;
+                  delete listItem.dataset.startY;
               });
 
               listItem.addEventListener('contextmenu', (e) => {
@@ -629,8 +613,8 @@
 
       function enableSortableMode() {
           isSortableMode = true;
-          saveButton.textContent = 'Save Order';
-          addIntervalButton.classList.add('disabled'); // Disable add button
+          saveButton.textContent = 'Reihenfolge speichern';
+          addIntervalButton.classList.add('disabled');
           addIntervalButton.setAttribute('disabled', 'true');
           const listItems = intervalContainer.querySelectorAll('.interval-item');
           listItems.forEach(item => item.classList.add('sortable-mode'));
@@ -642,8 +626,8 @@
 
       function disableSortableMode() {
           isSortableMode = false;
-          saveButton.textContent = 'Save';
-          addIntervalButton.classList.remove('disabled'); // Enable add button
+          saveButton.textContent = 'Speichern';
+          addIntervalButton.classList.remove('disabled');
           addIntervalButton.removeAttribute('disabled');
           const listItems = intervalContainer.querySelectorAll('.interval-item');
           listItems.forEach(item => item.classList.remove('sortable-mode'));
@@ -679,15 +663,15 @@
               const repeatCount = parseInt(repeatInput.value, 10);
 
               if (!timerName) {
-                  alert('Timer name cannot be empty.');
+                  alert('Timer-Name darf nicht leer sein.');
                   return;
               }
-              if (isNaN(repeatCount) || repeatCount < 1) {
-                  alert('Repeat count must be at least 1.');
+              if (isNaN(repeatCount) || repeatCount < 1 || repeatCount > 100) {
+                  alert('Wiederholungen müssen zwischen 1 und 100 liegen.');
                   return;
               }
               if (intervals.length === 0) {
-                  alert('A timer must have at least one interval.');
+                  alert('Ein Timer muss mindestens ein Intervall haben.');
                   return;
               }
 
@@ -699,13 +683,14 @@
                   intervals: intervals.map(interval => ({
                       id: interval.id,
                       name: interval.name,
-                      duration: typeof interval.duration === 'string' ? timeStringToSeconds(interval.duration) : interval.duration,
-                      type: interval.type === 'work' ? 'interval' : interval.type
+                      duration: typeof interval.duration === 'string' ? parseIntervalDuration(interval.duration) : interval.duration,
+                      type: interval.type,
+                      signalId: interval.signalId || null
                   }))
               };
 
               if (!isValidTimer(timerToSave)) {
-                  alert('Invalid timer data. Ensure all intervals have valid names and durations.');
+                  alert('Ungültige Timer-Daten. Stelle sicher, dass alle Intervalle gültige Namen, Dauern und Typen haben.');
                   return;
               }
 
@@ -727,14 +712,12 @@
       });
 
       addIntervalButton.addEventListener('click', () => {
-    if (isSortableMode) {
-        return;
-    }
-    const newId = generateUniqueId();
-    intervals.push({ id: newId, name: `New Interval`, duration: 0, type: "interval" });
-    renderIntervalList();
-    intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-});
+          if (isSortableMode) return;
+          const newId = generateUniqueId();
+          intervals.push({ id: newId, name: 'Neues Intervall', duration: 0, type: 'interval', signalId: null });
+          renderIntervalList();
+          intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      });
 
       cancelButton.addEventListener('click', () => {
           localStorage.removeItem('selectedTimerId');
@@ -764,11 +747,10 @@
           if (event.data && event.data.type === 'saveInterval') {
               const updatedInterval = event.data.data;
               const index = intervals.findIndex(item => item.id === updatedInterval.id);
-
               if (index !== -1) {
                   intervals[index] = { ...intervals[index], ...updatedInterval };
               } else {
-                  console.warn("Received update for unknown interval ID:", updatedInterval.id);
+                  console.warn('Update für unbekannte Intervall-ID erhalten:', updatedInterval.id);
               }
               renderIntervalList();
           }
@@ -777,7 +759,7 @@
       document.addEventListener('DOMContentLoaded', () => {
           const selectedTimerId = localStorage.getItem('selectedTimerId');
           if (selectedTimerId) {
-              headerTitle.textContent = 'Edit Timer';
+              headerTitle.textContent = 'Timer bearbeiten';
               currentTimerId = selectedTimerId;
               const allTimers = loadTimers();
               const timerToLoad = allTimers.find(t => t.id === selectedTimerId);
@@ -787,13 +769,13 @@
                   repeatInput.value = timerToLoad.repeat;
                   intervals = JSON.parse(JSON.stringify(timerToLoad.intervals));
               } else {
-                  console.warn(`Timer with ID ${selectedTimerId} not found. Starting a new timer.`);
-                  currentTimerId = generateUniqueId(); // Generiere eine neue ID für den Timer
+                  alert('Timer konnte nicht geladen werden. Neuer Timer wird erstellt.');
+                  currentTimerId = generateUniqueId();
                   intervals = [];
               }
           } else {
-              headerTitle.textContent = 'Add Timer';
-              currentTimerId = generateUniqueId(); // Generiere eine neue ID für den Timer
+              headerTitle.textContent = 'Timer hinzufügen';
+              currentTimerId = generateUniqueId();
               intervals = [];
           }
           renderIntervalList();

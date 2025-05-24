@@ -97,6 +97,10 @@
         -ms-user-select: none;
       }
 
+      .timer-item:hover {
+        background-color: #1a5c75;
+      }
+
       .timer-item > div.absolute {
         transform: translateX(100%);
         transition: transform 0.3s ease-in-out;
@@ -149,7 +153,6 @@
         opacity: 1;
       }
 
-      /* Confirmation Dialog Styles */
       .confirmation-dialog-overlay {
           position: fixed;
           top: 0;
@@ -248,10 +251,10 @@
 
     <div class="confirmation-dialog-overlay" id="deleteConfirmationDialog">
         <div class="confirmation-dialog">
-            <p>Delete Timer?</p>
+            <p>Timer löschen?</p>
             <div class="confirmation-dialog-buttons">
-                <button class="btn-cancel" id="cancelDelete">Cancel</button>
-                <button class="btn-confirm" id="confirmDelete">Delete</button>
+                <button class="btn-cancel" id="cancelDelete">Abbrechen</button>
+                <button class="btn-confirm" id="confirmDelete">Löschen</button>
             </div>
         </div>
     </div>
@@ -276,14 +279,16 @@
       renderTimerList();
 
       function calculateTimerDuration(timer) {
-          return timer.intervals.reduce((total, interval) => total + interval.duration, 0) * timer.repeat;
+          if (!timer || !timer.intervals || !Array.isArray(timer.intervals)) {
+              return 0;
+          }
+          return timer.intervals.reduce((total, interval) => total + (interval.duration || 0), 0) * (timer.repeat || 1);
       }
 
-      function secondsToTimeString(seconds) {
+      function formatDuration(seconds) {
           const hours = Math.floor(seconds / 3600);
           const minutes = Math.floor((seconds % 3600) / 60);
           const secs = seconds % 60;
-
           return `${hours}h ${minutes}m ${secs}s`;
       }
 
@@ -317,17 +322,18 @@
             closeOptions(listItem);
 
             const timerIndex = Array.from(timerList.children).indexOf(listItem);
-            const timerToDelete = timers[timerIndex];
+            const timer = timers[timerIndex];
 
             if (optionText === 'Review') {
-              window.location.href = '../home-screen/timer-review/timer-review.html';
+              localStorage.setItem('selectedTimerId', timer.id);
+              window.location.href = 'timer-review/timer-review.html';
             } else if (optionText === 'Modify') {
-              localStorage.setItem('selectedTimerId', timerToDelete.id);
+              localStorage.setItem('selectedTimerId', timer.id);
               window.location.href = '../timer-editor/timer-editor.html';
             } else if (optionText === 'Clone') {
               cloneTimer(timerIndex);
             } else if (optionText === 'Delete') {
-              showDeleteConfirmation(timerToDelete.id);
+              showDeleteConfirmation(timer.id);
             }
           });
           optionsElement.appendChild(optionSpan);
@@ -370,11 +376,18 @@
       }
 
       function cloneTimer(indexToClone) {
-    const timerToClone = { ...timers[indexToClone], id: generateUniqueId() };
-    timers.splice(indexToClone + 1, 0, timerToClone);
-    saveTimers(timers);
-    renderTimerList();
-}
+          const timerToClone = { 
+              ...timers[indexToClone], 
+              id: generateUniqueId(),
+              intervals: timers[indexToClone].intervals.map(interval => ({
+                  ...interval,
+                  id: generateUniqueId()
+              }))
+          };
+          timers.splice(indexToClone + 1, 0, timerToClone);
+          saveTimers(timers);
+          renderTimerList();
+      }
 
       function deleteTimerConfirmed() {
         if (timerToDeleteId) {
@@ -391,6 +404,10 @@
       function renderTimerList() {
         timerList.innerHTML = '';
         timers.forEach(timer => {
+          if (!timer || !timer.id || !timer.name) {
+              console.warn('Ungültiger Timer:', timer);
+              return;
+          }
           const li = document.createElement('li');
           li.classList.add('timer-item');
           if (isSortableMode) {
@@ -403,11 +420,11 @@
 
           const nameSpan = document.createElement('span');
           nameSpan.classList.add('timer-name');
-          nameSpan.textContent = timer.name;
+          nameSpan.textContent = timer.name || 'Unbenannter Timer';
 
           const durationSpan = document.createElement('span');
           durationSpan.classList.add('timer-duration');
-          durationSpan.textContent = secondsToTimeString(calculateTimerDuration(timer));
+          durationSpan.textContent = formatDuration(calculateTimerDuration(timer));
 
           li.appendChild(sortIcon);
           li.appendChild(nameSpan);
@@ -415,6 +432,13 @@
 
           let touchStartX = 0;
           let touchEndX = 0;
+
+          li.addEventListener('click', (e) => {
+            if (!isSortableMode && !e.target.classList.contains('bg-dark') && !e.target.closest('.bg-dark')) {
+              localStorage.setItem('selectedTimerId', timer.id);
+              window.location.href = '../timer-screen/timer-screen.html';
+            }
+          });
 
           li.addEventListener('touchstart', (e) => {
             if (!isSortableMode) {
@@ -435,7 +459,7 @@
             }
           });
 
-          li.addEventListener('selectstart', function(e) {
+          li.addEventListener('selectstart', (e) => {
             e.preventDefault();
           });
 
@@ -484,14 +508,14 @@
         }
       }
 
-      saveButton.addEventListener('click', function() {
-        disableSortableMode();
-        saveTimers(timers);
+      addButton.addEventListener('click', () => {
+          localStorage.removeItem('selectedTimerId');
+          window.location.href = '../timer-editor/timer-editor.html';
       });
 
-      addButton.addEventListener('click', () => {
-          localStorage.removeItem('selectedTimerId'); // Entferne alte Timer-ID
-          window.location.href = '../timer-editor/timer-editor.html';
+      saveButton.addEventListener('click', () => {
+        disableSortableMode();
+        saveTimers(timers);
       });
 
       cancelDeleteButton.addEventListener('click', hideDeleteConfirmation);
