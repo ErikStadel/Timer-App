@@ -295,12 +295,6 @@
         </div>
       </div>
     </div>
-
-    <div class="flex justify-center items-center mb-6">
-      <select id="signalSelect" class="bg-background text-accent border border-accent rounded-full px-4 py-2 w-full max-w-xs focus:outline-none">
-        <!-- Signals will be populated dynamically -->
-      </select>
-    </div>
   </div>
 
   <script>
@@ -311,7 +305,6 @@
     const contentInterval = document.getElementById('content-interval');
     const contentRest = document.getElementById('content-rest');
     const saveIntervalButton = document.getElementById('saveIntervalButton');
-    const signalSelect = document.getElementById('signalSelect');
 
     // --- Wheel-Funktionalität ---
     wheels.forEach((wheel) => {
@@ -424,10 +417,6 @@
             return;
         }
 
-        // Signale laden und Dropdown füllen
-        const signals = loadSignals();
-        signalSelect.innerHTML = signals.map(signal => `<option value="${signal.id}">${signal.name}</option>`).join('');
-
         // Intervall laden
         let interval = null;
         if (intervalId) {
@@ -439,23 +428,31 @@
                 return;
             }
             intervalNameInput.value = interval.name || 'Intervall';
-            signalSelect.value = interval.signalId || 'signal-gong';
 
             // Setze durationInterval
-            const intervalMinutes = Math.floor(interval.durationInterval / 60).toString().padStart(2, '0');
-            const intervalSeconds = (interval.durationInterval % 60).toString().padStart(2, '0');
-            setWheelValue('minutes-wheel', intervalMinutes);
-            setWheelValue('seconds-wheel', intervalSeconds);
+            let intervalMinutes = Math.floor(interval.durationInterval / 60);
+            let intervalSeconds = interval.durationInterval % 60;
+            intervalSeconds = Math.round(intervalSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
+            if (intervalSeconds === 60) { // Korrigiere 60 Sekunden
+                intervalMinutes += 1;
+                intervalSeconds = 0;
+            }
+            setWheelValue('minutes-wheel', intervalMinutes.toString().padStart(2, '0'));
+            setWheelValue('seconds-wheel', intervalSeconds.toString().padStart(2, '0'));
 
             // Setze durationRest
-            const restMinutes = Math.floor(interval.durationRest / 60).toString().padStart(2, '0');
-            const restSeconds = (interval.durationRest % 60).toString().padStart(2, '0');
-            setWheelValue('minutes-wheel-rest', restMinutes);
-            setWheelValue('seconds-wheel-rest', restSeconds);
+            let restMinutes = Math.floor(interval.durationRest / 60);
+            let restSeconds = interval.durationRest % 60;
+            restSeconds = Math.round(restSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
+            if (restSeconds === 60) { // Korrigiere 60 Sekunden
+                restMinutes += 1;
+                restSeconds = 0;
+            }
+            setWheelValue('minutes-wheel-rest', restMinutes.toString().padStart(2, '0'));
+            setWheelValue('seconds-wheel-rest', restSeconds.toString().padStart(2, '0'));
         } else {
             // Standardwerte für neues Intervall
             intervalNameInput.value = 'Intervall';
-            signalSelect.value = 'signal-gong';
             setWheelValue('minutes-wheel', '00');
             setWheelValue('seconds-wheel', '00');
             setWheelValue('minutes-wheel-rest', '00');
@@ -466,7 +463,6 @@
         // Save-Button Logik
         saveIntervalButton.addEventListener('click', () => {
             const name = intervalNameInput.value.trim() || 'Intervall';
-            const signalId = signalSelect.value;
 
             // durationInterval aus Interval-Tab
             const intervalMinutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
@@ -487,9 +483,13 @@
                 id: intervalId || generateUniqueId(),
                 name,
                 durationInterval,
-                durationRest,
-                signalId
+                durationRest
             };
+
+            // Bestehenden signalId beibehalten, falls vorhanden
+            if (interval && interval.signalId) {
+                updatedInterval.signalId = interval.signalId;
+            }
 
             if (intervalId) {
                 const index = timer.intervals.findIndex(i => i.id === intervalId);

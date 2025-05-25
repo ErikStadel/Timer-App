@@ -419,6 +419,12 @@
           if (indexToClone !== -1) {
               const clonedInterval = { ...intervals[indexToClone], id: generateUniqueId() };
               intervals.splice(indexToClone + 1, 0, clonedInterval);
+              let allTimers = loadTimers();
+              const timerIndex = allTimers.findIndex(t => t.id === currentTimerId);
+              if (timerIndex !== -1) {
+                  allTimers[timerIndex].intervals = intervals;
+                  saveTimers(allTimers);
+              }
               renderIntervalList();
           }
       }
@@ -449,6 +455,12 @@
 
       function deleteIntervalConfirmed(idToDelete) {
           intervals = intervals.filter(item => item.id !== idToDelete);
+          let allTimers = loadTimers();
+          const timerIndex = allTimers.findIndex(t => t.id === currentTimerId);
+          if (timerIndex !== -1) {
+              allTimers[timerIndex].intervals = intervals;
+              saveTimers(allTimers);
+          }
           renderIntervalList();
       }
 
@@ -629,6 +641,13 @@
       saveButton.addEventListener('click', () => {
           if (isSortableMode) {
               disableSortableMode();
+              let allTimers = loadTimers();
+              const timerIndex = allTimers.findIndex(t => t.id === currentTimerId);
+              if (timerIndex !== -1) {
+                  allTimers[timerIndex].intervals = intervals;
+                  saveTimers(allTimers);
+              }
+              return; // Keine Navigation
           }
 
           const timerName = timerNameInput.value.trim();
@@ -729,6 +748,15 @@
           repeatInput.value = timerToLoad.repeat;
           intervals = JSON.parse(JSON.stringify(timerToLoad.intervals || []));
           renderIntervalList();
+
+          timerNameInput.addEventListener('input', () => {
+              let allTimers = loadTimers();
+              const timerIndex = allTimers.findIndex(t => t.id === currentTimerId);
+              if (timerIndex !== -1) {
+                  allTimers[timerIndex].name = timerNameInput.value.trim() || 'New Timer';
+                  saveTimers(allTimers);
+              }
+          });
       });
     </script>
   </body>
