@@ -278,7 +278,9 @@
       // Berechnet die Gesamtdauer eines Timers in Sekunden
       function calculateTimerDuration(timer) {
         if (!timer.intervals || !timer.repeat) return 0;
-        const totalIntervalDuration = timer.intervals.reduce((sum, interval) => sum + interval.duration, 0);
+        const totalIntervalDuration = timer.intervals.reduce((sum, interval) => {
+          return sum + (interval.durationInterval || 0) + (interval.durationRest || 0);
+        }, 0);
         return totalIntervalDuration * timer.repeat;
       }
 
