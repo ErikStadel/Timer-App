@@ -49,7 +49,7 @@
         font-family: 'Karla', sans-serif;
         overscroll-behavior: none;
         scroll-padding-top: 4rem;
-        color: #EFF6E0; /* Added for general text color */
+        color: #EFF6E0;
       }
 
       header {
@@ -92,8 +92,8 @@
 
       .interval-item {
         margin-bottom: 1rem;
-        position: relative; /* For swipe options positioning */
-        overflow: hidden; /* To hide overflow of swipe options */
+        position: relative;
+        overflow: hidden;
       }
 
       .interval-item > div:first-child {
@@ -119,7 +119,6 @@
         opacity: 0.5;
       }
 
-      /* Swipe Options Container */
       .interval-item > div.swipe-options-container {
         transform: translateX(100%);
         transition: transform 0.3s ease-in-out;
@@ -163,7 +162,6 @@
         background-color: #AEC3B0 !important;
       }
 
-      /* Handle for sortable (now the whole item for drag) */
       .sort-icon-placeholder {
         width: 1.5rem;
         margin-right: 0.5rem;
@@ -182,14 +180,12 @@
         cursor: grab;
       }
 
-      /* Styles for disabled add interval button */
       #addIntervalButton.disabled {
           opacity: 0.5;
           cursor: not-allowed;
-          background-color: #598392; /* Slightly different color for disabled state */
+          background-color: #598392;
       }
 
-      /* Confirmation Dialog Styles (Copied from home-screen.html) */
       .confirmation-dialog-overlay {
           position: fixed;
           top: 0;
@@ -268,12 +264,7 @@
       <div class="w-full flex justify-between items-center">
         <button class="text-accent font-semibold hover:underline" onclick="window.location.href='../home-screen/index.html';">Back</button>
         <h1 id="headerTitle" class="text-xl font-bold text-accent tracking-wide">Add Timer</h1>
-        <button
-          id="saveButton"
-          class="text-accent font-semibold hover:underline"
-        >
-          Save
-        </button>
+        <button id="saveButton" class="text-accent font-semibold hover:underline">Save</button>
       </div>
     </header>
 
@@ -348,26 +339,20 @@
       let currentTimerId = null;
       let intervals = [];
 
-      // --- Helper Functions for Data Management (consistent with home-screen) ---
+      // --- Helper Functions for Data Management ---
       function generateUniqueId() {
           return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       }
 
-      // --- End Helper Functions ---
-
-      function formatTimeForEditor(durationString) {
-          if (!durationString || !durationString.includes(':')) {
-              return "0 Sek";
-          }
-          const parts = durationString.split(':');
-          const minutes = parseInt(parts[0], 10);
-          const seconds = parseInt(parts[1], 10);
+      function formatTimeForEditor(seconds) {
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = seconds % 60;
           let formatted = [];
           if (minutes > 0) {
               formatted.push(`${minutes} Min`);
           }
-          if (seconds > 0) {
-              formatted.push(`${seconds} Sek`);
+          if (remainingSeconds > 0) {
+              formatted.push(`${remainingSeconds} Sek`);
           }
           return formatted.join(' ') || "0 Sek";
       }
@@ -475,12 +460,11 @@
       });
 
       function deleteIntervalConfirmed(idToDelete) {
-          let newIntervals = intervals.filter(item => item.id !== idToDelete);
-          intervals = newIntervals;
+          intervals = intervals.filter(item => item.id !== idToDelete);
           renderIntervalList();
       }
-      // --- End Confirmation Dialog and Delete Logic ---
 
+      // --- Render Interval List ---
       function renderIntervalList() {
           intervalContainer.innerHTML = '';
           if (intervals.length === 0) {
@@ -503,29 +487,25 @@
               }
 
               if (isSortableMode) {
-                listItem.classList.add('sortable-mode');
+                  listItem.classList.add('sortable-mode');
               }
 
               listItem.innerHTML = `
                   <div class="bg-background border border-light/10 rounded-xl px-4 py-3 flex justify-between items-center transition-opacity duration-300">
-                      <span class="sort-icon-placeholder"></span><span class="interval-name-display">${interval.name}</span>
+                      <span class="sort-icon-placeholder"></span>
+                      <span class="interval-name-display">${interval.name}</span>
                       <span class="text-sm text-accent">${formatTimeForEditor(interval.duration)}</span>
                   </div>
               `;
 
               listItem.querySelector('div:first-child').addEventListener('click', (e) => {
                   if (isSortableMode || activeOptionsItem === listItem) {
-                    e.stopPropagation();
-                    return;
+                      e.stopPropagation();
+                      return;
                   }
 
                   const itemId = listItem.dataset.intervalId;
-                  const intervalToEdit = intervals.find(item => item.id === itemId);
-
-                  if (intervalToEdit) {
-                      localStorage.setItem('selectedIntervalId', itemId);
-                      window.location.href = '../interval-editor/interval-editor.html';
-                  }
+                  window.location.href = `../interval-editor/interval-editor.html?timerId=${currentTimerId}&intervalId=${itemId}`;
               });
 
               let startX = 0;
@@ -623,7 +603,7 @@
       function enableSortableMode() {
           isSortableMode = true;
           saveButton.textContent = 'Save Order';
-          addIntervalButton.classList.add('disabled'); // Disable add button
+          addIntervalButton.classList.add('disabled');
           addIntervalButton.setAttribute('disabled', 'true');
           const listItems = intervalContainer.querySelectorAll('.interval-item');
           listItems.forEach(item => item.classList.add('sortable-mode'));
@@ -636,7 +616,7 @@
       function disableSortableMode() {
           isSortableMode = false;
           saveButton.textContent = 'Save';
-          addIntervalButton.classList.remove('disabled'); // Enable add button
+          addIntervalButton.classList.remove('disabled');
           addIntervalButton.removeAttribute('disabled');
           const listItems = intervalContainer.querySelectorAll('.interval-item');
           listItems.forEach(item => item.classList.remove('sortable-mode'));
@@ -667,6 +647,12 @@
       saveButton.addEventListener('click', () => {
           if (isSortableMode) {
               disableSortableMode();
+              let allTimers = loadTimers();
+              const timerIndex = allTimers.findIndex(t => t.id === currentTimerId);
+              if (timerIndex !== -1) {
+                  allTimers[timerIndex].intervals = intervals;
+                  saveTimers(allTimers);
+              }
           } else {
               const timerName = timerNameInput.value.trim();
               const repeatCount = parseInt(repeatInput.value, 10);
@@ -686,14 +672,15 @@
 
               let allTimers = loadTimers();
               let timerToSave = {
-                  id: currentTimerId, // Verwende die bereits generierte ID
+                  id: currentTimerId,
                   name: timerName,
                   repeat: repeatCount,
                   intervals: intervals.map(interval => ({
                       id: interval.id,
                       name: interval.name,
                       duration: interval.duration,
-                      type: interval.type
+                      type: interval.type,
+                      signalId: interval.signalId || 'signal-gong'
                   }))
               };
 
@@ -710,19 +697,15 @@
               }
 
               saveTimers(allTimers);
-              localStorage.removeItem('selectedTimerId');
               window.location.href = '../home-screen/index.html';
           }
       });
 
       addIntervalButton.addEventListener('click', () => {
-          if (isSortableMode) { // Prevent adding if in sortable mode
+          if (isSortableMode) {
               return;
           }
-          const newId = generateUniqueId();
-          intervals.push({ id: newId, name: `New Interval`, duration: "00:00", type: "work" });
-          renderIntervalList();
-          intervalContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          window.location.href = `../interval-editor/interval-editor.html?timerId=${currentTimerId}`;
       });
 
       window.addEventListener('scroll', () => {
@@ -743,40 +726,27 @@
           }
       });
 
-      window.addEventListener('message', (event) => {
-          if (event.data && event.data.type === 'saveInterval') {
-              const updatedInterval = event.data.data;
-              const index = intervals.findIndex(item => item.id === updatedInterval.id);
-
-              if (index !== -1) {
-                  intervals[index] = { ...intervals[index], ...updatedInterval };
-              } else {
-                  console.warn("Received update for unknown interval ID:", updatedInterval.id);
-              }
-              renderIntervalList();
-          }
-      });
-
       document.addEventListener('DOMContentLoaded', () => {
-          const selectedTimerId = localStorage.getItem('selectedTimerId');
-          if (selectedTimerId) {
+          const urlParams = new URLSearchParams(window.location.search);
+          const timerId = urlParams.get('timerId');
+          if (timerId) {
               headerTitle.textContent = 'Edit Timer';
-              currentTimerId = selectedTimerId;
+              currentTimerId = timerId;
               const allTimers = loadTimers();
-              const timerToLoad = allTimers.find(t => t.id === selectedTimerId);
+              const timerToLoad = allTimers.find(t => t.id === timerId);
 
               if (timerToLoad) {
                   timerNameInput.value = timerToLoad.name;
                   repeatInput.value = timerToLoad.repeat;
                   intervals = JSON.parse(JSON.stringify(timerToLoad.intervals));
               } else {
-                  console.warn(`Timer with ID ${selectedTimerId} not found. Starting a new timer.`);
-                  currentTimerId = generateUniqueId(); // Generiere eine neue ID für den Timer
+                  console.warn(`Timer with ID ${timerId} not found. Starting a new timer.`);
+                  currentTimerId = generateUniqueId();
                   intervals = [];
               }
           } else {
               headerTitle.textContent = 'Add Timer';
-              currentTimerId = generateUniqueId(); // Generiere eine neue ID für den Timer
+              currentTimerId = generateUniqueId();
               intervals = [];
           }
           renderIntervalList();
