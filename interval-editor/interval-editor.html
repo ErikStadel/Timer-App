@@ -15,13 +15,13 @@
       theme: {
         extend: {
           colors: {
-            dark: '#01161E',
-            background: '#124559',
+            dark: '#124559',
+            background: '#ffffff',
             primary: '#598392',
             secondary: '#AEC3B0',
             light: '#EFF6E0',
             accent: '#83c5be',
-            rest: '#94d1be',
+            rest: '#94d8be',
             interval: '#e76f51',
             warning: '#fc814a',
           },
@@ -306,6 +306,9 @@
     const contentRest = document.getElementById('content-rest');
     const saveIntervalButton = document.getElementById('saveIntervalButton');
 
+    // Temporäres Intervall für Tabwechsel
+    let tempInterval = { durationInterval: 0, durationRest: 0 };
+
     // --- Wheel-Funktionalität ---
     wheels.forEach((wheel) => {
         setTimeout(() => updateWheel(wheel), 10);
@@ -372,8 +375,28 @@
         }
     }
 
+    // --- Tabwechsel-Speicherlogik ---
+    function saveCurrentTabValues() {
+        if (contentInterval.classList.contains('active')) {
+            const intervalMinutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
+            const intervalSecondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
+            const intervalMinutes = parseInt(intervalMinutesElement ? intervalMinutesElement.textContent : 0);
+            const intervalSeconds = parseInt(intervalSecondsElement ? intervalSecondsElement.textContent : 0);
+            tempInterval.durationInterval = intervalMinutes * 60 + intervalSeconds;
+            console.log('Saved Interval:', tempInterval.durationInterval); // Debugging
+        } else if (contentRest.classList.contains('active')) {
+            const restMinutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
+            const restSecondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
+            const restMinutes = parseInt(restMinutesElement ? restMinutesElement.textContent : 0);
+            const restSeconds = parseInt(restSecondsElement ? restSecondsElement.textContent : 0);
+            tempInterval.durationRest = restMinutes * 60 + restSeconds;
+            console.log('Saved Rest:', tempInterval.durationRest); // Debugging
+        }
+    }
+
     // --- Tab-Funktionalität ---
     tabInterval.addEventListener('click', () => {
+      saveCurrentTabValues(); // Speichern vor Tabwechsel
       tabInterval.classList.add('active');
       tabInterval.classList.remove('inactive');
       tabRest.classList.add('inactive');
@@ -388,6 +411,7 @@
     });
 
     tabRest.addEventListener('click', () => {
+      saveCurrentTabValues(); // Speichern vor Tabwechsel
       tabRest.classList.add('active');
       tabRest.classList.remove('inactive');
       tabInterval.classList.add('inactive');
@@ -467,6 +491,10 @@
             console.log('restMinutes:', restMinutes, 'restSeconds:', restSeconds); // Debugging
             setWheelValue('minutes-wheel-rest', restMinutes.toString().padStart(2, '0'));
             setWheelValue('seconds-wheel-rest', restSeconds.toString().padStart(2, '0'));
+
+            // Initialisiere tempInterval mit geladenen Werten
+            tempInterval.durationInterval = interval.durationInterval;
+            tempInterval.durationRest = interval.durationRest;
         } else {
             // Standardwerte für neues Intervall
             intervalNameInput.value = 'Intervall';
@@ -474,33 +502,21 @@
             setWheelValue('seconds-wheel', '00');
             setWheelValue('minutes-wheel-rest', '00');
             setWheelValue('seconds-wheel-rest', '00');
+            tempInterval = { durationInterval: 0, durationRest: 0 };
             tabInterval.click();
         }
 
         // Save-Button Logik
         saveIntervalButton.addEventListener('click', () => {
+            saveCurrentTabValues(); // Aktuellen Tab speichern
             const name = intervalNameInput.value.trim() || 'Intervall';
-
-            // durationInterval aus Interval-Wheels
-            const intervalMinutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
-            const intervalSecondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
-            const intervalMinutes = parseInt(intervalMinutesElement ? intervalMinutesElement.textContent : (interval ? Math.floor(interval.durationInterval / 60) : 0));
-            const intervalSeconds = parseInt(intervalSecondsElement ? intervalSecondsElement.textContent : (interval ? (interval.durationInterval % 60) : 0));
-            const durationInterval = intervalMinutes * 60 + intervalSeconds;
-
-            // durationRest aus Rest-Wheels
-            const restMinutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
-            const restSecondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
-            const restMinutes = parseInt(restMinutesElement ? restMinutesElement.textContent : (interval ? Math.floor(interval.durationRest / 60) : 0));
-            const restSeconds = parseInt(restSecondsElement ? restSecondsElement.textContent : (interval ? (interval.durationRest % 60) : 0));
-            const durationRest = restMinutes * 60 + restSeconds;
 
             // Neues Intervall erstellen oder bestehendes aktualisieren
             const updatedInterval = {
                 id: intervalId || generateUniqueId(),
                 name,
-                durationInterval,
-                durationRest
+                durationInterval: tempInterval.durationInterval,
+                durationRest: tempInterval.durationRest
             };
 
             // Bestehenden signalId beibehalten, falls vorhanden
