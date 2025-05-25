@@ -340,10 +340,6 @@
       let intervals = [];
 
       // --- Helper Functions for Data Management ---
-      function generateUniqueId() {
-          return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      }
-
       function formatTimeForEditor(seconds) {
           const minutes = Math.floor(seconds / 60);
           const remainingSeconds = seconds % 60;
@@ -647,58 +643,47 @@
       saveButton.addEventListener('click', () => {
           if (isSortableMode) {
               disableSortableMode();
-              let allTimers = loadTimers();
-              const timerIndex = allTimers.findIndex(t => t.id === currentTimerId);
-              if (timerIndex !== -1) {
-                  allTimers[timerIndex].intervals = intervals;
-                  saveTimers(allTimers);
-              }
-          } else {
-              const timerName = timerNameInput.value.trim();
-              const repeatCount = parseInt(repeatInput.value, 10);
-
-              if (!timerName) {
-                  alert('Timer name cannot be empty.');
-                  return;
-              }
-              if (isNaN(repeatCount) || repeatCount < 1) {
-                  alert('Repeat count must be at least 1.');
-                  return;
-              }
-              if (intervals.length === 0) {
-                  alert('A timer must have at least one interval.');
-                  return;
-              }
-
-              let allTimers = loadTimers();
-              let timerToSave = {
-                  id: currentTimerId,
-                  name: timerName,
-                  repeat: repeatCount,
-                  intervals: intervals.map(interval => ({
-                      id: interval.id,
-                      name: interval.name,
-                      duration: interval.duration,
-                      type: interval.type,
-                      signalId: interval.signalId || 'signal-gong'
-                  }))
-              };
-
-              if (currentTimerId) {
-                  const index = allTimers.findIndex(t => t.id === currentTimerId);
-                  if (index !== -1) {
-                      allTimers[index] = timerToSave;
-                  } else {
-                      console.warn("Attempted to update a timer that was not found. Adding as new.");
-                      allTimers.push(timerToSave);
-                  }
-              } else {
-                  allTimers.push(timerToSave);
-              }
-
-              saveTimers(allTimers);
-              window.location.href = '../home-screen/index.html';
           }
+          
+          const timerName = timerNameInput.value.trim();
+          const repeatCount = parseInt(repeatInput.value, 10);
+
+          if (!timerName) {
+              alert('Timer name cannot be empty.');
+              return;
+          }
+          if (isNaN(repeatCount) || repeatCount < 1) {
+              alert('Repeat count must be at least 1.');
+              return;
+          }
+          if (intervals.length === 0) {
+              alert('A timer must have at least one interval.');
+              return;
+          }
+
+          let allTimers = loadTimers();
+          let timerToSave = {
+              id: currentTimerId,
+              name: timerName,
+              repeat: repeatCount,
+              intervals: intervals.map(interval => ({
+                  id: interval.id,
+                  name: interval.name,
+                  duration: interval.duration,
+                  type: interval.type,
+                  signalId: interval.signalId || 'signal-gong'
+              }))
+          };
+
+          const index = allTimers.findIndex(t => t.id === currentTimerId);
+          if (index !== -1) {
+              allTimers[index] = timerToSave;
+          } else {
+              allTimers.push(timerToSave);
+          }
+
+          saveTimers(allTimers);
+          window.location.href = '../home-screen/index.html';
       });
 
       addIntervalButton.addEventListener('click', () => {
@@ -729,26 +714,34 @@
       document.addEventListener('DOMContentLoaded', () => {
           const urlParams = new URLSearchParams(window.location.search);
           const timerId = urlParams.get('timerId');
-          if (timerId) {
-              headerTitle.textContent = 'Edit Timer';
-              currentTimerId = timerId;
-              const allTimers = loadTimers();
-              const timerToLoad = allTimers.find(t => t.id === timerId);
 
-              if (timerToLoad) {
-                  timerNameInput.value = timerToLoad.name;
-                  repeatInput.value = timerToLoad.repeat;
-                  intervals = JSON.parse(JSON.stringify(timerToLoad.intervals));
-              } else {
-                  console.warn(`Timer with ID ${timerId} not found. Starting a new timer.`);
-                  currentTimerId = generateUniqueId();
-                  intervals = [];
-              }
-          } else {
-              headerTitle.textContent = 'Add Timer';
-              currentTimerId = generateUniqueId();
-              intervals = [];
+          if (!timerId) {
+              console.error('Keine timerId in der URL gefunden');
+              alert('Timer-ID fehlt. Bitte erneut versuchen.');
+              window.location.href = '../home-screen/index.html';
+              return;
           }
+
+          currentTimerId = timerId;
+          let allTimers = loadTimers();
+          let timerToLoad = allTimers.find(t => t.id === timerId);
+
+          if (!timerToLoad) {
+              // Neuer Timer, falls nicht in localStorage gefunden
+              timerToLoad = {
+                  id: currentTimerId,
+                  name: 'New Timer',
+                  repeat: 1,
+                  intervals: []
+              };
+              allTimers.push(timerToLoad);
+              saveTimers(allTimers);
+          }
+
+          headerTitle.textContent = timerToLoad.name !== 'New Timer' ? 'Edit Timer' : 'Add Timer';
+          timerNameInput.value = timerToLoad.name;
+          repeatInput.value = timerToLoad.repeat;
+          intervals = JSON.parse(JSON.stringify(timerToLoad.intervals || []));
           renderIntervalList();
       });
     </script>
