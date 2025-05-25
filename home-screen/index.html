@@ -238,7 +238,6 @@
         </button>
         <button
           id="addButton"
-          onclick="window.location.href='../timer-editor/timer-editor.html'"
           class="text-accent font-bold text-2xl leading-none hover:scale-110 transition-transform duration-150"
         >
           +
@@ -489,6 +488,19 @@
           });
         }
       }
+
+      // Handler für neuen Timer
+      addButton.addEventListener('click', () => {
+        const newTimer = {
+          id: generateUniqueId(),
+          name: 'New Timer',
+          repeat: 1,
+          intervals: []
+        };
+        timers.push(newTimer);
+        saveTimers(timers);
+        window.location.href = `../timer-editor/timer-editor.html?timerId=${newTimer.id}`;
+      });
 
       saveButton.addEventListener('click', function() {
         disableSortableMode();
