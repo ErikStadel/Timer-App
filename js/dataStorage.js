@@ -1,3 +1,4 @@
+```javascript
 const TIMER_STORAGE_KEY = 'martialArtsTimers';
 const SIGNAL_STORAGE_KEY = 'martialArtsSignals';
 
@@ -14,10 +15,8 @@ const defaultTimers = [
         name: 'Basic Workout',
         repeat: 1,
         intervals: [
-            { id: 'int-1-1', name: 'Warm-up', duration: 30, type: 'interval', signalId: 'signal-gong' },
-            { id: 'int-1-2', name: 'Rest', duration: 15, type: 'rest', signalId: 'signal-bell' },
-            { id: 'int-1-3', name: 'Main Set', duration: 60, type: 'interval', signalId: 'signal-gong' },
-            { id: 'int-1-4', name: 'Rest', duration: 30, type: 'rest', signalId: 'signal-bell' }
+            { id: 'int-1-1', name: 'Warm-up', durationInterval: 30, durationRest: 15, signalId: 'signal-gong' },
+            { id: 'int-1-2', name: 'Main Set', durationInterval: 60, durationRest: 30, signalId: 'signal-bell' }
         ]
     },
     {
@@ -25,15 +24,14 @@ const defaultTimers = [
         name: 'Quick HIIT',
         repeat: 3,
         intervals: [
-            { id: 'int-2-1', name: 'Work', duration: 45, type: 'interval' },
-            { id: 'int-2-2', name: 'Rest', duration: 15, type: 'rest' }
+            { id: 'int-2-1', name: 'Work', durationInterval: 45, durationRest: 15, signalId: 'signal-gong' }
         ]
     }
 ];
 
 // Generiert eine eindeutige ID für Timer oder Intervalle
 function generateUniqueId() {
-    return 'interval-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    return 'timer-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 }
 
 // Lädt alle Timer aus dem localStorage oder initialisiert sie mit Standarddaten
@@ -41,7 +39,23 @@ function loadTimers() {
     try {
         const storedTimers = localStorage.getItem(TIMER_STORAGE_KEY);
         if (storedTimers) {
-            return JSON.parse(storedTimers);
+            const timers = JSON.parse(storedTimers);
+            // Migration für alte Timer
+            return timers.map(timer => ({
+                ...timer,
+                intervals: timer.intervals.map(interval => {
+                    if (interval.duration && interval.type) {
+                        return {
+                            id: interval.id,
+                            name: interval.name,
+                            durationInterval: interval.type === 'interval' ? interval.duration : 0,
+                            durationRest: interval.type === 'rest' ? interval.duration : 0,
+                            signalId: interval.signalId || 'signal-gong'
+                        };
+                    }
+                    return interval;
+                })
+            }));
         }
     } catch (e) {
         console.error("Fehler beim Laden der Timer aus localStorage:", e);
@@ -81,3 +95,4 @@ function saveSignals(signals) {
         console.error("Fehler beim Speichern der Signale in localStorage:", e);
     }
 }
+```

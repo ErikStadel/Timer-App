@@ -111,10 +111,6 @@
           user-select: none;
       }
 
-      .interval-item.is-rest-type > div:first-child {
-        background-color: #598392;
-      }
-
       .interval-item.options-active > div:first-child {
         opacity: 0.5;
       }
@@ -340,17 +336,13 @@
       let intervals = [];
 
       // --- Helper Functions for Data Management ---
-      function formatTimeForEditor(seconds) {
-          const minutes = Math.floor(seconds / 60);
-          const remainingSeconds = seconds % 60;
-          let formatted = [];
-          if (minutes > 0) {
-              formatted.push(`${minutes} Min`);
-          }
-          if (remainingSeconds > 0) {
-              formatted.push(`${remainingSeconds} Sek`);
-          }
-          return formatted.join(' ') || "0 Sek";
+      function formatTimeForEditor(interval) {
+          const formatDuration = (seconds) => {
+              const minutes = Math.floor(seconds / 60);
+              const secs = seconds % 60;
+              return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+          };
+          return `${formatDuration(interval.durationInterval)} | ${formatDuration(interval.durationRest)}`;
       }
 
       // --- Swipe Logic ---
@@ -476,12 +468,6 @@
               listItem.classList.add('interval-item');
               listItem.dataset.intervalId = interval.id;
 
-              if (interval.type === 'rest') {
-                  listItem.classList.add('is-rest-type');
-              } else {
-                  listItem.classList.add('is-interval-type');
-              }
-
               if (isSortableMode) {
                   listItem.classList.add('sortable-mode');
               }
@@ -490,7 +476,7 @@
                   <div class="bg-background border border-light/10 rounded-xl px-4 py-3 flex justify-between items-center transition-opacity duration-300">
                       <span class="sort-icon-placeholder"></span>
                       <span class="interval-name-display">${interval.name}</span>
-                      <span class="text-sm text-accent">${formatTimeForEditor(interval.duration)}</span>
+                      <span class="text-sm text-accent">${formatTimeForEditor(interval)}</span>
                   </div>
               `;
 
@@ -644,7 +630,7 @@
           if (isSortableMode) {
               disableSortableMode();
           }
-          
+
           const timerName = timerNameInput.value.trim();
           const repeatCount = parseInt(repeatInput.value, 10);
 
@@ -669,8 +655,8 @@
               intervals: intervals.map(interval => ({
                   id: interval.id,
                   name: interval.name,
-                  duration: interval.duration,
-                  type: interval.type,
+                  durationInterval: interval.durationInterval,
+                  durationRest: interval.durationRest,
                   signalId: interval.signalId || 'signal-gong'
               }))
           };
