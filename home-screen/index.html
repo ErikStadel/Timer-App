@@ -276,6 +276,20 @@
 
       renderTimerList();
 
+      // Berechnet die Gesamtdauer eines Timers in Sekunden
+      function calculateTimerDuration(timer) {
+        if (!timer.intervals || !timer.repeat) return 0;
+        const totalIntervalDuration = timer.intervals.reduce((sum, interval) => sum + interval.duration, 0);
+        return totalIntervalDuration * timer.repeat;
+      }
+
+      // Formatiert Sekunden in MM:SS
+      function formatDuration(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+
       function handleSwipe(listItem, endX, startX) {
         const deltaX = endX - startX;
         const swipeThreshold = 50;
@@ -306,17 +320,16 @@
             closeOptions(listItem);
 
             const timerIndex = Array.from(timerList.children).indexOf(listItem);
-            const timerToDelete = timers[timerIndex];
+            const timer = timers[timerIndex];
 
             if (optionText === 'Review') {
-              window.location.href = '../home-screen/timer-review/timer-review.html';
+              window.location.href = `../home-screen/timer-review/timer-review.html?timerId=${timer.id}`;
             } else if (optionText === 'Modify') {
-              localStorage.setItem('selectedTimerId', timerToDelete.id);
-              window.location.href = '../timer-editor/timer-editor.html';
+              window.location.href = `../timer-editor/timer-editor.html?timerId=${timer.id}`;
             } else if (optionText === 'Clone') {
               cloneTimer(timerIndex);
             } else if (optionText === 'Delete') {
-              showDeleteConfirmation(timerToDelete.id);
+              showDeleteConfirmation(timer.id);
             }
           });
           optionsElement.appendChild(optionSpan);
@@ -360,6 +373,10 @@
 
       function cloneTimer(indexToClone) {
         const timerToClone = { ...timers[indexToClone], id: generateUniqueId() };
+        timerToClone.intervals = timerToClone.intervals.map(interval => ({
+          ...interval,
+          id: generateUniqueId()
+        }));
         timers.splice(indexToClone + 1, 0, timerToClone);
         saveTimers(timers);
         renderTimerList();
@@ -396,7 +413,7 @@
 
           const durationSpan = document.createElement('span');
           durationSpan.classList.add('timer-duration');
-          durationSpan.textContent = timer.duration;
+          durationSpan.textContent = formatDuration(calculateTimerDuration(timer));
 
           li.appendChild(sortIcon);
           li.appendChild(nameSpan);
@@ -500,10 +517,6 @@
           }
         }
       });
-
-      function generateUniqueId() {
-        return `timer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      }
     </script>
   </body>
 </html>
