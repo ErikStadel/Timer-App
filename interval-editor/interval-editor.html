@@ -1,526 +1,279 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  />
-  <title>Intervall Editor</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interval Editor</title>
   <script src="../js/dataStorage.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            dark: '#01161E',
-            background: '#124559',
-            primary: '#598392',
-            secondary: '#AEC3B0',
-            light: '#EFF6E0',
-            accent: '#83c5be',
-            rest: '#94d1be',
-            interval: '#e76f51',
-            warning: '#fc814a',
-          },
-          fontFamily: {
-            karla: ['Karla', 'sans-serif'],
-          },
-        },
-      },
-    };
-  </script>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-    rel="stylesheet"
-  />
   <style>
-    /* General Tab Design */
-    .tab-btn {
-      cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.2s ease;
-      flex: 1;
-      text-align: center;
-      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-    }
-
-    .tab-btn.active {
-      background-color: #83c5be; /* Ursprüngliche Farbe */
-      color: #124559;
-      font-weight: 700;
-      transform: scale(1.1);
-    }
-
-    .tab-btn.inactive {
-      background-color: #01161E;
-      border: 2px solid #83c5be;
-      color: #83c5be;
-      font-weight: 600;
-    }
-
-    .tab-btn.inactive:hover {
-      background-color: rgba(131, 197, 190, 0.15);
-    }
-
-    /* Wheel styling: updated for 3 visible items and highlighting */
-    .wheel-container {
-      position: relative;
-      width: 100%;
-      z-index: 30;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-    }
-
-    .wheel {
-      height: 120px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      scroll-snap-type: y mandatory;
-      scroll-padding: 40px 0;
-      scrollbar-width: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 0;
-      overscroll-behavior-x: none;
-      touch-action: pan-y;
-      width: 100%;
-    }
-
-    .wheel::-webkit-scrollbar {
-      display: none;
-    }
-
-    .wheel-item {
-      scroll-snap-align: center;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1.25rem;
-      user-select: none;
-      transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s;
-      color: #83c5be;
-      -webkit-touch-callout: none;
-      opacity: 0.6;
-      transform: scale(0.9);
-      min-width: 60px;
-      padding: 0 20px;
-      white-space: nowrap;
-    }
-
-    .wheel-item.selected {
-      color: #EFF6E0;
-      opacity: 1;
-      transform: scale(1.1);
-      font-size: 1.5rem;
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
     body {
-      overflow: hidden;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
     }
-
-    .overlay {
-      z-index: 10;
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background-color: #333;
+      color: white;
     }
-
-    .popup {
-      z-index: 20;
+    header a.back {
+      color: white;
+      text-decoration: none;
+      font-size: 16px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    header button.save {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    header button.save:hover {
+      background-color: #45a049;
+    }
+    main {
+      padding: 20px;
+    }
+    section {
+      margin-bottom: 20px;
+    }
+    section h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    select {
+      padding: 8px;
+      margin-right: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    div {
+      margin-bottom: 10px;
     }
   </style>
 </head>
+<body>
+  <header>
+    <a href="#" class="back">Back</a>
+    <h1>Interval Editor</h1>
+    <button class="save">Save</button>
+  </header>
 
-<body
-  class="bg-dark text-light font-karla p-4 flex items-center justify-center min-h-screen"
->
-  <div class="bg-black/60 backdrop-blur-md fixed inset-0 z-10 overlay"></div>
+  <main>
+    <section>
+      <label for="interval-name">Name</label>
+      <input type="text" id="interval-name" placeholder="Interval Name">
+    </section>
 
-  <div
-    class="relative z-20 bg-background rounded-3xl p-8 w-full max-w-md shadow-2xl shadow-black/40 popup"
-  >
-    <div class="flex justify-center items-center mb-6">
-      <input
-        type="text"
-        value="Intervall"
-        id="intervalNameInput" class="bg-transparent text-2xl font-bold text-accent border-b border-accent focus:outline-none text-center w-full"
-        onclick="this.select()"
-      />
-    </div>
-
-    <div class="flex justify-center space-x-4 mb-6">
-      <button id="tab-interval" class="tab-btn active px-5 py-2 rounded-full">
-        Interval
-      </button>
-      <button id="tab-rest" class="tab-btn inactive px-5 py-2 rounded-full">
-        Rest
-      </button>
-    </div>
-
-    <div id="content-interval" class="tab-content active">
-      <div class="flex justify-between space-x-4 mb-8">
-        <div class="flex flex-col items-center flex-1">
-          <span class="text-sm text-accent mb-1">Min</span>
-          <div class="wheel-container">
-            <div class="wheel" id="minutes-wheel">
-              <div class="wheel-item">00</div>
-              <div class="wheel-item">01</div>
-              <div class="wheel-item">02</div>
-              <div class="wheel-item">03</div>
-              <div class="wheel-item">04</div>
-              <div class="wheel-item">05</div>
-              <div class="wheel-item">06</div>
-              <div class="wheel-item">07</div>
-              <div class="wheel-item">08</div>
-              <div class="wheel-item">09</div>
-              <div class="wheel-item">10</div>
-              <div class="wheel-item">11</div>
-              <div class="wheel-item">12</div>
-              <div class="wheel-item">13</div>
-              <div class="wheel-item">14</div>
-              <div class="wheel-item">15</div>
-              <div class="wheel-item">16</div>
-              <div class="wheel-item">17</div>
-              <div class="wheel-item">18</div>
-              <div class="wheel-item">19</div>
-              <div class="wheel-item">20</div>
-              <div class="wheel-item">21</div>
-              <div class="wheel-item">22</div>
-              <div class="wheel-item">23</div>
-              <div class="wheel-item">24</div>
-              <div class="wheel-item">25</div>
-              <div class="wheel-item">26</div>
-              <div class="wheel-item">27</div>
-              <div class="wheel-item">28</div>
-              <div class="wheel-item">29</div>
-              <div class="wheel-item">30</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col items-center flex-1">
-          <span class="text-sm text-accent mb-1">Sek</span>
-          <div class="wheel-container">
-            <div class="wheel" id="seconds-wheel">
-              <div class="wheel-item">00</div>
-              <div class="wheel-item">05</div>
-              <div class="wheel-item">10</div>
-              <div class="wheel-item">15</div>
-              <div class="wheel-item">20</div>
-              <div class="wheel-item">25</div>
-              <div class="wheel-item">30</div>
-              <div class="wheel-item">35</div>
-              <div class="wheel-item">40</div>
-              <div class="wheel-item">45</div>
-              <div class="wheel-item">50</div>
-              <div class="wheel-item">55</div>
-            </div>
-          </div>
-        </div>
+    <section>
+      <h2>Interval</h2>
+      <div>
+        <label>Min</label>
+        <select id="interval-minutes">
+          <option value="0">00</option>
+          <option value="1">01</option>
+          <option value="2">02</option>
+          <option value="3">03</option>
+          <option value="4">04</option>
+          <option value="5">05</option>
+          <option value="6">06</option>
+          <option value="7">07</option>
+          <option value="8">08</option>
+          <option value="9">09</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+          <option value="20">20</option>
+          <option value="21">21</option>
+          <option value="22">22</option>
+          <option value="23">23</option>
+          <option value="24">24</option>
+          <option value="25">25</option>
+          <option value="26">26</option>
+          <option value="27">27</option>
+          <option value="28">28</option>
+          <option value="29">29</option>
+          <option value="30">30</option>
+        </select>
       </div>
-    </div>
-
-    <div id="content-rest" class="tab-content">
-      <div class="flex justify-between space-x-4 mb-8">
-        <div class="flex flex-col items-center flex-1">
-          <span class="text-sm text-accent mb-1">Min</span>
-          <div class="wheel-container">
-            <div class="wheel" id="minutes-wheel-rest">
-              <div class="wheel-item">00</div>
-              <div class="wheel-item">01</div>
-              <div class="wheel-item">02</div>
-              <div class="wheel-item">03</div>
-              <div class="wheel-item">04</div>
-              <div class="wheel-item">05</div>
-              <div class="wheel-item">06</div>
-              <div class="wheel-item">07</div>
-              <div class="wheel-item">08</div>
-              <div class="wheel-item">09</div>
-              <div class="wheel-item">10</div>
-              <div class="wheel-item">11</div>
-              <div class="wheel-item">12</div>
-              <div class="wheel-item">13</div>
-              <div class="wheel-item">14</div>
-              <div class="wheel-item">15</div>
-              <div class="wheel-item">16</div>
-              <div class="wheel-item">17</div>
-              <div class="wheel-item">18</div>
-              <div class="wheel-item">19</div>
-              <div class="wheel-item">20</div>
-              <div class="wheel-item">21</div>
-              <div class="wheel-item">22</div>
-              <div class="wheel-item">23</div>
-              <div class="wheel-item">24</div>
-              <div class="wheel-item">25</div>
-              <div class="wheel-item">26</div>
-              <div class="wheel-item">27</div>
-              <div class="wheel-item">28</div>
-              <div class="wheel-item">29</div>
-              <div class="wheel-item">30</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col items-center flex-1">
-          <span class="text-sm text-accent mb-1">Sek</span>
-          <div class="wheel-container">
-            <div class="wheel" id="seconds-wheel-rest">
-              <div class="wheel-item">00</div>
-              <div class="wheel-item">05</div>
-              <div class="wheel-item">10</div>
-              <div class="wheel-item">15</div>
-              <div class="wheel-item">20</div>
-              <div class="wheel-item">25</div>
-              <div class="wheel-item">30</div>
-              <div class="wheel-item">35</div>
-              <div class="wheel-item">40</div>
-              <div class="wheel-item">45</div>
-              <div class="wheel-item">50</div>
-              <div class="wheel-item">55</div>
-            </div>
-          </div>
-        </div>
+      <div>
+        <label>Sek</label>
+        <select id="interval-seconds">
+          <option value="0">00</option>
+          <option value="5">05</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+          <option value="25">25</option>
+          <option value="30">30</option>
+          <option value="35">35</option>
+          <option value="40">40</option>
+          <option value="45">45</option>
+          <option value="50">50</option>
+          <option value="55">55</option>
+        </select>
       </div>
-    </div>
+    </section>
 
-    <button
-      id="saveIntervalButton" class="w-full bg-accent text-dark py-3 rounded-xl font-bold hover:bg-accent/90 transition-all"
-    >
-      Save
-    </button>
-  </div>
+    <section>
+      <h2>Rest</h2>
+      <div>
+        <label>Min</label>
+        <select id="rest-minutes">
+          <option value="0">00</option>
+          <option value="1">01</option>
+          <option value="2">02</option>
+          <option value="3">03</option>
+          <option value="4">04</option>
+          <option value="5">05</option>
+          <option value="6">06</option>
+          <option value="7">07</option>
+          <option value="8">08</option>
+          <option value="9">09</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+          <option value="13">13</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="17">17</option>
+          <option value="18">18</option>
+          <option value="19">19</option>
+          <option value="20">20</option>
+          <option value="21">21</option>
+          <option value="22">22</option>
+          <option value="23">23</option>
+          <option value="24">24</option>
+          <option value="25">25</option>
+          <option value="26">26</option>
+          <option value="27">27</option>
+          <option value="28">28</option>
+          <option value="29">29</option>
+          <option value="30">30</option>
+        </select>
+      </div>
+      <div>
+        <label>Sek</label>
+        <select id="rest-seconds">
+          <option value="0">00</option>
+          <option value="5">05</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+          <option value="25">25</option>
+          <option value="30">30</option>
+          <option value="35">35</option>
+          <option value="40">40</option>
+          <option value="45">45</option>
+          <option value="50">50</option>
+          <option value="55">55</option>
+        </select>
+      </div>
+    </section>
+  </main>
 
   <script>
-    const wheels = document.querySelectorAll('.wheel');
-    const intervalNameInput = document.getElementById('intervalNameInput');
-    const tabInterval = document.getElementById('tab-interval');
-    const tabRest = document.getElementById('tab-rest');
-    const contentInterval = document.getElementById('content-interval');
-    const contentRest = document.getElementById('content-rest');
-    const saveIntervalButton = document.getElementById('saveIntervalButton');
-
-    // Aktuell bearbeitetes Intervall (zum Speichern der ID)
-    let currentIntervalId = null;
-
-    // --- Wheel-Funktionalität ---
-    wheels.forEach((wheel) => {
-        setTimeout(() => updateWheel(wheel), 10);
-        wheel.addEventListener('scroll', () => updateWheel(wheel));
-    });
-
-    function updateWheel(wheel) {
-        const items = wheel.getElementsByClassName('wheel-item');
-        clearTimeout(wheel.scrollTimeout);
-
-        wheel.scrollTimeout = setTimeout(() => {
-            const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
-            let closestItem = null;
-            let minDistance = Infinity;
-
-            Array.from(items).forEach((item) => {
-                const rect = item.getBoundingClientRect();
-                const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
-
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestItem = item;
-                }
-                item.classList.remove('selected'); // Alle Selektionen entfernen
-            });
-
-            if (closestItem) {
-                closestItem.classList.add('selected'); // Das nächste Element auswählen
-                // Optional: Scrollen zum nächsten ausgewählten Element, wenn es nicht genau in der Mitte ist
-                const currentScrollTop = wheel.scrollTop;
-                const targetScrollTop = closestItem.offsetTop - wheel.offsetHeight / 2 + closestItem.offsetHeight / 2;
-                if (Math.abs(currentScrollTop - targetScrollTop) > 1) { // Nur scrollen, wenn nötig
-                     wheel.scrollTo({
-                        top: targetScrollTop,
-                        behavior: 'smooth'
-                    });
-                }
-            }
-        }, 50); // Etwas längeres Timeout, um Scroll-Ende besser zu erkennen
-    }
-
-    // Hilfsfunktion zum Setzen des Wheel-Wertes
-    function setWheelValue(wheelId, value) {
-        const wheel = document.getElementById(wheelId);
-        if (wheel) {
-            const items = Array.from(wheel.querySelectorAll('.wheel-item'));
-            const itemToSelect = items.find(item => item.textContent === value);
-            if (itemToSelect) {
-                // Sofort scrollen
-                wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
-                // Timeout, um sicherzustellen, dass die Auswahl nach dem Scrollen aktualisiert wird
-                setTimeout(() => updateWheel(wheel), 100);
-            }
-        }
-    }
-
-    // --- Tab-Funktionalität ---
-    tabInterval.addEventListener('click', function() {
-      tabInterval.classList.add('active');
-      tabInterval.classList.remove('inactive');
-      tabRest.classList.add('inactive');
-      tabRest.classList.remove('active');
-
-      contentInterval.classList.add('active');
-      contentRest.classList.remove('active');
-
-      // Nach Tab-Wechsel Wheels aktualisieren
-      setTimeout(() => {
-          document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
-      }, 0);
-    });
-
-    tabRest.addEventListener('click', function() {
-      tabRest.classList.add('active');
-      tabRest.classList.remove('inactive');
-      tabInterval.classList.add('inactive');
-      tabInterval.classList.remove('active');
-
-      contentRest.classList.add('active');
-      contentInterval.classList.remove('active');
-
-      // Nach Tab-Wechsel Wheels aktualisieren
-      setTimeout(() => {
-          document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
-      }, 0);
-    });
-
-    // --- Speichern-Funktionalität ---
-    saveIntervalButton.addEventListener('click', () => {
-        const name = intervalNameInput.value.trim();
-        const type = tabInterval.classList.contains('active') ? "interval" : "rest";
-
-        let minutesElement;
-        let secondsElement;
-
-        if (type === "interval") {
-            minutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
-            secondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
-        } else { // type === "rest"
-            minutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
-            secondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
-        }
-
-        const minutes = minutesElement ? minutesElement.textContent : "00";
-        const seconds = secondsElement ? secondsElement.textContent : "00";
-        const duration = `${minutes}:${seconds}`;
-
-        const intervalData = {
-            id: currentIntervalId || generateUniqueId(), // Verwende die vorhandene ID oder generiere eine neue
-            name: name,
-            duration: duration,
-            type: type
-        };
-
-        // Speichere die Daten in localStorage
-        let allTimers = loadTimers();
-        let timerIndex = -1;
-        let intervalIndex = -1;
-
-        // Finde den Timer und das Intervall, das bearbeitet wird
-        allTimers.forEach((timer, tIndex) => {
-            timer.intervals.forEach((interval, iIndex) => {
-                if (interval.id === currentIntervalId) {
-                    timerIndex = tIndex;
-                    intervalIndex = iIndex;
-                }
-            });
-        });
-
-        if (timerIndex !== -1 && intervalIndex !== -1) {
-            allTimers[timerIndex].intervals[intervalIndex] = intervalData;
-            saveTimers(allTimers);
-        } else {
-            // Wenn kein bestehendes Intervall gefunden wurde, füge ein neues hinzu
-            const selectedTimerId = localStorage.getItem('selectedTimerId');
-            if (selectedTimerId) {
-                const timerIndex = allTimers.findIndex(timer => timer.id === selectedTimerId);
-                if (timerIndex !== -1) {
-                    allTimers[timerIndex].intervals.push(intervalData);
-                    saveTimers(allTimers);
-                }
-            }
-        }
-
-        // Sende die Daten an den Timer-Editor zurück
-        if (window.opener) {
-            window.opener.postMessage({ type: 'saveInterval', data: intervalData }, window.location.origin);
-        } else {
-            console.warn("No opener window found. Interval data not sent.");
-        }
-        window.location.href = '../timer-editor/timer-editor.html'; // Navigiere zurück zum Timer Editor
-    });
-
-    // --- Initialisierung beim Laden (Empfang von Daten vom Timer-Editor) ---
     document.addEventListener('DOMContentLoaded', () => {
-        // Initial alle Wheels aktualisieren, um die "selected"-Klasse zu setzen
-        wheels.forEach((wheel) => {
-            updateWheel(wheel);
-        });
+      // URL-Parameter auslesen
+      const urlParams = new URLSearchParams(window.location.search);
+      const timerId = urlParams.get('timerId');
+      const intervalId = urlParams.get('intervalId');
 
-        // Event-Listener für Nachrichten vom Elternfenster (Timer-Editor)
-        window.addEventListener('message', (event) => {
-            // Wichtig: Prüfe event.origin für Sicherheit in einer echten Anwendung
-            // if (event.origin !== "http://deine-timer-editor-domain.de") {
-            //     return;
-            // }
+      // Back-Link aktualisieren
+      const backLink = document.querySelector('.back');
+      if (backLink && timerId) {
+        backLink.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
+      }
 
-            if (event.data && event.data.type === 'loadInterval') {
-                const intervalToLoad = event.data.data;
-                currentIntervalId = intervalToLoad.id; // Speichere die ID des zu bearbeitenden Intervalls
+      // Timer laden
+      const timers = loadTimers();
+      const timer = timers.find(t => t.id === timerId);
+      let interval = null;
+      if (intervalId && timer) {
+        interval = timer.intervals.find(i => i.id === intervalId);
+      }
 
-                intervalNameInput.value = intervalToLoad.name;
+      // Eingabefelder füllen, falls Intervall bearbeitet wird
+      if (interval) {
+        document.getElementById('interval-name').value = interval.name || '';
+        const intervalDuration = interval.type === 'interval' ? interval.duration : 0;
+        const restDuration = interval.type === 'rest' ? interval.duration : 0;
+        document.getElementById('interval-minutes').value = Math.floor(intervalDuration / 60);
+        document.getElementById('interval-seconds').value = intervalDuration % 60;
+        document.getElementById('rest-minutes').value = Math.floor(restDuration / 60);
+        document.getElementById('rest-seconds').value = restDuration % 60;
+      }
 
-                // Tab basierend auf dem Typ setzen
-                if (intervalToLoad.type === 'rest') {
-                    tabRest.click(); // Simuliert Klick auf den Rest-Tab
-                } else {
-                    tabInterval.click(); // Simuliert Klick auf den Interval-Tab
-                }
+      // Save-Button Logik
+      document.querySelector('.save').addEventListener('click', () => {
+        const name = document.getElementById('interval-name').value || 'Unnamed Interval';
+        const intervalMinutes = parseInt(document.getElementById('interval-minutes').value) || 0;
+        const intervalSeconds = parseInt(document.getElementById('interval-seconds').value) || 0;
+        const restMinutes = parseInt(document.getElementById('rest-minutes').value) || 0;
+        const restSeconds = parseInt(document.getElementById('rest-seconds').value) || 0;
 
-                // Dauer auf den Wheels einstellen
-                const [initialMinutes, initialSeconds] = intervalToLoad.duration.split(':');
+        const intervalDuration = intervalMinutes * 60 + intervalSeconds;
+        const restDuration = restMinutes * 60 + restSeconds;
 
-                // Setze die Werte auf den korrekten Wheels, abhängig vom Typ
-                if (intervalToLoad.type === 'interval') {
-                    setWheelValue('minutes-wheel', initialMinutes);
-                    setWheelValue('seconds-wheel', initialSeconds);
-                } else { // type === 'rest'
-                    setWheelValue('minutes-wheel-rest', initialMinutes);
-                    setWheelValue('seconds-wheel-rest', initialSeconds);
-                }
-            }
-        });
-
-        // Wenn das Popup ohne übergebene Daten geöffnet wird, setze Standardwerte
-        if (!window.opener) {
-             // Setze die Standardwerte für ein neues Intervall (z.B. "00:00" und "Interval")
-             setWheelValue('minutes-wheel', '00');
-             setWheelValue('seconds-wheel', '00');
-             intervalNameInput.value = 'Intervall'; // Standardname für neue Intervalle
-             tabInterval.click(); // Standardmäßig den Interval-Tab aktiv
+        if (!timer) {
+          console.error('Timer nicht gefunden:', timerId);
+          return;
         }
-    });
 
-    function generateUniqueId() {
-        return `interval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    }
+        // Neues Intervall erstellen oder bestehendes aktualisieren
+        if (interval) {
+          // Intervall bearbeiten
+          interval.name = name;
+          interval.duration = intervalDuration || restDuration;
+          interval.type = intervalDuration > 0 ? 'interval' : 'rest';
+        } else {
+          // Neues Intervall hinzufügen
+          const newInterval = {
+            id: `int-${timerId}-${Date.now()}`,
+            name,
+            duration: intervalDuration || restDuration,
+            type: intervalDuration > 0 ? 'interval' : 'rest',
+            signalId: 'signal-gong' // Standard-Signal
+          };
+          timer.intervals.push(newInterval);
+        }
+
+        // Timer speichern
+        saveTimers(timers);
+
+        // Zurück zu timer-editor.html
+        window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
+      });
+    });
   </script>
 </body>
 </html>
