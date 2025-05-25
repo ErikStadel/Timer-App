@@ -394,9 +394,14 @@
         const timerId = urlParams.get('timerId');
         const intervalId = urlParams.get('intervalId');
 
+        if (!timerId) {
+            console.error('Keine timerId in der URL gefunden');
+            return;
+        }
+
         // Back-Link aktualisieren
         const backButton = document.querySelector('.back');
-        if (backButton && timerId) {
+        if (backButton) {
             backButton.onclick = () => window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
         }
 
@@ -434,6 +439,12 @@
 
         // Save-Button Logik
         saveIntervalButton.addEventListener('click', () => {
+            if (!timer) {
+                console.error('Timer nicht gefunden:', timerId);
+                alert('Timer nicht gefunden. Bitte erneut versuchen.');
+                return;
+            }
+
             const name = intervalNameInput.value.trim() || 'Intervall';
             const type = tabInterval.classList.contains('active') ? 'interval' : 'rest';
 
@@ -450,11 +461,6 @@
             const seconds = parseInt(secondsElement ? secondsElement.textContent : '0');
             const duration = minutes * 60 + seconds;
 
-            if (!timer) {
-                console.error('Timer nicht gefunden:', timerId);
-                return;
-            }
-
             // Neues Intervall erstellen oder bestehendes aktualisieren
             if (interval) {
                 interval.name = name;
@@ -462,7 +468,7 @@
                 interval.type = type;
             } else {
                 const newInterval = {
-                    id: `int-${timerId}-${Date.now()}`,
+                    id: generateUniqueId(),
                     name,
                     duration,
                     type,
@@ -483,10 +489,6 @@
             updateWheel(wheel);
         });
     });
-
-    function generateUniqueId() {
-        return `interval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    }
   </script>
 </body>
 </html>
