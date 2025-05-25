@@ -461,7 +461,7 @@
             restSeconds = Math.round(restSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
             if (restSeconds >= 60) { // Korrigiere 60 Sekunden
                 restMinutes += Math.floor(restSeconds / 60);
-                restSeconds = restSeconds % 60;
+                restSeconds = intervalSeconds % 60;
             }
             console.log('restMinutes:', restMinutes, 'restSeconds:', restSeconds); // Debugging
             setWheelValue('minutes-wheel-rest', restMinutes.toString().padStart(2, '0'));
@@ -480,19 +480,27 @@
         saveIntervalButton.addEventListener('click', () => {
             const name = intervalNameInput.value.trim() || 'Intervall';
 
-            // durationInterval aus Interval-Tab
-            const intervalMinutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
-            const intervalSecondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
-            const intervalMinutes = parseInt(intervalMinutesElement ? intervalMinutesElement.textContent : 0);
-            const intervalSeconds = parseInt(intervalSecondsElement ? intervalSecondsElement.textContent : 0);
-            const durationInterval = intervalMinutes * 60 + intervalSeconds;
+            // Standardwerte für durationInterval und durationRest aus gespeichertem Intervall oder 0
+            let durationInterval = interval ? interval.durationInterval : 0;
+            let durationRest = interval ? interval.durationRest : 0;
 
-            // durationRest aus Rest-Tab
-            const restMinutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
-            const restSecondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
-            const restMinutes = parseInt(restMinutesElement ? restMinutesElement.textContent : 0);
-            const restSeconds = parseInt(restSecondsElement ? restSecondsElement.textContent : 0);
-            const durationRest = restMinutes * 60 + restSeconds;
+            // Wenn Interval-Tab aktiv ist, aktualisiere durationInterval
+            if (contentInterval.classList.contains('active')) {
+                const intervalMinutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
+                const intervalSecondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
+                const intervalMinutes = parseInt(intervalMinutesElement ? intervalMinutesElement.textContent : 0);
+                const intervalSeconds = parseInt(intervalSecondsElement ? intervalSecondsElement.textContent : 0);
+                durationInterval = intervalMinutes * 60 + intervalSeconds;
+            }
+
+            // Wenn Rest-Tab aktiv ist, aktualisiere durationRest
+            if (contentRest.classList.contains('active')) {
+                const restMinutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
+                const restSecondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
+                const restMinutes = parseInt(restMinutesElement ? restMinutesElement.textContent : 0);
+                const restSeconds = parseInt(restSecondsElement ? restSecondsElement.textContent : 0);
+                durationRest = restMinutes * 60 + restSeconds;
+            }
 
             // Neues Intervall erstellen oder bestehendes aktualisieren
             const updatedInterval = {
