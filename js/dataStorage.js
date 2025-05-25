@@ -1,4 +1,3 @@
-```javascript
 const TIMER_STORAGE_KEY = 'martialArtsTimers';
 const SIGNAL_STORAGE_KEY = 'martialArtsSignals';
 
@@ -95,4 +94,3 @@ function saveSignals(signals) {
         console.error("Fehler beim Speichern der Signale in localStorage:", e);
     }
 }
-```
