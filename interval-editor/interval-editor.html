@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -414,7 +415,7 @@
             interval = timer.intervals.find(i => i.id === intervalId);
         }
 
-        // Eingabefelder füllen, falls Intervall bearbeitet wird
+        // Eing’s
         if (interval) {
             intervalNameInput.value = interval.name || 'Intervall';
             const durationSeconds = interval.duration;
@@ -443,12 +444,6 @@
             if (!timer) {
                 console.error('Timer nicht gefunden:', timerId);
                 alert('Timer nicht gefunden. Bitte erneut versuchen.');
-                return;
-            }
-
-            if (typeof generateUniqueId !== 'function') {
-                console.error('generateUniqueId ist nicht definiert. Prüfe, ob dataStorage.js korrekt geladen ist.');
-                alert('Interner Fehler: Datenlogik nicht verfügbar.');
                 return;
             }
 
@@ -499,3 +494,15 @@
   </script>
 </body>
 </html>
+```
+
+### Hinweise
+- **Fehlerbehebung**: `generateUniqueId` ist jetzt in `dataStorage.js` definiert, was den Fehler `Uncaught ReferenceError: generateUniqueId is not defined` und das Popup behebt.
+- **Testen**:
+  - Öffne `https://erikstadel.github.io/Timer-App/timer-editor/timer-editor.html?timerId=timer-example-1`.
+  - Klicke auf "+ Add Interval", erstelle ein neues Intervall, und teste den "Save"-Button.
+  - Prüfe, ob das neue Intervall in `timer-editor.html` erscheint.
+  - Stelle sicher, dass `../js/dataStorage.js` korrekt geladen ist (prüfe Netzwerk-Tab in der Konsole).
+- **CodeSpaces**: Speichere beide Dateien (`js/dataStorage.js` und `interval-editor/interval-editor.html`), pushe, und teste.
+
+Falls weitere Fehler auftreten, teile bitte die genaue Konsolenausgabe oder Netzwerkdetails!
