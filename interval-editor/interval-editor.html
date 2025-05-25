@@ -348,18 +348,31 @@
 
     function setWheelValue(wheelId, value) {
         const wheel = document.getElementById(wheelId);
-        if (wheel) {
-            const items = Array.from(wheel.querySelectorAll('.wheel-item'));
-            const itemToSelect = items.find(item => item.textContent === value);
-            if (itemToSelect) {
-                wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
-                setTimeout(() => updateWheel(wheel), 100);
-            }
+        if (!wheel) return;
+
+        const items = Array.from(wheel.querySelectorAll('.wheel-item'));
+        const validValues = items.map(item => item.textContent);
+        let targetValue = value;
+
+        // Falls der Wert nicht in den validValues existiert, finde den nächstgelegenen
+        if (!validValues.includes(value)) {
+            const numericValue = parseInt(value, 10);
+            const numericValidValues = validValues.map(v => parseInt(v, 10));
+            const closest = numericValidValues.reduce((prev, curr) =>
+                Math.abs(curr - numericValue) < Math.abs(prev - numericValue) ? curr : prev
+            );
+            targetValue = closest.toString().padStart(2, '0');
+        }
+
+        const itemToSelect = items.find(item => item.textContent === targetValue);
+        if (itemToSelect) {
+            wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
+            updateWheel(wheel);
         }
     }
 
     // --- Tab-Funktionalität ---
-    tabInterval.addEventListener('click', function() {
+    tabInterval.addEventListener('click', () => {
       tabInterval.classList.add('active');
       tabInterval.classList.remove('inactive');
       tabRest.classList.add('inactive');
@@ -373,7 +386,7 @@
       }, 0);
     });
 
-    tabRest.addEventListener('click', function() {
+    tabRest.addEventListener('click', () => {
       tabRest.classList.add('active');
       tabRest.classList.remove('inactive');
       tabInterval.classList.add('inactive');
@@ -412,7 +425,7 @@
         const timer = timers.find(t => t.id === timerId);
         if (!timer) {
             console.error('Timer nicht gefunden:', timerId);
-            alert('Timer nicht gefunden. Bitte erneut versuchen.');
+            alert('Timer nicht gefunden. Bitte versuchen Sie erneut.');
             window.location.href = '../timer-editor/timer-editor.html';
             return;
         }
@@ -427,16 +440,18 @@
                 window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
                 return;
             }
+            console.log('Geladenes Intervall:', interval); // Debugging
             intervalNameInput.value = interval.name || 'Intervall';
 
             // Setze durationInterval
             let intervalMinutes = Math.floor(interval.durationInterval / 60);
             let intervalSeconds = interval.durationInterval % 60;
             intervalSeconds = Math.round(intervalSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
-            if (intervalSeconds === 60) { // Korrigiere 60 Sekunden
-                intervalMinutes += 1;
-                intervalSeconds = 0;
+            if (intervalSeconds >= 60) { // Korrigiere 60 Sekunden
+                intervalMinutes += Math.floor(intervalSeconds / 60);
+                intervalSeconds = intervalSeconds % 60;
             }
+            console.log('intervalMinutes:', intervalMinutes, 'intervalSeconds:', intervalSeconds); // Debugging
             setWheelValue('minutes-wheel', intervalMinutes.toString().padStart(2, '0'));
             setWheelValue('seconds-wheel', intervalSeconds.toString().padStart(2, '0'));
 
@@ -444,10 +459,11 @@
             let restMinutes = Math.floor(interval.durationRest / 60);
             let restSeconds = interval.durationRest % 60;
             restSeconds = Math.round(restSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
-            if (restSeconds === 60) { // Korrigiere 60 Sekunden
-                restMinutes += 1;
-                restSeconds = 0;
+            if (restSeconds >= 60) { // Korrigiere 60 Sekunden
+                restMinutes += Math.floor(restSeconds / 60);
+                restSeconds = restSeconds % 60;
             }
+            console.log('restMinutes:', restMinutes, 'restSeconds:', restSeconds); // Debugging
             setWheelValue('minutes-wheel-rest', restMinutes.toString().padStart(2, '0'));
             setWheelValue('seconds-wheel-rest', restSeconds.toString().padStart(2, '0'));
         } else {
@@ -467,15 +483,15 @@
             // durationInterval aus Interval-Tab
             const intervalMinutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
             const intervalSecondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
-            const intervalMinutes = parseInt(intervalMinutesElement ? intervalMinutesElement.textContent : '0');
-            const intervalSeconds = parseInt(intervalSecondsElement ? intervalSecondsElement.textContent : '0');
+            const intervalMinutes = parseInt(intervalMinutesElement ? intervalMinutesElement.textContent : 0);
+            const intervalSeconds = parseInt(intervalSecondsElement ? intervalSecondsElement.textContent : 0);
             const durationInterval = intervalMinutes * 60 + intervalSeconds;
 
             // durationRest aus Rest-Tab
             const restMinutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
             const restSecondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
-            const restMinutes = parseInt(restMinutesElement ? restMinutesElement.textContent : '0');
-            const restSeconds = parseInt(restSecondsElement ? restSecondsElement.textContent : '0');
+            const restMinutes = parseInt(restMinutesElement ? restMinutesElement.textContent : 0);
+            const restSeconds = parseInt(restSecondsElement ? restSecondsElement.textContent : 0);
             const durationRest = restMinutes * 60 + restSeconds;
 
             // Neues Intervall erstellen oder bestehendes aktualisieren
