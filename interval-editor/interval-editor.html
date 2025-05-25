@@ -15,13 +15,13 @@
       theme: {
         extend: {
           colors: {
-            dark: '#124559',
-            background: '#ffffff',
+            dark: '#01161E',
+            background: '#124559',
             primary: '#598392',
             secondary: '#AEC3B0',
             light: '#EFF6E0',
             accent: '#83c5be',
-            rest: '#94d8be',
+            rest: '#94d1be',
             interval: '#e76f51',
             warning: '#fc814a',
           },
@@ -422,7 +422,7 @@
 
       setTimeout(() => {
           document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
-      }, 0);
+      }, 100); // Verzögerung für sichtbares Rendering
     });
 
     // --- Initialisierung und Datenlogik ---
@@ -455,6 +455,10 @@
             return;
         }
 
+        // Beide Tabs für Initialisierung sichtbar machen
+        contentInterval.classList.add('active');
+        contentRest.classList.add('active');
+
         // Intervall laden
         let interval = null;
         if (intervalId) {
@@ -484,7 +488,7 @@
             let restMinutes = Math.floor(interval.durationRest / 60);
             let restSeconds = interval.durationRest % 60;
             restSeconds = Math.round(restSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
-            if (restSeconds >= 60) { // Korrigiere 60 Sekunden
+            if (restSeconds >= 60) {
                 restMinutes += Math.floor(restSeconds / 60);
                 restSeconds = restSeconds % 60;
             }
@@ -503,8 +507,16 @@
             setWheelValue('minutes-wheel-rest', '00');
             setWheelValue('seconds-wheel-rest', '00');
             tempInterval = { durationInterval: 0, durationRest: 0 };
-            tabInterval.click();
         }
+
+        // Alle Wheels initialisieren
+        wheels.forEach((wheel) => {
+            updateWheel(wheel);
+        });
+
+        // Nach Initialisierung Rest-Tab ausblenden
+        contentRest.classList.remove('active');
+        tabInterval.click(); // Interval-Tab aktivieren
 
         // Save-Button Logik
         saveIntervalButton.addEventListener('click', () => {
@@ -536,11 +548,6 @@
 
             // Zurück zu timer-editor.html
             window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
-        });
-
-        // Initial alle Wheels aktualisieren
-        wheels.forEach((wheel) => {
-            updateWheel(wheel);
         });
     });
   </script>
