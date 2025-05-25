@@ -396,6 +396,7 @@
 
         if (!timerId) {
             console.error('Keine timerId in der URL gefunden');
+            alert('Timer-ID fehlt. Bitte erneut versuchen.');
             return;
         }
 
@@ -442,6 +443,12 @@
             if (!timer) {
                 console.error('Timer nicht gefunden:', timerId);
                 alert('Timer nicht gefunden. Bitte erneut versuchen.');
+                return;
+            }
+
+            if (typeof generateUniqueId !== 'function') {
+                console.error('generateUniqueId ist nicht definiert. Prüfe, ob dataStorage.js korrekt geladen ist.');
+                alert('Interner Fehler: Datenlogik nicht verfügbar.');
                 return;
             }
 
