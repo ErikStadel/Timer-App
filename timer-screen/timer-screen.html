@@ -561,7 +561,7 @@
         confirmEndButton.addEventListener('click', () => {
             endConfirmationDialog.classList.remove('active');
             resetTimer();
-            window.location.href = '../index.html';
+            window.location.href = '../home-screen/index.html';
         });
 
         // --- Initialisierung ---
@@ -573,7 +573,7 @@
             if (!timerId) {
                 console.error('Keine timerId in der URL gefunden');
                 alert('Timer-ID fehlt. Bitte erneut versuchen.');
-                window.location.href = '../index.html';
+                window.location.href = '../home-screen/index.html';
                 return;
             }
 
@@ -582,7 +582,7 @@
             if (!timer) {
                 console.error('Timer nicht gefunden:', timerId);
                 alert('Timer nicht gefunden. Bitte versuchen Sie erneut.');
-                window.location.href = '../index.html';
+                window.location.href = '../home-screen/index.html';
                 return;
             }
 
