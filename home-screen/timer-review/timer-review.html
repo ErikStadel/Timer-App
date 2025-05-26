@@ -33,15 +33,14 @@
         rel="stylesheet"
     />
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: #01161E;
+        body {
+            background-color: #124559;
+            color: #EFF6E0;
             font-family: 'Karla', sans-serif;
-            overscroll-behavior: none;
-            scroll-padding-top: 4rem;
-            scroll-behavior: smooth;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
         }
         header {
             position: sticky;
@@ -69,8 +68,6 @@
             list-style: none;
             padding: 0;
             margin: 0;
-            overflow-y: auto;
-            scroll-behavior: smooth;
         }
         .interval-item {
             background-color: rgba(255, 255, 255, 0.08);
@@ -81,43 +78,28 @@
             justify-content: space-between;
             font-size: 1.1rem;
         }
-        .section-title {
-            padding: 0.75rem 1rem;
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #EFF6E0;
-        }
-        footer {
-            position: sticky;
-            bottom: 0;
-            z-index: 50;
-            padding: 1rem;
-            background-color: #01161E;
-            text-align: center;
-        }
     </style>
 </head>
-<body class="text-light">
-    <header id="header" class="text-light shadow-md">
-        <div class="w-full flex justify-between items-center">
-            <a href="../index.html" class="text-accent font-semibold hover:underline">Back</a>
-            <h1 id="timer-name" class="text-xl font-bold text-accent tracking-wide">Timer Name</h1>
-            <div></div>
-        </div>
+<body>
+    <header>
+        <a href="../index.html" class="text-accent font-semibold hover:underline">Back</a>
+        <h1 id="timer-name" class="text-2xl font-bold text-light">Timer Name</h1>
+        <div></div>
     </header>
 
-    <ul id="interval-list" class="interval-list">
-        <li class="section-title">Repeat</li>
-        <li class="interval-item">
-            <span>Repeat</span>
-            <span id="repeat-count">1</span>
-        </li>
-        <li class="section-title">Sequence</li>
-    </ul>
+    <div class="mb-4">
+        <h2 class="text-xl font-semibold text-light">Repeat</h2>
+        <p id="repeat-count" class="text-light">1</p>
+    </div>
 
-    <footer>
+    <div>
+        <h2 class="text-xl font-semibold text-light mb-2">Sequence</h2>
+        <ul id="interval-list" class="interval-list"></ul>
+    </div>
+
+    <div class="mt-auto text-center">
         <a href="../timer-screen.html?timerId=" id="start-timer" class="bg-accent text-dark px-4 py-2 rounded-full font-bold hover:bg-secondary transition">Start Timer</a>
-    </footer>
+    </div>
 
     <script>
         function formatTime(seconds) {
@@ -155,6 +137,7 @@
 
             // Intervalle anzeigen
             const intervalList = document.getElementById('interval-list');
+            intervalList.innerHTML = '';
             timer.intervals.forEach(interval => {
                 // Intervall
                 const intervalLi = document.createElement('li');
