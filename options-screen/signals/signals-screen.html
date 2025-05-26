@@ -2,15 +2,12 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8" />
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Signals Screen</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../js/dataStorage.js"></script>
     <script>
-        // Tailwind CSS Konfiguration - identisch zum Timer-Screen
         tailwind.config = {
             theme: {
                 extend: {
@@ -21,9 +18,6 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
-                        rest: '#629471',      /* Satteres Grün für Rest-Zustand */
-                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand */
-                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
                     },
                     fontFamily: {
                         karla: ['Karla', 'sans-serif'],
@@ -32,268 +26,95 @@
             },
         };
     </script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-        rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: #01161E;
-            font-family: 'Karla', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior: none;
-            scroll-padding-top: 4rem;
-            scroll-behavior: smooth;
+        body {
+            background-color: #124559;
             color: #EFF6E0;
+            font-family: 'Karla', sans-serif;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-        }
-
-        /* --- Sticky Header --- */
-        .sticky-header {
-            position: sticky;
-            top: 0;
-            width: 100%;
-            background-color: #01161E;
             padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 50;
-            flex-shrink: 0;
-        }
-        
-        /* Pseudo-Element für den Bereich über dem Header, wie auf dem Home-Screen */
-        .sticky-header::before {
-            content: "";
-            position: absolute;
-            top: -100vh;
-            left: 0;
-            right: 0;
-            height: 100vh;
-            background-color: #01161E;
-            z-index: -1;
         }
 
-        .header-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #83c5be;
-            text-align: center;
-            letter-spacing: 0.025em;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .header-link {
-            color: #83c5be;
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.2s;
-            padding: 0.5rem 0.75rem;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        }
-
-        .header-link:hover {
-            text-decoration: underline;
-        }
-
-        /* Platzhalter für die rechte Seite, damit der Titel mittig bleibt */
-        .header-placeholder {
-            width: 90px; /* Ca. Breite des "Back"-Links */
-        }
-
-        /* --- Main Content Area --- */
-        .main-content {
-            flex-grow: 1;
-            padding: 1.5rem 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem; /* Abstand zwischen den "Gruppen" aus Button + Sound-Name */
-            overflow-y: auto;
-        }
-
-        .signal-group {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start; /* Button und Text linksbündig */
-            width: 100%; /* Die Gruppe nimmt volle Breite ein */
-        }
-
-        .signal-button {
-            background-color: #124559; /* Hintergrund wie timer-item */
-            border-radius: 0.75rem; /* Abgerundete Ecken */
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 1rem;
-            text-align: left;
-            color: #edede9; /* Farbe wie timer-name */
+            background-color: #01161E;
+            border-radius: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .signal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 0.75rem;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-            width: 100%; /* Button nimmt volle Breite der Gruppe ein */
-            margin-bottom: 0.25rem; /* Etwas Abstand zum Sound-Namen darunter */
+            transition: background-color 0.3s ease;
         }
 
-        .signal-button:active {
-            background-color: rgba(18, 69, 89, 0.8);
-            transform: scale(0.99);
+        .signal-item:hover {
+            background-color: rgba(255, 255, 255, 0.15);
         }
-
-        .signal-name {
-            font-size: 1.1rem; /* Größe des Signal-Namens (im Button) */
-            font-weight: bold;
-        }
-
-        .signal-sound {
-            font-size: 0.9rem; /* Kleinere Größe für den Sound-Namen */
-            color: #AEC3B0; /* Etwas hellere Farbe für den Sound-Namen (secondary) */
-            font-weight: normal;
-            margin-left: 1rem; /* Einzug wie bei List-Items */
-        }
-
-        /* Pfeil-Icon im Button */
-        .signal-button .icon {
-            font-size: 1.5rem;
-            margin-left: 1rem; /* Abstand vom Text */
-            color: #83c5be; /* accent Farbe für Icons */
-        }
-
     </style>
 </head>
-
 <body>
-
-    <header class="sticky-header" id="signals-header">
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/options.html" class="header-link">Back</a> 
-        <h1 class="header-title">Signals</h1>
-        <div class="header-placeholder"></div>
+    <header>
+        <a href="../home-screen/index.html" class="text-accent font-semibold hover:underline">Back</a>
+        <h1 class="text-2xl font-bold text-light">Signals</h1>
+        <div></div>
     </header>
 
-    <div class="main-content">
-        <div class="signal-group">
-            <div class="signal-button" id="timer-start-signal">
-                <span class="signal-name">Timer Start</span>
-                <span class="icon">></span>
-            </div>
-            <span class="signal-sound" id="timer-start-sound">bell</span>
+    <div class="flex-col space-y-2">
+        <div class="signal-item" data-signal-type="timerStart">
+            <span>Timer Start</span>
+            <span id="signal-timer-start" class="text-accent">Bell</span>
         </div>
-
-        <div class="signal-group">
-            <div class="signal-button" id="timer-end-signal">
-                <span class="signal-name">Timer End</span>
-                <span class="icon">></span>
-            </div>
-            <span class="signal-sound" id="timer-end-sound">horn</span>
+        <div class="signal-item" data-signal-type="timerEnd">
+            <span>Timer End</span>
+            <span id="signal-timer-end" class="text-accent">Horn</span>
         </div>
-
-        <div class="signal-group">
-            <div class="signal-button" id="halfway-signal">
-                <span class="signal-name">Halfway Signal</span>
-                <span class="icon">></span>
-            </div>
-            <span class="signal-sound" id="halfway-sound">beep</span>
+        <div class="signal-item" data-signal-type="halfway">
+            <span>Halfway Signal</span>
+            <span id="signal-halfway" class="text-accent">Beep</span>
         </div>
-
-        <div class="signal-group">
-            <div class="signal-button" id="five-second-signal">
-                <span class="signal-name">5 Second Signal</span>
-                <span class="icon">></span>
-            </div>
-            <span class="signal-sound" id="five-second-sound">applause</span>
+        <div class="signal-item" data-signal-type="fiveSecond">
+            <span>5 Second Signal</span>
+            <span id="signal-five-second" class="text-accent">Applause</span>
         </div>
     </div>
 
     <script>
-        // Globales Objekt für Audio-Steuerung (muss auf allen Seiten verfügbar sein, die Audio nutzen)
-        window.appAudio = window.appAudio || {
-            audioContext: null,
-            masterGainNode: null,
-            loadedSounds: {}, // Speichert geladene AudioBuffer
-            // Basispfad zu deinen Sounds. Wichtig: Von hier aus muss der Pfad stimmen!
-            basePath: 'https://erikstadel.github.io/Timer-App/options-screen/signals/sounds/', 
-            currentGlobalVolume: 1.0 // Standardwert, wird von Sound-Regler-Screen aktualisiert
-        };
+        document.addEventListener('DOMContentLoaded', () => {
+            const globalSignals = loadGlobalSignals();
+            const signals = loadSignals();
 
-        // Funktion zur Initialisierung des AudioContext und GainNode
-        // Diese Funktion sollte auf allen Seiten vorhanden sein, die potenziell Sounds abspielen
-        async function initAudioContext() {
-            if (!window.appAudio.audioContext) {
-                try {
-                    window.appAudio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    window.appAudio.masterGainNode = window.appAudio.audioContext.createGain();
-                    window.appAudio.masterGainNode.connect(window.appAudio.audioContext.destination);
+            const signalElements = {
+                timerStart: document.getElementById('signal-timer-start'),
+                timerEnd: document.getElementById('signal-timer-end'),
+                halfway: document.getElementById('signal-halfway'),
+                fiveSecond: document.getElementById('signal-five-second')
+            };
 
-                    // Lautstärke aus localStorage laden und GainNode setzen
-                    const savedVolume = localStorage.getItem('appVolume');
-                    if (savedVolume !== null) {
-                        const volumeValue = parseFloat(savedVolume);
-                        // Mappe 50-150 auf 0.0-1.5 (GainNode kann über 1.0 gehen)
-                        window.appAudio.currentGlobalVolume = Math.max(0, (volumeValue - 50) / 100 + 0.5); // 50 -> 0.5, 100 -> 1.0, 150 -> 1.5
-                    } else {
-                        window.appAudio.currentGlobalVolume = 1.0; // Standardwert
-                    }
-                    window.appAudio.masterGainNode.gain.value = window.appAudio.currentGlobalVolume;
-                    console.log("AudioContext und MasterGainNode initialisiert/gefunden. Aktuelle Lautstärke:", window.appAudio.currentGlobalVolume);
+            Object.keys(signalElements).forEach(type => {
+                const signalId = globalSignals[type];
+                const signal = signals.find(s => s.id === signalId);
+                signalElements[type].textContent = signal ? signal.name : 'None';
+            });
 
-                } catch (e) {
-                    console.error("Web Audio API konnte nicht initialisiert werden:", e);
-                    alert("Ihr Browser unterstützt die Web Audio API nicht oder es gab ein Problem beim Initialisieren. Soundfunktionen sind möglicherweise eingeschränkt.");
-                    return false;
-                }
-            }
-            // Optional: Wenn der AudioContext suspended ist, versuchen ihn zu reaktivieren.
-            // Dies ist meistens auf User-Interaktion notwendig. Hier im Signals-Screen
-            // findet keine direkte Audio-Wiedergabe statt, daher ist dies eher präventiv.
-            // Die Haupt-Resume-Logik bleibt im signal-select.html beim Klick.
-            if (window.appAudio.audioContext && window.appAudio.audioContext.state === 'suspended') {
-                 console.log("AudioContext ist 'suspended' auf Signals-Screen, versuche zu 'resume'...");
-                 await window.appAudio.audioContext.resume().then(() => {
-                     console.log("AudioContext auf Signals-Screen wurde 'resumed'.");
-                 }).catch(e => {
-                     console.error("Fehler beim Resuming des AudioContext auf Signals-Screen:", e);
-                 });
-            }
-            return true;
-        }
-
-        // Dummy-Funktion, die auf den Klick eines Signal-Buttons reagiert
-        function handleSignalClick(signalType) {
-            console.log(`Signal '${signalType}' geklickt!`);
-            // Angepasster Link für die Navigation zum signal-select.html Screen
-            window.location.href = `https://erikstadel.github.io/Timer-App/options-screen/signals/signal-select.html?type=${signalType}`;
-        }
-
-        // Event Listener für die Signal-Buttons
-        document.getElementById('timer-start-signal').addEventListener('click', () => handleSignalClick('timer-start'));
-        document.getElementById('timer-end-signal').addEventListener('click', () => handleSignalClick('timer-end'));
-        document.getElementById('halfway-signal').addEventListener('click', () => handleSignalClick('halfway'));
-        document.getElementById('five-second-signal').addEventListener('click', () => handleSignalClick('five-second'));
-
-        // Funktion zum Laden und Anzeigen der Sounds
-        function loadAndDisplaySignals() {
-            let savedSignals = JSON.parse(localStorage.getItem('savedSignalsSounds')) || {};
-
-            document.getElementById('timer-start-sound').textContent = savedSignals['timer-start'] ? savedSignals['timer-start'] : 'bell';
-            document.getElementById('timer-end-sound').textContent = savedSignals['timer-end'] ? savedSignals['timer-end'] : 'horn';
-            document.getElementById('halfway-sound').textContent = savedSignals['halfway'] ? savedSignals['halfway'] : 'beep';
-            document.getElementById('five-second-sound').textContent = savedSignals['five-second'] ? savedSignals['five-second'] : 'applause';
-        }
-
-        // Laden der Sounds und Initialisierung des AudioContext beim Laden der Seite
-        document.addEventListener('DOMContentLoaded', async () => {
-            loadAndDisplaySignals();
-            // Initialisiere den AudioContext beim Laden des Screens.
-            // Dadurch ist das window.appAudio-Objekt bereit, wenn signal-select.html geladen wird.
-            await initAudioContext();
+            document.querySelectorAll('.signal-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const signalType = item.dataset.signalType;
+                    window.location.href = `../signal-selector/index.html?signalType=${signalType}`;
+                });
+            });
         });
     </script>
 </body>

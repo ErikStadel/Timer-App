@@ -4,15 +4,21 @@ const GLOBAL_SIGNALS_KEY = 'martialArtsGlobalSignals';
 
 // Globale Signale
 const defaultGlobalSignals = {
-    timerStart: 'signal-gong',
-    halfway: 'signal-bell',
-    fourSecond: 'signal-bell'
+    timerStart: 'signal-bell',
+    timerEnd: 'signal-horn',
+    halfway: 'signal-beep',
+    fiveSecond: 'signal-applause'
 };
 
 // Standard-Signale
 const defaultSignals = [
+    { id: 'signal-bell', name: 'Bell', filePath: 'assets/sounds/bell.mp3' },
+    { id: 'signal-horn', name: 'Horn', filePath: 'assets/sounds/horn.mp3' },
+    { id: 'signal-beep', name: 'Beep', filePath: 'assets/sounds/beep.mp3' },
+    { id: 'signal-applause', name: 'Applause', filePath: 'assets/sounds/applause.mp3' },
+    { id: 'signal-chime', name: 'Chime', filePath: 'assets/sounds/chime.mp3' },
     { id: 'signal-gong', name: 'Gong', filePath: 'assets/sounds/gong.mp3' },
-    { id: 'signal-bell', name: 'Bell', filePath: 'assets/sounds/bell.mp3' }
+    { id: 'signal-whoosh', name: 'Whoosh', filePath: 'assets/sounds/whoosh.mp3' }
 ];
 
 // Standard-Timer
@@ -20,7 +26,7 @@ const defaultTimers = [
     {
         id: 'timer-example-1',
         name: 'Basic Workout',
-        repeat: 1,
+        repeat: 2,
         intervals: [
             { id: 'int-1-1', name: 'Warm-up', durationInterval: 30, durationRest: 15 },
             { id: 'int-1-2', name: 'Main Set', durationInterval: 60, durationRest: 30 }

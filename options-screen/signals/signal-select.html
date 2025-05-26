@@ -2,13 +2,11 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8" />
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Signal Select</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../js/dataStorage.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -20,9 +18,6 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
-                        rest: '#629471',
-                        interval: '#fd5c34',
-                        warning: '#fc814a',
                     },
                     fontFamily: {
                         karla: ['Karla', 'sans-serif'],
@@ -31,357 +26,83 @@
             },
         };
     </script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-        rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: #01161E;
-            font-family: 'Karla', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior: none;
-            scroll-padding-top: 4rem;
-            scroll-behavior: smooth;
+        body {
+            background-color: #124559;
             color: #EFF6E0;
+            font-family: 'Karla', sans-serif;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
+            padding: 1rem;
         }
 
-        .sticky-header {
-            position: sticky;
-            top: 0;
-            width: 100%;
-            background-color: #01161E;
-            padding: 1rem;
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 50;
-            flex-shrink: 0;
-        }
-
-        .sticky-header::before {
-            content: "";
-            position: absolute;
-            top: -100vh;
-            left: 0;
-            right: 0;
-            height: 100vh;
-            background-color: #01161E;
-            z-index: -1;
-        }
-
-        .header-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #83c5be;
-            text-align: center;
-            letter-spacing: 0.025em;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .header-link {
-            color: #83c5be;
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.2s;
-            padding: 0.5rem 0.75rem;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        }
-
-        .header-link:hover {
-            text-decoration: underline;
-        }
-
-        .header-placeholder {
-            width: 90px;
-        }
-
-        .sound-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            flex-grow: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        .sound-list::-webkit-scrollbar {
-            display: none;
-        }
-        .sound-list {
-            touch-action: pan-y;
-        }
-
-        .sound-item {
-            background-color: #124559;
-            border-bottom: 1px solid #EFF6E0;
-            display: flex;
-            align-items: center;
             padding: 1rem;
+            background-color: #01161E;
+            border-radius: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .signal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 0.75rem;
             cursor: pointer;
-            transition: background-color 0.2s;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            transition: background-color 0.3s ease;
         }
 
-        .sound-item:active {
-            background-color: rgba(18, 69, 89, 0.8);
+        .signal-item:hover {
+            background-color: rgba(255, 255, 255, 0.15);
         }
-
-        .sound-item.selected {
-            background-color: #598392;
-            font-weight: bold;
-            color: #EFF6E0;
-        }
-
-        .sound-name {
-            font-size: 1.1rem;
-            color: inherit;
-            flex-grow: 1;
-        }
-
     </style>
 </head>
-
 <body>
-
-    <header class="sticky-header" id="signal-select-header">
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signals-screen.html" class="header-link" id="back-link">Back</a>
-        <h1 class="header-title" id="signal-name-display">Signalname</h1>
-        <div class="header-placeholder"></div>
+    <header>
+        <a href="../signals-screen/index.html" class="text-accent font-semibold hover:underline">Back</a>
+        <h1 class="text-2xl font-bold text-light" id="signal-title">Signal</h1>
+        <div></div>
     </header>
 
-    <ul class="sound-list" id="sound-list">
-        <li class="sound-item" data-sound-id="bell" data-file="bell.mp3">
-            <span class="sound-name">Bell</span>
-        </li>
-        <li class="sound-item" data-sound-id="horn" data-file="horn.mp3">
-            <span class="sound-name">Horn</span>
-        </li>
-        <li class="sound-item" data-sound-id="beep" data-file="beep.mp3">
-            <span class="sound-name">Beep</span>
-        </li>
-        <li class="sound-item" data-sound-id="applause" data-file="applause.mp3">
-            <span class="sound-name">Applause</span>
-        </li>
-        <li class="sound-item" data-sound-id="chime" data-file="chime.mp3">
-            <span class="sound-name">Chime</span>
-        </li>
-        <li class="sound-item" data-sound-id="gong" data-file="gong.mp3">
-            <span class="sound-name">Gong</span>
-        </li>
-        <li class="sound-item" data-sound-id="whoosh" data-file="whoosh.mp3">
-            <span class="sound-name">Whoosh</span>
-        </li>
-    </ul>
+    <div class="flex-col space-y-2">
+        <div class="signal-item" data-signal-id="signal-bell"><span>Bell</span></div>
+        <div class="signal-item" data-signal-id="signal-horn"><span>Horn</span></div>
+        <div class="signal-item" data-signal-id="signal-beep"><span>Beep</span></div>
+        <div class="signal-item" data-signal-id="signal-applause"><span>Applause</span></div>
+        <div class="signal-item" data-signal-id="signal-chime"><span>Chime</span></div>
+        <div class="signal-item" data-signal-id="signal-gong"><span>Gong</span></div>
+        <div class="signal-item" data-signal-id="signal-whoosh"><span>Whoosh</span></div>
+    </div>
 
     <script>
-        const soundList = document.getElementById('sound-list');
-        const signalNameDisplay = document.getElementById('signal-name-display');
-        const backLink = document.getElementById('back-link');
-
-        // Globales Objekt für Audio-Steuerung
-        window.appAudio = window.appAudio || {
-            audioContext: null,
-            masterGainNode: null,
-            loadedSounds: {}, // Speichert geladene AudioBuffer
-            basePath: 'https://erikstadel.github.io/Timer-App/options-screen/signals/sounds/',
-            currentGlobalVolume: 1.0 // Wird vom Volume-Screen aktualisiert
-        };
-
-        const availableSounds = [
-            { id: 'bell', name: 'Bell', file: 'bell.mp3' },
-            { id: 'horn', name: 'Horn', file: 'horn.mp3' },
-            { id: 'beep', name: 'Beep', file: 'beep.mp3' },
-            { id: 'applause', name: 'Applause', file: 'applause.mp3' },
-            { id: 'chime', name: 'Chime', file: 'chime.mp3' },
-            { id: 'gong', name: 'Gong', file: 'gong.mp3' },
-            { id: 'whoosh', name: 'Whoosh', file: 'whoosh.mp3' },
-        ];
-
-        let currentSelectedSoundId = null;
-        let currentSignalType = null;
-
-        // Funktion zur Initialisierung des AudioContext und GainNode
-        async function initAudioContext() {
-            if (!window.appAudio.audioContext) {
-                try {
-                    window.appAudio.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    window.appAudio.masterGainNode = window.appAudio.audioContext.createGain();
-                    window.appAudio.masterGainNode.connect(window.appAudio.audioContext.destination);
-
-                    // Lautstärke aus localStorage laden und GainNode setzen
-                    const savedVolume = localStorage.getItem('appVolume');
-                    if (savedVolume !== null) {
-                        const volumeValue = parseFloat(savedVolume);
-                        window.appAudio.currentGlobalVolume = Math.max(0, (volumeValue - 50) / 100 + 0.5); // 50 -> 0.5, 100 -> 1.0, 150 -> 1.5
-                    } else {
-                        window.appAudio.currentGlobalVolume = 1.0; // Standardwert
-                    }
-                    window.appAudio.masterGainNode.gain.value = window.appAudio.currentGlobalVolume;
-                    console.log("AudioContext und MasterGainNode initialisiert. Aktuelle Lautstärke:", window.appAudio.currentGlobalVolume);
-
-                } catch (e) {
-                    console.error("Web Audio API konnte nicht initialisiert werden:", e);
-                    alert("Ihr Browser unterstützt die Web Audio API nicht oder es gab ein Problem beim Initialisieren. Soundfunktionen sind möglicherweise eingeschränkt.");
-                    return false;
-                }
-            }
-            // Wichtig: Context resume, falls er suspended ist (oft nach erster Nutzerinteraktion)
-            if (window.appAudio.audioContext.state === 'suspended') {
-                console.log("AudioContext ist 'suspended', versuche zu 'resume'...");
-                await window.appAudio.audioContext.resume().then(() => {
-                    console.log("AudioContext wurde 'resumed'.");
-                }).catch(e => {
-                    console.error("Fehler beim Resuming des AudioContext:", e);
-                });
-            }
-            return true;
-        }
-
-        // Funktion zum Laden einer Sounddatei
-        async function loadSound(file) {
-            const url = window.appAudio.basePath + file;
-            if (window.appAudio.loadedSounds[file]) {
-                console.log(`Sound '${file}' bereits geladen.`);
-                return window.appAudio.loadedSounds[file]; // Sound bereits geladen
-            }
-
-            // Sicherstellen, dass AudioContext bereit ist, bevor geladen wird
-            // Dies ist ein optionaler Aufruf, um sicherzustellen, dass fetch/decodeAudioData funktioniert.
-            // Die eigentliche 'resume' Logik ist im playSound oder beim ersten Klick.
-            if (!window.appAudio.audioContext) {
-                await initAudioContext(); // Nur initialisieren, nicht resume erzwingen
-                if (!window.appAudio.audioContext) {
-                    console.error("AudioContext ist nicht verfügbar, kann Sound nicht laden.");
-                    return null;
-                }
-            }
-
-            console.log(`Lade Sound: ${url}`);
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await window.appAudio.audioContext.decodeAudioData(arrayBuffer);
-                window.appAudio.loadedSounds[file] = audioBuffer;
-                console.log(`Sound '${file}' erfolgreich geladen.`);
-                return audioBuffer;
-            } catch (error) {
-                console.error(`Fehler beim Laden oder Dekodieren von Sound '${file}':`, error);
-                alert(`Fehler beim Laden des Sounds: ${file}. Bitte prüfen Sie die Konsolenausgabe.`);
-                return null;
-            }
-        }
-
-        // Neue playSound-Funktion mit Web Audio API
-        async function playSound(filePath) {
-            // WICHTIG: AudioContext erst hier (nach Nutzerinteraktion) sicherstellen und resume
-            if (!await initAudioContext()) {
-                 console.error("Konnte AudioContext nicht initialisieren/resumen, Sound kann nicht abgespielt werden.");
-                 return;
-            }
-
-            const audioBuffer = await loadSound(filePath);
-            if (!audioBuffer) {
-                console.warn(`Sound '${filePath}' konnte nicht abgespielt werden, da nicht geladen.`);
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const signalType = urlParams.get('signalType');
+            if (!signalType) {
+                console.error('Kein signalType in der URL gefunden');
+                window.location.href = '../signals-screen/index.html';
                 return;
             }
 
-            try {
-                const source = window.appAudio.audioContext.createBufferSource();
-                source.buffer = audioBuffer;
-                source.connect(window.appAudio.masterGainNode); // Verbindung zum Master Gain Node
-                source.start(0); // Sofort abspielen
-                console.log(`Sound '${filePath}' wird über Web Audio API abgespielt.`);
-            } catch (error) {
-                console.error(`Fehler beim Erstellen der BufferSource für '${filePath}':`, error);
-            }
-        }
+            document.getElementById('signal-title').textContent = signalType.toUpperCase();
 
-        function selectSoundItem(soundId) {
-            document.querySelectorAll('.sound-item').forEach(item => {
-                item.classList.remove('selected');
+            document.querySelectorAll('.signal-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const signalId = item.dataset.signalId;
+                    const globalSignals = loadGlobalSignals();
+                    globalSignals[signalType] = signalId;
+                    saveGlobalSignals(globalSignals);
+                    window.location.href = '../signals/index.html';
+                });
             });
-            const selectedItem = document.querySelector(`.sound-item[data-sound-id="${soundId}"]`);
-            if (selectedItem) {
-                selectedItem.classList.add('selected');
-                currentSelectedSoundId = soundId;
-            }
-        }
-
-        function saveSelectedSound() {
-            if (currentSignalType && currentSelectedSoundId) {
-                let savedSignals = JSON.parse(localStorage.getItem('savedSignalsSounds')) || {};
-                savedSignals[currentSignalType] = currentSelectedSoundId;
-                localStorage.setItem('savedSignalsSounds', JSON.stringify(savedSignals));
-                console.log(`Sound '${currentSelectedSoundId}' für Signal '${currentSignalType}' gespeichert.`);
-            } else {
-                console.warn('Kein Signal-Typ oder kein Sound ausgewählt zum Speichern.');
-            }
-        }
-
-        soundList.addEventListener('click', async (event) => { // 'async' hinzugefügt
-            const clickedItem = event.target.closest('.sound-item');
-            if (clickedItem) {
-                const soundId = clickedItem.dataset.soundId;
-                const soundFile = clickedItem.dataset.file;
-                selectSoundItem(soundId);
-                // Beim Klick versuchen, den AudioContext zu initialisieren und zu resumieren
-                await initAudioContext();
-                playSound(soundFile); // Nutzt die neue playSound-Funktion
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            currentSignalType = urlParams.get('type');
-
-            if (currentSignalType) {
-                const formattedSignalName = currentSignalType
-                    .split('-')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ');
-                signalNameDisplay.textContent = formattedSignalName;
-
-                let savedSignals = JSON.parse(localStorage.getItem('savedSignalsSounds')) || {};
-                const savedSoundId = savedSignals[currentSignalType];
-
-                if (savedSoundId) {
-                    selectSoundItem(savedSoundId);
-                }
-            } else {
-                signalNameDisplay.textContent = "Sound auswählen";
-            }
-
-            // Sounds im Hintergrund vorladen, um Latenz zu vermeiden.
-            // Autoplay-Regeln verhindern hier die Initialisierung/Resume des AudioContexts ohne User-Interaktion.
-            // Daher wird initAudioContext() beim Laden nur initialisiert, nicht resumed.
-            // Das Resume findet dann beim ersten Klick statt.
-            await initAudioContext(); // Stellt sicher, dass context-Objekt existiert
-            for (const sound of availableSounds) {
-                // Nur laden, nicht abspielen, falls AudioContext noch suspended ist
-                loadSound(sound.file);
-            }
-        });
-
-        backLink.addEventListener('click', (event) => {
-            event.preventDefault();
-            saveSelectedSound();
-            console.log('Zurück zu Signals navigieren...');
-            window.location.href = backLink.href;
         });
     </script>
 </body>
