@@ -422,6 +422,7 @@
 
           let touchStartX = 0;
           let touchEndX = 0;
+          let clickTimer = null;
 
           li.addEventListener('touchstart', (e) => {
             if (!isSortableMode) {
@@ -439,6 +440,17 @@
               handleSwipe(li, touchEndX, touchStartX);
               touchStartX = 0;
               touchEndX = 0;
+            }
+          });
+
+          li.addEventListener('click', (e) => {
+            if (!isSortableMode && !li.classList.contains('options-active')) {
+              clearTimeout(clickTimer);
+              clickTimer = setTimeout(() => {
+                const timerIndex = Array.from(timerList.children).indexOf(li);
+                const timer = timers[timerIndex];
+                window.location.href = `../timer-screen/timer-screen.html?timerId=${timer.id}`;
+              }, 200);
             }
           });
 
