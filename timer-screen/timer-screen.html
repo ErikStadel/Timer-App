@@ -403,12 +403,17 @@
             const signals = loadSignals();
             const globalSignals = loadGlobalSignals();
             const signalId = globalSignals[type];
-            const signal = signals.find(s => s.id === signalId);
-            if (signal && signal.filePath) {
-                const audio = new Audio(`../${signal.filePath}`);
-                audio.play().catch(e => console.error('Fehler beim Abspielen des Sounds:', e));
+            console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
+            if (signalId && signalId !== '') {
+                const signal = signals.find(s => s.id === signalId);
+                if (signal && signal.filePath) {
+                    const audio = new Audio(`../${signal.filePath}`);
+                    audio.play().catch(e => console.error('Fehler beim Abspielen des Sounds:', e));
+                } else {
+                    console.warn(`Kein Sound für Signal-Typ: ${type}, signalId: ${signalId}`);
+                }
             } else {
-                console.warn(`Kein Sound für Signal-Typ: ${type}, signalId: ${signalId}`);
+                console.log(`Kein Sound ausgewählt für: ${type}`);
             }
         }
 
@@ -423,8 +428,8 @@
                 currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
                 halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
                 lastFiveSecondPlayed = 0;
-                // Spiele Start-Sound basierend auf Intervall-Typ
                 const type = timerIntervalsData[currentIntervalIndex].type;
+                console.log(`Starte Timer, Intervalltyp: ${type}`);
                 playSound(type === 'interval' ? 'intervalStart' : 'restStart');
             } else if (isTimerPaused) {
                 halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
@@ -444,20 +449,17 @@
                 currentIntervalTimeRemaining--;
                 totalTimeRemaining--;
 
-                // Halfway Signal (nur für interval)
                 if (timerIntervalsData[currentIntervalIndex].type === 'interval' && 
                     currentIntervalTimeRemaining === halfwayPoint) {
                     playSound('halfway');
                 }
 
-                // 5 Second Signal (für interval und rest)
                 if (currentIntervalTimeRemaining <= 5 && currentIntervalTimeRemaining > 0 &&
                     currentIntervalTimeRemaining !== lastFiveSecondPlayed) {
                     playSound('fiveSecond');
                     lastFiveSecondPlayed = currentIntervalTimeRemaining;
                 }
 
-                // Farbwechsel für Warnung (letzte 5 Sekunden)
                 if (currentIntervalTimeRemaining <= 5 && currentIntervalTimeRemaining > 0) {
                     updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type, true);
                 } else {
@@ -488,8 +490,8 @@
                     halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
                     lastFiveSecondPlayed = 0;
 
-                    // Spiele Sound basierend auf Intervall-Typ
                     const type = timerIntervalsData[currentIntervalIndex].type;
+                    console.log(`Wechsel zu Intervalltyp: ${type}, Index: ${currentIntervalIndex}`);
                     playSound(type === 'interval' ? 'intervalStart' : 'restStart');
 
                     updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
@@ -519,10 +521,10 @@
             isTimerPaused = false;
             currentIntervalIndex = 0;
             currentRepeat = 1;
-            totalTimeRemaining = '';
+            totalTimeRemaining = 0;
             currentIntervalTimeRemaining = 0;
             halfwayPoint = 0;
-            lastFiveSecond = '';
+            lastFiveSecondPlayed = 0;
             intervalItems = [];
 
             resetTimerDisplay();
