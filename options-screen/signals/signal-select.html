@@ -96,14 +96,22 @@
                 window.location.href = 'signals-screen.html';
                 return;
             }
-
             console.log('Signal Type:', signalType);
 
-            const signals = loadSignals();
+            let signals = loadSignals();
             console.log('Geladene Signale:', signals);
+            if (signals.length !== defaultSignals.length) {
+                console.warn('Signale unvollständig, setze Standard zurück');
+                signals = defaultSignals;
+                saveSignals(signals);
+            }
 
-            const globalSignals = loadGlobalSignals();
+            let globalSignals = loadGlobalSignals();
             console.log('Globale Signale:', globalSignals);
+            if (!globalSignals[signalType]) {
+                globalSignals = { ...defaultGlobalSignals, ...globalSignals };
+                saveGlobalSignals(globalSignals);
+            }
 
             let selectedSignalId = globalSignals[signalType] || '';
 
@@ -117,15 +125,12 @@
                     div.classList.add('selected');
                 }
                 div.textContent = signal.name;
-                div.dataset.signalId = signal.id; // Speichere signalId
+                div.dataset.signalId = signal.id;
                 div.addEventListener('click', () => {
-                    // Entferne Highlight von anderen
                     signalList.querySelectorAll('.signal-item').forEach(item => item.classList.remove('selected'));
-                    // Highlight aktuellen
                     div.classList.add('selected');
                     selectedSignalId = signal.id;
                     console.log('Ausgewählter Signal:', signal.id);
-                    // Spiele Sound
                     const audio = new Audio(`../../${signal.filePath}`);
                     audio.play().catch(e => console.error('Fehler beim Abspielen:', e));
                 });

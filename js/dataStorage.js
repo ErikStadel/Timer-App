@@ -100,8 +100,8 @@ function saveSignals(signals) {
 function loadGlobalSignals() {
     try {
         const storedGlobalSignals = localStorage.getItem(GLOBAL_SIGNALS_KEY);
-        if (storedSignals) {
-            return JSON.parse(storedSignals);
+        if (storedGlobalSignals) {
+            return JSON.parse(storedGlobalSignals);
         }
     } catch (e) {
         console.error("Fehler beim Laden der globalen Signale:", e);
