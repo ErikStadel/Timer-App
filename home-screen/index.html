@@ -132,7 +132,7 @@
 
       .timer-duration {
         font-size: 0.9rem;
-        color: #83c5be;
+        color: #83c5be
       }
 
       .sortable-chosen {
@@ -149,8 +149,8 @@
         opacity: 1;
       }
 
-      /* Confirmation Dialog Styles */
-      .confirmation-dialog-overlay {
+      /* Confirmation Dialog */
+      .confirmation-overlay {
           position: fixed;
           top: 0;
           left: 0;
@@ -164,9 +164,9 @@
           opacity: 0;
           visibility: hidden;
           transition: opacity 0.3s ease, visibility 0.3s ease;
-      }
+}
 
-      .confirmation-dialog-overlay.active {
+      .confirmation-overlay.active {
           opacity: 1;
           visibility: visible;
       }
@@ -184,8 +184,7 @@
 
       .confirmation-dialog p {
           font-size: 1.1rem;
-          margin-bottom: 1.5rem;
-      }
+          margin-bottom: 1.5rem }
 
       .confirmation-dialog-buttons {
           display: flex;
@@ -246,7 +245,7 @@
     </header>
     <ul class="timer-list"></ul>
 
-    <div class="confirmation-dialog-overlay" id="deleteConfirmationDialog">
+    <div class="confirmation-overlay" id="deleteConfirmationDialog">
         <div class="confirmation-dialog">
             <p>Delete Timer?</p>
             <div class="confirmation-dialog-buttons">
@@ -317,7 +316,8 @@
           const optionSpan = document.createElement('span');
           optionSpan.classList.add('text-light', 'cursor-pointer');
           optionSpan.textContent = optionText;
-          optionSpan.addEventListener('click', () => {
+          optionSpan.addEventListener('click', (e) => {
+            e.stopPropagation(); // Verhindert, dass der Klick zum Timer-Item propagiert
             closeOptions(listItem);
 
             const timerIndex = Array.from(timerList.children).indexOf(listItem);
@@ -444,7 +444,7 @@
           });
 
           li.addEventListener('click', (e) => {
-            if (!isSortableMode && !li.classList.contains('options-active')) {
+            if (!isSortableMode && !li.classList.contains('options-active') && !e.target.closest('.bg-dark.absolute')) {
               clearTimeout(clickTimer);
               clickTimer = setTimeout(() => {
                 const timerIndex = Array.from(timerList.children).indexOf(li);
