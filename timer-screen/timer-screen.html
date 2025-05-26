@@ -145,6 +145,26 @@
             opacity: 1;
         }
 
+        .interval-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.75rem;
+            background-color: rgba(255, 255, 255, 0.08);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            font-size: 1.1rem;
+            opacity: 0.6;
+        }
+
+        .interval-item .active {
+            background-color: rgba(255,255,255,0.2);
+            font-weight: bold;
+            transform: scale(1.02);
+            opacity: 1;
+        }
+
         .interval-item-name {
             flex-grow: 1;
             text-align: left;
@@ -165,13 +185,15 @@
         }
 
         footer button {
+            background-color: #598392;
             padding: 0.75rem 1.5rem;
             border-radius: 9999px;
             font-weight: bold;
             font-size: 1.1rem;
+            color: #EFF6E0;
             transition: background-color 0.3s ease, transform 0.2s ease;
             user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            -webkit-tap-highlight-color: rgba(0,0,0,0);
         }
 
         footer button:active {
@@ -207,7 +229,7 @@
             z-index: 100;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: opacity 0.3s ease, visibility 0.0s ease;
         }
 
         .confirmation-dialog-overlay.active {
@@ -222,7 +244,7 @@
             text-align: center;
             max-width: 90%;
             width: 300px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
             transform: translateY(20px);
             opacity: 0;
             transition: transform 0.3s ease, opacity 0.3s ease;
@@ -252,7 +274,7 @@
             font-weight: bold;
             transition: background-color 0.3s ease;
             user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            -webkit-tap-highlight-color: rgba(0,0,0,0);
         }
 
         .btn-confirm {
@@ -335,11 +357,27 @@
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioContext = null;
         let audioPlayers = {};
+        let isAudioInitialized = false;
 
-        function initAudioContext() {
-            if (!audioContext) {
+        function initAudio() {
+            if (!isAudioInitialized) {
                 audioContext = new AudioContext();
                 console.log('AudioContext initialisiert:', audioContext.state);
+
+                // Lade Sounds
+                const signals = loadSignals();
+                const globalSignals = loadGlobalSignals();
+                Object.keys(globalSignals).forEach(type => {
+                    const signalId = globalSignals[type];
+                    if (signalId && signalId !== '') {
+                        const signal = signals.find(s => s.id === signalId);
+                        if (signal && signal.filePath) {
+                            audioPlayers[type] = new Audio(`../${signal.filePath}`);
+                            console.log(`Audio-Player erstellt für ${type}: ${signal.filePath}`);
+                        }
+                    }
+                });
+
                 // Resume AudioContext nach Unterbrechungen
                 document.addEventListener('visibilitychange', () => {
                     if (document.visibilityState === 'visible' && audioContext.state === 'suspended') {
@@ -348,45 +386,21 @@
                         }).catch(e => console.error('Fehler beim Fortsetzen des AudioContext:', e));
                     }
                 });
-                // Resume bei Benutzerinteraktion
-                document.addEventListener('click', () => {
-                    if (audioContext.state === 'suspended') {
-                        audioContext.resume().then(() => {
-                            console.log('AudioContext durch Klick fortgesetzt:', audioContext.state);
-                        }).catch(e => console.error('Fehler beim Fortsetzen des AudioContext:', e));
-                    }
-                }, { once: true });
+
+                isAudioInitialized = true;
             }
         }
 
-        function preloadSounds(signals, globalSignals) {
-            Object.keys(globalSignals).forEach(type => {
-                const signalId = globalSignals[type];
-                if (signalId && signalId !== '') {
-                    const signal = signals.find(s => s.id === signalId);
-                    if (signal && signal.filePath) {
-                        const audio = new Audio(`../${signal.filePath}`);
-                        audioPlayers[type] = audio;
-                        // iOS Workaround: Spiele kurz, um Audio freizuschalten
-                        audio.play().then(() => {
-                            setTimeout(() => {
-                                audio.pause();
-                                audio.currentTime = 0;
-                                console.log(`Sound vorgeladen für ${type}: ${signal.filePath}`);
-                            }, 1);
-                        }).catch(e => console.error(`Fehler beim Voreladen von ${type}:`, e));
-                    }
-                }
-            });
-        }
-
         function playSound(type) {
+            if (!audioContext) {
+                console.warn('AudioContext nicht initialisiert für:', type);
+                return;
+            }
             if (audioContext.state === 'suspended') {
                 audioContext.resume().then(() => {
                     console.log('AudioContext fortgesetzt vor Sound-Wiedergabe:', audioContext.state);
                 }).catch(e => console.error('Fehler beim Fortsetzen des AudioContext:', e));
             }
-            const signals = loadSignals();
             const globalSignals = loadGlobalSignals();
             const signalId = globalSignals[type];
             console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
@@ -475,10 +489,7 @@
 
         function startTimer() {
             if (!isTimerRunning && !isTimerPaused) {
-                initAudioContext();
-                const signals = loadSignals();
-                const globalSignals = loadGlobalSignals();
-                preloadSounds(signals, globalSignals);
+                initAudio();
 
                 currentIntervalIndex = 0;
                 currentRepeat = 1;
@@ -586,6 +597,7 @@
             lastFiveSecondPlayed = 0;
             intervalItems = [];
             audioPlayers = {};
+            isAudioInitialized = false;
 
             resetTimerDisplay();
             updateBackgroundAndCircleColor('initial');
