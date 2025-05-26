@@ -106,6 +106,10 @@
                 saveSignals(signals);
             }
 
+            // Füge "None"-Option hinzu
+            const noneOption = { id: '', name: 'None', filePath: '' };
+            signals = [noneOption, ...signals];
+
             let globalSignals = loadGlobalSignals();
             console.log('Globale Signale:', globalSignals);
             if (!globalSignals[signalType]) {
@@ -131,25 +135,24 @@
                     div.classList.add('selected');
                     selectedSignalId = signal.id;
                     console.log('Ausgewählter Signal:', signal.id);
-                    const audio = new Audio(`../../${signal.filePath}`);
-                    audio.play().catch(e => console.error('Fehler beim Abspielen:', e));
+                    if (signal.filePath) {
+                        const audio = new Audio(`../../${signal.filePath}`);
+                        audio.play().catch(e => console.error('Fehler beim Abspielen:', e));
+                    }
                 });
                 signalList.appendChild(div);
             });
 
             document.getElementById('save-button').addEventListener('click', () => {
-                if (selectedSignalId) {
-                    console.log('Speichere Signal:', { signalType, selectedSignalId });
-                    const newGlobalSignals = { ...globalSignals, [signalType]: selectedSignalId };
-                    saveGlobalSignals(newGlobalSignals);
-                    console.log('Gespeicherte globale Signale:', newGlobalSignals);
-                } else {
-                    console.warn('Kein Signal ausgewählt');
-                }
-                window.location.href = 'signals-screen.html';
-            });
+    console.log('Speichert:', { signalType, selectedSignalId });
+    const newGlobalSignals = { ...globalSignals, [signalType]: selectedSignalId };
+    saveGlobalSignals(newGlobalSignals);
+    console.log('Gespeicherte Signale:', newGlobalSignals);
+    window.location.href = 'signals-screen.html';
+});
 
-            // Scroll-Listener für Header
+
+            // Scroll-Listener
             const header = document.querySelector('header');
             window.addEventListener('scroll', () => {
                 if (window.scrollY > 0) {
@@ -159,6 +162,6 @@
                 }
             });
         });
-    </script>
+        </script>
 </body>
 </html>
