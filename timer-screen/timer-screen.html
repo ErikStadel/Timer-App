@@ -331,6 +331,78 @@
         let currentRepeat = 1;
         let maxRepeats = 1;
 
+        // iOS Audio Fix: AudioContext
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioContext = null;
+        let audioPlayers = {};
+
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new AudioContext();
+                console.log('AudioContext initialisiert:', audioContext.state);
+                // Resume AudioContext nach Unterbrechungen
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible' && audioContext.state === 'suspended') {
+                        audioContext.resume().then(() => {
+                            console.log('AudioContext fortgesetzt:', audioContext.state);
+                        }).catch(e => console.error('Fehler beim Fortsetzen des AudioContext:', e));
+                    }
+                });
+                // Resume bei Benutzerinteraktion
+                document.addEventListener('click', () => {
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(() => {
+                            console.log('AudioContext durch Klick fortgesetzt:', audioContext.state);
+                        }).catch(e => console.error('Fehler beim Fortsetzen des AudioContext:', e));
+                    }
+                }, { once: true });
+            }
+        }
+
+        function preloadSounds(signals, globalSignals) {
+            Object.keys(globalSignals).forEach(type => {
+                const signalId = globalSignals[type];
+                if (signalId && signalId !== '') {
+                    const signal = signals.find(s => s.id === signalId);
+                    if (signal && signal.filePath) {
+                        const audio = new Audio(`../${signal.filePath}`);
+                        audioPlayers[type] = audio;
+                        // iOS Workaround: Spiele kurz, um Audio freizuschalten
+                        audio.play().then(() => {
+                            setTimeout(() => {
+                                audio.pause();
+                                audio.currentTime = 0;
+                                console.log(`Sound vorgeladen für ${type}: ${signal.filePath}`);
+                            }, 1);
+                        }).catch(e => console.error(`Fehler beim Voreladen von ${type}:`, e));
+                    }
+                }
+            });
+        }
+
+        function playSound(type) {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    console.log('AudioContext fortgesetzt vor Sound-Wiedergabe:', audioContext.state);
+                }).catch(e => console.error('Fehler beim Fortsetzen des AudioContext:', e));
+            }
+            const signals = loadSignals();
+            const globalSignals = loadGlobalSignals();
+            const signalId = globalSignals[type];
+            console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
+            if (signalId && signalId !== '') {
+                const audio = audioPlayers[type];
+                if (audio) {
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.error(`Fehler beim Abspielen von ${type}:`, e));
+                } else {
+                    console.warn(`Kein Audio-Player für Signal-Typ: ${type}, signalId: ${signalId}`);
+                }
+            } else {
+                console.log(`Kein Sound ausgewählt für: ${type}`);
+            }
+        }
+
         // --- Hilfsfunktionen ---
 
         function formatTime(seconds) {
@@ -399,28 +471,15 @@
             totalCountdownBelowCircle.textContent = `Gesamt: ${formatTime(totalTimeRemaining)}`;
         }
 
-        function playSound(type) {
-            const signals = loadSignals();
-            const globalSignals = loadGlobalSignals();
-            const signalId = globalSignals[type];
-            console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
-            if (signalId && signalId !== '') {
-                const signal = signals.find(s => s.id === signalId);
-                if (signal && signal.filePath) {
-                    const audio = new Audio(`../${signal.filePath}`);
-                    audio.play().catch(e => console.error('Fehler beim Abspielen des Sounds:', e));
-                } else {
-                    console.warn(`Kein Sound für Signal-Typ: ${type}, signalId: ${signalId}`);
-                }
-            } else {
-                console.log(`Kein Sound ausgewählt für: ${type}`);
-            }
-        }
-
         // --- Timer-Logik ---
 
         function startTimer() {
             if (!isTimerRunning && !isTimerPaused) {
+                initAudioContext();
+                const signals = loadSignals();
+                const globalSignals = loadGlobalSignals();
+                preloadSounds(signals, globalSignals);
+
                 currentIntervalIndex = 0;
                 currentRepeat = 1;
                 const singleCycleTime = timerIntervalsData.reduce((sum, item) => sum + item.duration, 0);
@@ -526,6 +585,7 @@
             halfwayPoint = 0;
             lastFiveSecondPlayed = 0;
             intervalItems = [];
+            audioPlayers = {};
 
             resetTimerDisplay();
             updateBackgroundAndCircleColor('initial');
