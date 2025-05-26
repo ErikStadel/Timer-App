@@ -267,7 +267,7 @@
     </style>
 </head>
 
-<body class="bg-initial">
+<body class="min-initial">
     <header>
         <h1 class="text-2xl font-bold text-light" id="timer-title">Mein Timer</h1>
     </header>
@@ -297,7 +297,7 @@
         <div class="confirmation-dialog">
             <p>Timer beenden?</p>
             <div class="confirmation-dialog-buttons">
-                <button class="btn-cancel" id="cancel-end">Abbrechen</button>
+                <button class="btn-cancel" id="cancel-end">Cancel</button>
                 <button class="btn-confirm" id="confirm-end">Beenden</button>
             </div>
         </div>
@@ -315,10 +315,8 @@
         const endConfirmationDialog = document.getElementById('end-confirmation-dialog');
         const cancelEndButton = document.getElementById('cancel-end');
         const confirmEndButton = document.getElementById('confirm-end');
-        const intervalListContainer = document.getElementById('interval-list-container');
-        const timerTitle = document.getElementById('timer-title');
-        let intervalItems = [];
-
+        const intervalListContainer = document.querySelector('.interval-list-container');
+        const timerTitle = document.querySelector('#timer-title');
         let isTimerRunning = false;
         let isTimerPaused = false;
         let currentIntervalIndex = 0;
@@ -388,18 +386,26 @@
         }
 
         function updateSecondaryDisplays() {
-            currentIntervalNumberDisplay.textContent = `${(Math.floor(currentIntervalIndex / 2) + 1).toString().padStart(2, '0')}`;
+            let intervalCount = 0;
+            for (let i = 0; i <= currentIntervalIndex && i < timerIntervalsData.length; i++) {
+                if (timerIntervalsData[i].type === 'interval') {
+                    intervalCount++;
+                }
+            }
+            currentIntervalNumberDisplay.textContent = intervalCount.toString().padStart(2, '0');
             totalCountdownBelowCircle.textContent = `Gesamt: ${formatTime(totalTimeRemaining)}`;
         }
 
-        function playSound(signalId) {
+        function playSound(type) {
             const signals = loadSignals();
+            const globalSignals = loadGlobalSignals();
+            const signalId = globalSignals[type];
             const signal = signals.find(s => s.id === signalId);
-            if (signal && signal.filePath) {
-                const audio = new Audio(signal.filePath);
+            if (signal && signal.file) {
+                const audio = new Audio(`../assets/sounds/${signal.file}.mp3`);
                 audio.play().catch(e => console.error('Fehler beim Abspielen des Sounds:', e));
             } else {
-                console.warn(`Kein Signal gefunden für signalId: ${signalId}`);
+                console.warn(`Kein Sound für Signal-Typ: ${type}, signalId: ${signalId}`);
             }
         }
 
@@ -414,7 +420,7 @@
                 currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
                 halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
                 lastFiveSecondPlayed = 0;
-                playSound('signal-timer-start');
+                playSound('timerStart');
             } else if (isTimerPaused) {
                 halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
             }
@@ -436,13 +442,13 @@
                 // Halfway Signal (nur für interval)
                 if (timerIntervalsData[currentIntervalIndex].type === 'interval' && 
                     currentIntervalTimeRemaining === halfwayPoint) {
-                    playSound('signal-halfway');
+                    playSound('halfway');
                 }
 
-                // 5 Second Signal (für interval und rest)
+                // 5 Sekunden Signal (für interval und rest)
                 if (currentIntervalTimeRemaining <= 5 && currentIntervalTimeRemaining > 0 &&
                     currentIntervalTimeRemaining !== lastFiveSecondPlayed) {
-                    playSound('signal-five-second');
+                    playSound('fiveSecond');
                     lastFiveSecondPlayed = currentIntervalTimeRemaining;
                 }
 
@@ -466,9 +472,9 @@
                             clearInterval(timerIntervalId);
                             isTimerRunning = false;
                             isTimerPaused = false;
-                            resetTimerDisplay();
+                            resetTimer();
                             updateBackgroundAndCircleColor('initial');
-                            playSound('signal-timer-end');
+                            playSound('timerEnd');
                             console.log('Timer beendet!');
                             return;
                         }
@@ -484,9 +490,9 @@
                     clearInterval(timerIntervalId);
                     isTimerRunning = false;
                     isTimerPaused = false;
-                    resetTimerDisplay();
+                    resetTimer();
                     updateBackgroundAndCircleColor('initial');
-                    playSound('signal-timer-end');
+                    playSound('timerEnd');
                     console.log('Gesamtzeit abgelaufen!');
                 }
             }, 1000);
@@ -565,7 +571,7 @@
             const timer = timers.find(t => t.id === timerId);
             if (!timer) {
                 console.error('Timer nicht gefunden:', timerId);
-                alert('Timer nicht gefunden. Bitte versuchen Sie erneut.');
+                alert('Timer nicht gefunden. Bitte versuchen Sie es erneut.');
                 window.location.href = '../home-screen/index.html';
                 return;
             }
