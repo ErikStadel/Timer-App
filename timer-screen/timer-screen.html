@@ -267,7 +267,7 @@
     </style>
 </head>
 
-<body class="min-initial">
+<body class="bg-initial">
     <header>
         <h1 class="text-2xl font-bold text-light" id="timer-title">Mein Timer</h1>
     </header>
@@ -315,8 +315,10 @@
         const endConfirmationDialog = document.getElementById('end-confirmation-dialog');
         const cancelEndButton = document.getElementById('cancel-end');
         const confirmEndButton = document.getElementById('confirm-end');
-        const intervalListContainer = document.querySelector('.interval-list-container');
-        const timerTitle = document.querySelector('#timer-title');
+        const intervalListContainer = document.getElementById('interval-list-container');
+        const timerTitle = document.getElementById('timer-title');
+        let intervalItems = [];
+
         let isTimerRunning = false;
         let isTimerPaused = false;
         let currentIntervalIndex = 0;
@@ -386,8 +388,12 @@
         }
 
         function updateSecondaryDisplays() {
-            let intervalCount = 0;
-            for (let i = 0; i <= currentIntervalIndex && i < timerIntervalsData.length; i++) {
+            // Zähle Intervall-Typen pro Zyklus
+            const intervalsPerCycle = timerIntervalsData.filter(item => item.type === 'interval').length;
+            // Intervall-Count aus vorherigen Zyklen
+            let intervalCount = (currentRepeat - 1) * intervalsPerCycle;
+            // Plus Intervall-Typen im aktuellen Zyklus bis currentIntervalIndex
+            for (let i = 0; i <= currentIntervalIndex; i++) {
                 if (timerIntervalsData[i].type === 'interval') {
                     intervalCount++;
                 }
@@ -445,7 +451,7 @@
                     playSound('halfway');
                 }
 
-                // 5 Sekunden Signal (für interval und rest)
+                // 5 Second Signal (für interval und rest)
                 if (currentIntervalTimeRemaining <= 5 && currentIntervalTimeRemaining > 0 &&
                     currentIntervalTimeRemaining !== lastFiveSecondPlayed) {
                     playSound('fiveSecond');
@@ -571,7 +577,7 @@
             const timer = timers.find(t => t.id === timerId);
             if (!timer) {
                 console.error('Timer nicht gefunden:', timerId);
-                alert('Timer nicht gefunden. Bitte versuchen Sie es erneut.');
+                alert('Timer nicht gefunden. Bitte versuchen Sie erneut.');
                 window.location.href = '../home-screen/index.html';
                 return;
             }
