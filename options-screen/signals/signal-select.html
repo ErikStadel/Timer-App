@@ -2,11 +2,10 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Signal Select</title>
-
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../js/dataStorage.js"></script>
+    <script src="../../js/dataStorage.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -18,6 +17,9 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
+                        rest: '#629471',
+                        interval: '#fd5c34',
+                        warning: '#fc814a',
                     },
                     fontFamily: {
                         karla: ['Karla', 'sans-serif'],
@@ -28,80 +30,116 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
     <style>
-        body {
-            background-color: #124559;
-            color: #EFF6E0;
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #01161E;
             font-family: 'Karla', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: 1rem;
+            overscroll-behavior: none;
+            scroll-padding-top: 4rem;
+            scroll-behavior: smooth;
         }
-
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
             padding: 1rem;
             background-color: #01161E;
-            border-radius: 0.75rem;
-            margin-bottom: 1.5rem;
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
         }
-
+        header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
+        }
+        header.scrolled {
+            background-color: rgba(1, 22, 30, 0.7);
+            backdrop-filter: blur(6px);
+        }
         .signal-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background-color: rgba(255, 255, 255, 0.08);
             padding: 0.75rem 1rem;
             margin-bottom: 0.5rem;
-            background-color: rgba(255, 255, 255, 0.08);
             border-radius: 0.75rem;
+            font-size: 1.1rem;
             cursor: pointer;
-            transition: background-color 0.3s ease;
         }
-
-        .signal-item:hover {
-            background-color: rgba(255, 255, 255, 0.15);
+        .signal-item.selected {
+            background-color: #83c5be;
+            color: #01161E;
         }
     </style>
 </head>
-<body>
-    <header>
-        <a href="../signals-screen/index.html" class="text-accent font-semibold hover:underline">Back</a>
-        <h1 class="text-2xl font-bold text-light" id="signal-title">Signal</h1>
-        <div></div>
+<body class="text-light">
+    <header id="header" class="text-light shadow-md">
+        <div class="w-full flex justify-between items-center">
+            <a href="signals-screen.html" class="text-accent font-semibold hover:underline">Back</a>
+            <h1 class="text-xl font-bold text-accent tracking-wide">Signal</h1>
+            <button id="save-button" class="text-accent font-semibold hover:underline">Save</button>
+        </div>
     </header>
 
-    <div class="flex-col space-y-2">
-        <div class="signal-item" data-signal-id="signal-bell"><span>Bell</span></div>
-        <div class="signal-item" data-signal-id="signal-horn"><span>Horn</span></div>
-        <div class="signal-item" data-signal-id="signal-beep"><span>Beep</span></div>
-        <div class="signal-item" data-signal-id="signal-applause"><span>Applause</span></div>
-        <div class="signal-item" data-signal-id="signal-chime"><span>Chime</span></div>
-        <div class="signal-item" data-signal-id="signal-gong"><span>Gong</span></div>
-        <div class="signal-item" data-signal-id="signal-whoosh"><span>Whoosh</span></div>
-    </div>
+    <div id="signal-list" class="p-4"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const signalType = urlParams.get('signalType');
             if (!signalType) {
-                console.error('Kein signalType in der URL gefunden');
-                window.location.href = '../signals-screen/index.html';
+                console.error('Kein signalType in der URL');
+                window.location.href = 'signals-screen.html';
                 return;
             }
 
-            document.getElementById('signal-title').textContent = signalType.toUpperCase();
+            const signals = loadSignals();
+            const globalSignals = loadGlobalSignals();
+            let selectedSignalId = globalSignals[signalType] || '';
 
-            document.querySelectorAll('.signal-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const signalId = item.dataset.signalId;
-                    const globalSignals = loadGlobalSignals();
-                    globalSignals[signalType] = signalId;
-                    saveGlobalSignals(globalSignals);
-                    window.location.href = '../signals/index.html';
+            const signalList = document.getElementById('signal-list');
+            signalList.innerHTML = '';
+
+            signals.forEach(signal => {
+                const div = document.createElement('div');
+                div.classList.add('signal-item');
+                if (signal.id === selectedSignalId) {
+                    div.classList.add('selected');
+                }
+                div.textContent = signal.name;
+                div.addEventListener('click', () => {
+                    // Entferne Highlight von anderen
+                    signalList.querySelectorAll('.signal-item').forEach(item => item.classList.remove('selected'));
+                    // Highlight aktuellen
+                    div.classList.add('selected');
+                    selectedSignalId = signal.id;
+                    // Spiele Sound
+                    const audio = new Audio(`../../${signal.filePath}`);
+                    audio.play().catch(e => console.error('Fehler beim Abspielen:', e));
                 });
+                signalList.appendChild(div);
+            });
+
+            document.getElementById('save-button').addEventListener('click', () => {
+                if (selectedSignalId) {
+                    const newGlobalSignals = { ...globalSignals, [signalType]: selectedSignalId };
+                    saveGlobalSignals(newGlobalSignals);
+                }
+                window.location.href = 'signals-screen.html';
+            });
+
+            // Scroll-Listener für Header
+            const header = document.querySelector('header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 0) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
             });
         });
     </script>

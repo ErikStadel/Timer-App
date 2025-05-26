@@ -4,8 +4,8 @@ const GLOBAL_SIGNALS_KEY = 'martialArtsGlobalSignals';
 
 // Globale Signale
 const defaultGlobalSignals = {
-    timerStart: 'signal-bell',
-    timerEnd: 'signal-horn',
+    intervalStart: 'signal-bell',
+    restStart: 'signal-chime',
     halfway: 'signal-beep',
     fiveSecond: 'signal-applause'
 };
@@ -100,8 +100,8 @@ function saveSignals(signals) {
 function loadGlobalSignals() {
     try {
         const storedGlobalSignals = localStorage.getItem(GLOBAL_SIGNALS_KEY);
-        if (storedGlobalSignals) {
-            return JSON.parse(storedGlobalSignals);
+        if (storedSignals) {
+            return JSON.parse(storedSignals);
         }
     } catch (e) {
         console.error("Fehler beim Laden der globalen Signale:", e);

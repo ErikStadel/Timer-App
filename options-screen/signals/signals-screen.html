@@ -2,11 +2,10 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Signals Screen</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Signals</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../js/dataStorage.js"></script>
+    <script src="../../js/dataStorage.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -18,6 +17,9 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
+                        rest: '#629471',
+                        interval: '#fd5c34',
+                        warning: '#fc814a',
                     },
                     fontFamily: {
                         karla: ['Karla', 'sans-serif'],
@@ -28,79 +30,88 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
     <style>
-        body {
-            background-color: #124559;
-            color: #EFF6E0;
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #01161E;
             font-family: 'Karla', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: 1rem;
+            overscroll-behavior: none;
+            scroll-padding-top: 4rem;
+            scroll-behavior: smooth;
         }
-
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
             padding: 1rem;
             background-color: #01161E;
-            border-radius: 0.75rem;
-            margin-bottom: 1.5rem;
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
         }
-
+        header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
+        }
+        header.scrolled {
+            background-color: rgba(1, 22, 30, 0.7);
+            backdrop-filter: blur(6px);
+        }
         .signal-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background-color: #124559;
             padding: 0.75rem 1rem;
             margin-bottom: 0.5rem;
-            background-color: rgba(255, 255, 255, 0.08);
             border-radius: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1rem;
             cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .signal-item:hover {
-            background-color: rgba(255, 255, 255, 0.15);
         }
     </style>
 </head>
-<body>
-    <header>
-        <a href="../options-screen.html" class="text-accent font-semibold hover:underline">Back</a>
-        <h1 class="text-2xl font-bold text-light">Signals</h1>
-        <div></div>
+<body class="text-light">
+    <header id="header" class="text-light shadow-md">
+        <div class="w-full flex justify-between items-center">
+            <a href="../options-screen.html" class="text-accent font-semibold hover:underline">Back</a>
+            <h1 class="text-xl font-bold text-accent tracking-wide">Signals</h1>
+            <div></div>
+        </div>
     </header>
 
-    <div class="flex-col space-y-2">
-        <div class="signal-item" data-signal-type="timerStart">
-            <span>Timer Start</span>
-            <span id="signal-timer-start" class="text-accent">Bell</span>
+    <div class="p-4">
+        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=intervalStart'">
+            <span>Interval Start</span>
+            <span id="interval-start-signal">Bell</span>
         </div>
-        <div class="signal-item" data-signal-type="timerEnd">
-            <span>Timer End</span>
-            <span id="signal-timer-end" class="text-accent">Horn</span>
+        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=restStart'">
+            <span>Rest Start</span>
+            <span id="rest-start-signal">Chime</span>
         </div>
-        <div class="signal-item" data-signal-type="halfway">
+        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=halfway'">
             <span>Halfway Signal</span>
-            <span id="signal-halfway" class="text-accent">Beep</span>
+            <span id="halfway-signal">Beep</span>
         </div>
-        <div class="signal-item" data-signal-type="fiveSecond">
+        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=fiveSecond'">
             <span>5 Second Signal</span>
-            <span id="signal-five-second" class="text-accent">Applause</span>
+            <span id="five-second-signal">Applause</span>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const globalSignals = loadGlobalSignals();
             const signals = loadSignals();
+            const globalSignals = loadGlobalSignals();
 
             const signalElements = {
-                timerStart: document.getElementById('signal-timer-start'),
-                timerEnd: document.getElementById('signal-timer-end'),
-                halfway: document.getElementById('signal-halfway'),
-                fiveSecond: document.getElementById('signal-five-second')
+                'intervalStart': document.getElementById('interval-start-signal'),
+                'restStart': document.getElementById('rest-start-signal'),
+                'halfway': document.getElementById('halfway-signal'),
+                'fiveSecond': document.getElementById('five-second-signal')
             };
 
             Object.keys(signalElements).forEach(type => {
@@ -109,11 +120,14 @@
                 signalElements[type].textContent = signal ? signal.name : 'None';
             });
 
-            document.querySelectorAll('.signal-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const signalType = item.dataset.signalType;
-                    window.location.href = `../signal-selector/index.html?signalType=${signalType}`;
-                });
+            // Scroll-Listener für Header
+            const header = document.querySelector('header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 0) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
             });
         });
     </script>
