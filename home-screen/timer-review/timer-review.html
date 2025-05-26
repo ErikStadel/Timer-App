@@ -43,10 +43,26 @@
             padding: 1rem;
         }
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 1rem;
+            background-color: #01161E;
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+        }
+        header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
+        }
+        header.scrolled {
+            background-color: rgba(1, 22, 30, 0.7);
+            backdrop-filter: blur(6px);
         }
         .interval-list {
             list-style: none;
@@ -99,7 +115,7 @@
             if (!timerId) {
                 console.error('Keine timerId in der URL gefunden');
                 alert('Timer-ID fehlt. Bitte erneut versuchen.');
-                window.location.href = '../../index.html';
+                window.location.href = '../index.html';
                 return;
             }
 
@@ -108,7 +124,7 @@
             if (!timer) {
                 console.error('Timer nicht gefunden:', timerId);
                 alert('Timer nicht gefunden. Bitte versuchen Sie erneut.');
-                window.location.href = '../../index.html';
+                window.location.href = '../index.html';
                 return;
             }
 
@@ -141,6 +157,16 @@
                         <span>${formatTime(interval.durationRest)}</span>
                     `;
                     intervalList.appendChild(restLi);
+                }
+            });
+
+            // Scroll-Listener für Header
+            const header = document.querySelector('header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 0) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
                 }
             });
         });
