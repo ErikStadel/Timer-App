@@ -149,7 +149,7 @@
 
 <body>
     <header class="sticky-header" id="sound-header">
-        <a href="../options-screen.html" class="header-link">Back</a>
+        <a href="../options-screen.html" class="header-link" id="back-button">Back</a>
         <h1 class="header-title">Sound</h1>
         <div class="header-placeholder"></div>
     </header>
@@ -163,6 +163,7 @@
         const volumeDial = document.getElementById('volumeDial');
         const volumeFill = document.getElementById('volumeFill');
         const volumeValueDisplay = document.getElementById('volumeValue');
+        const backButton = document.getElementById('back-button');
 
         let isDragging = false;
         let currentVolume = 100;
@@ -209,10 +210,12 @@
 
             window.mainGainNode.gain.value = mapVolumeToGain(currentVolume);
             console.log(`Lautstärke auf ${currentVolume}% (${window.mainGainNode.gain.value.toFixed(2)} Gain) gesetzt.`);
+        }
 
-            if (window.audioContext.state === 'suspended') {
-                window.audioContext.resume();
-            }
+        function saveAndUpdateVolume() {
+            saveVolumeBoost(currentVolume);
+            updateVolumeDisplay();
+            console.log("Lautstärke gespeichert:", currentVolume);
         }
 
         volumeDial.addEventListener('mousedown', (e) => {
@@ -231,15 +234,14 @@
             const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
             currentVolume = Math.max(50, Math.min(150, currentVolume));
-            updateVolumeDisplay();
+            saveAndUpdateVolume();
         });
 
         document.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false;
                 volumeDial.style.cursor = 'grab';
-                saveVolumeBoost(currentVolume);
-                console.log("Lautstärke gespeichert:", currentVolume);
+                saveAndUpdateVolume();
             }
         });
 
@@ -260,7 +262,7 @@
             const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
             currentVolume = Math.max(50, Math.min(150, currentVolume));
-            updateVolumeDisplay();
+            saveAndUpdateVolume();
             e.preventDefault();
         }, { passive: false });
 
@@ -268,15 +270,23 @@
             if (isDragging) {
                 isDragging = false;
                 volumeDial.style.cursor = 'grab';
-                saveVolumeBoost(currentVolume);
-                console.log("Lautstärke gespeichert:", currentVolume);
+                saveAndUpdateVolume();
             }
+        });
+
+        backButton.addEventListener('click', (e) => {
+            saveAndUpdateVolume();
+            console.log('Back-Button: Lautstärke gespeichert vor Navigation');
+            window.location.href = '../options-screen.html';
         });
 
         document.addEventListener('DOMContentLoaded', () => {
             const savedVolume = loadVolumeBoost();
-            currentVolume = savedVolume;
+            currentVolume = Number(savedVolume) || 100; // Fallback auf 100
             updateVolumeDisplay();
+            if (window.audioContext.state === 'suspended') {
+                window.audioContext.resume();
+            }
         });
     </script>
 </body>
