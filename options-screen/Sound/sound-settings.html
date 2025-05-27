@@ -160,6 +160,13 @@
     </div>
 
     <script>
+        // Debugging: Prüfe, ob dataStorage.js geladen ist
+        if (typeof loadVolumeBoost === 'undefined' || typeof saveVolumeBoost === 'undefined') {
+            console.error('dataStorage.js nicht geladen oder loadVolumeBoost/saveVolumeBoost nicht definiert');
+        } else {
+            console.log('dataStorage.js erfolgreich geladen');
+        }
+
         const volumeDial = document.getElementById('volumeDial');
         const volumeFill = document.getElementById('volumeFill');
         const volumeValueDisplay = document.getElementById('volumeValue');
@@ -213,9 +220,13 @@
         }
 
         function saveAndUpdateVolume() {
-            saveVolumeBoost(currentVolume);
+            if (typeof saveVolumeBoost !== 'undefined') {
+                saveVolumeBoost(currentVolume);
+                console.log("Lautstärke gespeichert:", currentVolume);
+            } else {
+                console.error('saveVolumeBoost nicht verfügbar');
+            }
             updateVolumeDisplay();
-            console.log("Lautstärke gespeichert:", currentVolume);
         }
 
         volumeDial.addEventListener('mousedown', (e) => {
@@ -281,8 +292,14 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            const savedVolume = loadVolumeBoost();
-            currentVolume = Number(savedVolume) || 100; // Fallback auf 100
+            if (typeof loadVolumeBoost !== 'undefined') {
+                const savedVolume = loadVolumeBoost();
+                currentVolume = Number(savedVolume) || 100;
+                console.log('Geladene Lautstärke:', currentVolume);
+            } else {
+                console.error('loadVolumeBoost nicht verfügbar, Standardwert 100');
+                currentVolume = 100;
+            }
             updateVolumeDisplay();
             if (window.audioContext.state === 'suspended') {
                 window.audioContext.resume();
