@@ -9,7 +9,7 @@
     <title>Sound Settings</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../../js/dataStorage.js"></script>
+    <script src="../js/dataStorage.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -196,13 +196,13 @@
         window.mainGainNode.connect(window.audioContext.destination);
 
         function mapVolumeToGain(volume) {
-            const gainValue = 0.5 + (volume - 50) / 100;
+            const gainValue = 0.5 + (volume - 50) / 150; // Skaliere 50–200% auf 0.5–2.0
             return Math.max(0, gainValue);
         }
 
         function updateVolumeDisplay() {
             volumeValueDisplay.textContent = Math.round(currentVolume);
-            const fillPercentage = ((currentVolume - 50) / 100) * 100;
+            const fillPercentage = ((currentVolume - 50) / 150) * 100; // Skaliere 50–200% auf 0–100%
             volumeFill.style.height = `${Math.max(0, Math.min(100, fillPercentage))}%`;
 
             let displayColor;
@@ -210,7 +210,7 @@
                 const factor = (currentVolume - 50) / (100 - 50);
                 displayColor = interpolateColor(colors.low, colors.mid, factor);
             } else {
-                const factor = (currentVolume - 100) / (150 - 100);
+                const factor = (currentVolume - 100) / (200 - 100); // Anpassung für 100–200%
                 displayColor = interpolateColor(colors.mid, colors.high, factor);
             }
             volumeFill.style.backgroundColor = displayColor;
@@ -244,7 +244,7 @@
             const deltaY = initialMouseY - e.clientY;
             const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
-            currentVolume = Math.max(50, Math.min(150, currentVolume));
+            currentVolume = Math.max(50, Math.min(200, currentVolume)); // Max 200%
             saveAndUpdateVolume();
         });
 
@@ -272,7 +272,7 @@
             const deltaY = initialMouseY - e.touches[0].clientY;
             const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
-            currentVolume = Math.max(50, Math.min(150, currentVolume));
+            currentVolume = Math.max(50, Math.min(200, currentVolume)); // Max 200%
             saveAndUpdateVolume();
             e.preventDefault();
         }, { passive: false });
@@ -294,7 +294,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof loadVolumeBoost !== 'undefined') {
                 const savedVolume = loadVolumeBoost();
-                currentVolume = Number(savedVolume) || 100;
+                currentVolume = Number(savedVolume) || 100; // Standard 100%
                 console.log('Geladene Lautstärke:', currentVolume);
             } else {
                 console.error('loadVolumeBoost nicht verfügbar, Standardwert 100');
