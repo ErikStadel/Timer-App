@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Signal Select</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../../js/dataStorage.js"></script>
+    <script src="../js/dataStorage.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -112,7 +112,7 @@
 
             // Lade volumeBoost
             const volumeBoost = Number(loadVolumeBoost()) || 100;
-            const gainValue = 0.5 + (volumeBoost - 50) / 100; // Map 50–150% to 0.5–1.5
+            const gainValue = 0.5 + (volumeBoost - 50) / 125; // Map 50–300% to 0.5–3.0
             window.mainGainNode.gain.value = Math.max(0, gainValue);
             console.log(`AudioContext: ${window.audioContext.state}, Gain: ${gainValue}`);
 
@@ -178,7 +178,7 @@
                 } catch (e) {
                     console.error('Fehler bei createMediaElementSource:', e);
                     // Fallback: Spiele ohne mainGainNode
-                    audio.volume = (Number(loadVolumeBoost()) || 100) / 100;
+                    audio.volume = Math.min(1.0, (Number(loadVolumeBoost()) || 100) / 100);
                     audio.play().catch(e => console.error('Fallback-Fehler:', e));
                 }
             }
