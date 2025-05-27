@@ -9,8 +9,8 @@
     <title>Sound Settings</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../js/dataStorage.js"></script>
     <script>
-        // Tailwind CSS Konfiguration - identisch zu den anderen Screens
         tailwind.config = {
             theme: {
                 extend: {
@@ -21,9 +21,9 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
-                        rest: '#629471',      /* Satteres Grün für Rest-Zustand (low) */
-                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand (high) */
-                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. (mid) */
+                        rest: '#629471',
+                        interval: '#fd5c34',
+                        warning: '#fc814a',
                     },
                     fontFamily: {
                         karla: ['Karla', 'sans-serif'],
@@ -55,7 +55,6 @@
             align-items: center;
         }
 
-        /* --- Sticky Header --- */
         .sticky-header {
             position: sticky;
             top: 0;
@@ -71,7 +70,6 @@
             top: 0;
         }
         
-        /* Pseudo-Element für den Bereich über dem Header */
         .sticky-header::before {
             content: "";
             position: absolute;
@@ -108,12 +106,10 @@
             text-decoration: underline;
         }
 
-        /* Platzhalter für die rechte Seite */
         .header-placeholder {
             width: 90px;
         }
 
-        /* --- Volume Dial Container --- */
         .volume-dial-container {
             position: relative;
             width: 280px;
@@ -131,7 +127,6 @@
             touch-action: none;
         }
 
-        /* Füllstand des Zifferblatts (Farbe wird dynamisch gesetzt) */
         .volume-fill {
             position: absolute;
             bottom: 0;
@@ -153,9 +148,8 @@
 </head>
 
 <body>
-
     <header class="sticky-header" id="sound-header">
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/options-screen.html" class="header-link">Back</a>
+        <a href="../options-screen.html" class="header-link">Back</a>
         <h1 class="header-title">Sound</h1>
         <div class="header-placeholder"></div>
     </header>
@@ -171,18 +165,16 @@
         const volumeValueDisplay = document.getElementById('volumeValue');
 
         let isDragging = false;
-        let currentVolume = 100; // Startwert für die Anzeige (50-150)
+        let currentVolume = 100;
         let initialMouseY;
         let initialVolume;
 
-        // Farben für den Verlauf (RGB-Werte für Interpolation)
         const colors = {
-            low: { r: 98, g: 148, b: 113 },    // #629471 (rest)
-            mid: { r: 252, g: 129, b: 74 },   // #fc814a (warning)
-            high: { r: 253, g: 92, b: 52 }    // #fd5c34 (interval)
+            low: { r: 98, g: 148, b: 113 },
+            mid: { r: 252, g: 129, b: 74 },
+            high: { r: 253, g: 92, b: 52 }
         };
 
-        // Hilfsfunktion zur Interpolation von Farben (linear interpolation)
         function interpolateColor(color1, color2, factor) {
             let result = {};
             result.r = Math.round(color1.r + factor * (color2.r - color1.r));
@@ -191,68 +183,43 @@
             return `rgb(${result.r}, ${result.g}, ${result.b})`;
         }
 
-        // --- Web Audio API Setup ---
-        // Diesen Kontext und GainNode machen wir global verfügbar,
-        // damit signal-select.html sie nutzen kann.
         window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
         window.mainGainNode = window.mainGainNode || window.audioContext.createGain();
-        // Verbinde den GainNode mit der Lautsprecher-Ausgabe
         window.mainGainNode.connect(window.audioContext.destination);
 
-        // Standard-Lautstärke auf 1.0 setzen, wenn nicht anders geladen
-        // Der gain-Wert entspricht dem Faktor der Verstärkung.
-        // Bei 50% soll er 0.5 sein, bei 100% 1.0, bei 150% 1.5
         function mapVolumeToGain(volume) {
-            // Mappt den Bereich 50-150 auf 0.5-1.5
-            // Min-Wert 50 -> 0.5
-            // Max-Wert 150 -> 1.5
-            // Skala ist 100 Einheiten breit (150-50)
-            // Ziel-Skala ist 1.0 Einheiten breit (1.5-0.5)
-            // Faktor: (volume - 50) / 100 -> 0.0 bis 1.0
-            // Ergebnis: 0.5 + Faktor * 1.0
             const gainValue = 0.5 + (volume - 50) / 100;
-            return Math.max(0, gainValue); // Sicherstellen, dass der Wert nicht negativ ist
+            return Math.max(0, gainValue);
         }
 
-
-        // Funktion zum Aktualisieren der Anzeige, des Füllstands und der Farbe
         function updateVolumeDisplay() {
             volumeValueDisplay.textContent = Math.round(currentVolume);
-
-            // Füllstand des Kreises (0% bei 50, 100% bei 150)
             const fillPercentage = ((currentVolume - 50) / 100) * 100;
             volumeFill.style.height = `${Math.max(0, Math.min(100, fillPercentage))}%`;
 
-            // Farbe interpolieren
             let displayColor;
             if (currentVolume <= 100) {
-                // Von low (50) zu mid (100)
-                const factor = (currentVolume - 50) / (100 - 50); // 0 bei 50, 1 bei 100
+                const factor = (currentVolume - 50) / (100 - 50);
                 displayColor = interpolateColor(colors.low, colors.mid, factor);
             } else {
-                // Von mid (100) zu high (150)
-                const factor = (currentVolume - 100) / (150 - 100); // 0 bei 100, 1 bei 150
+                const factor = (currentVolume - 100) / (150 - 100);
                 displayColor = interpolateColor(colors.mid, colors.high, factor);
             }
             volumeFill.style.backgroundColor = displayColor;
 
-            // --- Lautstärke des GainNode aktualisieren ---
             window.mainGainNode.gain.value = mapVolumeToGain(currentVolume);
             console.log(`Lautstärke auf ${currentVolume}% (${window.mainGainNode.gain.value.toFixed(2)} Gain) gesetzt.`);
 
-            // Aktivieren des AudioContext, falls noch nicht aktiv (durch User-Geste)
             if (window.audioContext.state === 'suspended') {
                 window.audioContext.resume();
             }
         }
 
-        // --- Event Listener für Maus (Desktop) ---
         volumeDial.addEventListener('mousedown', (e) => {
             isDragging = true;
             initialMouseY = e.clientY;
             initialVolume = currentVolume;
             volumeDial.style.cursor = 'grabbing';
-            // Versuche den AudioContext zu aktivieren, falls er pausiert ist
             if (window.audioContext.state === 'suspended') {
                 window.audioContext.resume();
             }
@@ -261,10 +228,8 @@
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             const deltaY = initialMouseY - e.clientY;
-            const sensitivity = 0.7; // Angepasste Sensitivität
+            const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
-
-            // Lautstärke im Bereich 50-150 halten
             currentVolume = Math.max(50, Math.min(150, currentVolume));
             updateVolumeDisplay();
         });
@@ -273,19 +238,17 @@
             if (isDragging) {
                 isDragging = false;
                 volumeDial.style.cursor = 'grab';
-                localStorage.setItem('appVolume', currentVolume);
+                saveVolumeBoost(currentVolume);
                 console.log("Lautstärke gespeichert:", currentVolume);
             }
         });
 
-        // --- Event Listener für Touch (Mobile) ---
         volumeDial.addEventListener('touchstart', (e) => {
             isDragging = true;
             initialMouseY = e.touches[0].clientY;
             initialVolume = currentVolume;
             volumeDial.style.cursor = 'grabbing';
             e.preventDefault();
-            // Versuche den AudioContext zu aktivieren, falls er pausiert ist
             if (window.audioContext.state === 'suspended') {
                 window.audioContext.resume();
             }
@@ -305,18 +268,15 @@
             if (isDragging) {
                 isDragging = false;
                 volumeDial.style.cursor = 'grab';
-                localStorage.setItem('appVolume', currentVolume);
+                saveVolumeBoost(currentVolume);
                 console.log("Lautstärke gespeichert:", currentVolume);
             }
         });
 
-        // Initialisierung: Lautstärke beim Laden der Seite laden
         document.addEventListener('DOMContentLoaded', () => {
-            const savedVolume = localStorage.getItem('appVolume');
-            if (savedVolume !== null) {
-                currentVolume = parseFloat(savedVolume);
-            }
-            updateVolumeDisplay(); // Initialen Wert und Farbe anzeigen und GainNode setzen
+            const savedVolume = loadVolumeBoost();
+            currentVolume = savedVolume;
+            updateVolumeDisplay();
         });
     </script>
 </body>

@@ -1,6 +1,7 @@
 const TIMER_STORAGE_KEY = 'martialArtsTimers';
 const SIGNAL_STORAGE_KEY = 'martialArtsSignals';
 const GLOBAL_SIGNALS_KEY = 'martialArtsGlobalSignals';
+const VOLUME_BOOST_KEY = 'martialArtsVolumeBoost';
 
 // Globale Signale
 const defaultGlobalSignals = {
@@ -115,5 +116,27 @@ function saveGlobalSignals(globalSignals) {
         localStorage.setItem(GLOBAL_SIGNALS_KEY, JSON.stringify(globalSignals));
     } catch (e) {
         console.error("Fehler beim Speichern der globalen Signale:", e);
+    }
+}
+
+function loadVolumeBoost() {
+    try {
+        const storedVolumeBoost = localStorage.getItem(VOLUME_BOOST_KEY);
+        if (storedVolumeBoost) {
+            return parseInt(storedVolumeBoost, 10);
+        }
+    } catch (e) {
+        console.error("Fehler beim Laden des Volume-Boosts:", e);
+    }
+    const defaultVolumeBoost = 100;
+    saveVolumeBoost(defaultVolumeBoost);
+    return defaultVolumeBoost;
+}
+
+function saveVolumeBoost(volumeBoost) {
+    try {
+        localStorage.setItem(VOLUME_BOOST_KEY, volumeBoost.toString());
+    } catch (e) {
+        console.error("Fehler beim Speichern des Volume-Boosts:", e);
     }
 }

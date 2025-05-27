@@ -2,15 +2,10 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8" />
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Options Screen</title>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Tailwind CSS Konfiguration - identisch zum Timer-Screen
         tailwind.config = {
             theme: {
                 extend: {
@@ -21,9 +16,9 @@
                         secondary: '#AEC3B0',
                         light: '#EFF6E0',
                         accent: '#83c5be',
-                        rest: '#629471',      /* Satteres Grün für Rest-Zustand */
-                        interval: '#fd5c34',  /* Kräftiges Orange-Rot für Intervall-Zustand */
-                        warning: '#fc814a',   /* Bleibt gleich für letzte 5 Sek. */
+                        rest: '#629471',
+                        interval: '#fd5c34',
+                        warning: '#fc814a',
                     },
                     fontFamily: {
                         karla: ['Karla', 'sans-serif'],
@@ -32,184 +27,66 @@
             },
         };
     </script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-        rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
     <style>
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
-            /* padding-top: env(safe-area-inset-top); // Füge dies hinzu, wenn du es für mobile Safe-Areas brauchst */
-            background-color: #01161E; /* Hintergrundfarbe wie Home-Screen Body */
+            background-color: #01161E;
             font-family: 'Karla', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior: none; /* Von Home-Screen übernommen */
-            scroll-padding-top: 4rem; /* Von Home-Screen übernommen */
-            scroll-behavior: smooth; /* Glattes Scrollverhalten, von Home-Screen übernommen */
-            color: #EFF6E0; /* Helle Textfarbe */
-            display: flex;
-            flex-direction: column;
+            overscroll-behavior: none;
         }
-
-        /* --- Sticky Header --- */
-        .sticky-header {
+        header {
             position: sticky;
             top: 0;
-            width: 100%;
-            background-color: #01161E; /* Header Hintergrund wie Home-Screen Header */
+            z-index: 50;
             padding: 1rem;
-            display: flex;
-            justify-content: space-between; /* Elemente auseinanderziehen */
-            align-items: center;
-            /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); // Könnte hinzugefügt werden, wenn gewünscht */
-            z-index: 50; /* z-index wie Home-Screen Header */
-            flex-shrink: 0;
-        }
-        
-        /* Pseudo-Element für den Bereich über dem Header, wie auf dem Home-Screen */
-        .sticky-header::before {
-            content: "";
-            position: absolute;
-            top: -100vh;
-            left: 0;
-            right: 0;
-            height: 100vh;
             background-color: #01161E;
-            z-index: -1;
         }
-
-        .header-title {
-            font-size: 1.25rem; /* Kleinere Schriftgröße (text-xl in Tailwind) */
-            font-weight: bold;
-            color: #83c5be; /* accent Farbe */
-            text-align: center;
-            letter-spacing: 0.025em; /* tracking-wide, von Home-Screen h1 */
-            position: absolute; /* Macht den Titel unabhängig von Flex-Layout */
-            left: 50%;
-            transform: translateX(-50%); /* Zentriert den Titel exakt */
-        }
-
-        .header-link {
-            color: #83c5be; /* accent Farbe */
-            font-weight: 600; /* font-semibold */
-            text-decoration: none;
-            transition: color 0.2s;
-            padding: 0.5rem 0.75rem;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        }
-
-        .header-link:hover {
-            text-decoration: underline;
-        }
-
-        /* Platzhalter auf der linken Seite, um den Titel zu zentrieren */
-        .header-placeholder {
-            width: 90px; /* Ca. Breite des "Timer"-Links */
-        }
-
-        /* --- Main Content Area --- */
-        .main-content {
-            flex-grow: 1;
-            padding: 1.5rem 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            overflow-y: auto;
-        }
-
-        .option-button {
-            background-color: #124559; /* Hintergrund wie timer-item */
-            /* border-bottom: 1px solid #EFF6E0; */ /* ENTFERNT: Border-Bottom für abgerundete Ecken */
-            border-radius: 0.75rem; /* NEU: Abgerundete Ecken */
+        .option-item {
+            background-color: rgba(255, 255, 255, 0.08);
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem;
-            text-align: left;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #edede9; /* Farbe wie timer-name */
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-            border: none; /* Make sure it's a button and not a link */
-            width: 100%; /* Ensure full width like the links */
         }
-
-        .option-button:active {
-            background-color: rgba(18, 69, 89, 0.8);
-            transform: scale(0.99);
-        }
-
-        .option-button .icon {
-            font-size: 1.5rem;
-            margin-left: 1rem;
-            color: #83c5be; /* accent Farbe für Icons */
-        }
-
-        /* Specific style for the reset button */
-        .clear-storage-button {
-            background-color: #fc814a; /* Warning color for emphasis */
-            color: #EFF6E0;
-        }
-
-        .clear-storage-button:active {
-            background-color: #e76f51;
-        }
-
     </style>
 </head>
-
-<body>
-
-    <header class="sticky-header" id="options-header">
-        <div class="header-placeholder"></div>
-        <h1 class="header-title">Options</h1>
-        <a href="../home-screen/index.html" class="header-link">Timer</a> 
+<body class="text-light">
+    <header class="text-light shadow-md">
+        <div class="w-full flex justify-between items-center">
+            <a href="../home-screen/index.html" class="text-accent font-semibold hover:underline">Back</a>
+            <h1 class="text-xl font-bold text-accent tracking-wide">Options</h1>
+            <div class="w-16"></div>
+        </div>
     </header>
 
-    <div class="main-content">
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/signals/signals-screen.html" class="option-button" id="signals-option">
-            <span>Signals</span>
-            <span class="icon">></span>
+    <div class="p-4">
+        <a href="timers-screen/timers-screen.html">
+            <div class="option-item">
+                <span>Timer</span>
+                <span>></span>
+            </div>
         </a>
 
-        <a href="https://erikstadel.github.io/Timer-App/options-screen/Sound/sound-settings.html" class="option-button" id="sound-option">
-            <span>Sound</span>
-            <span class="icon">></span>
+        <a href="signals/signals-screen.html">
+            <div class="option-item">
+                <span>Signals</span>
+                <span>></span>
+            </div>
         </a>
 
-        <button class="option-button clear-storage-button" id="clearStorageButton">
-            <span>App-Daten löschen</span>
-            <span class="icon">🗑️</span> </button>
+        <a href="sound/sound-settings.html">
+            <div class="option-item">
+                <span>Sound</span>
+                <span>></span>
+            </div>
+        </a>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Updated event listener for "Timer" link to ensure correct navigation
-            document.querySelector('.header-link[href="../home-screen/index.html"]').addEventListener('click', (event) => {
-                // No need to prevent default or set window.location.href directly as it's an anchor tag.
-                // The browser will handle the navigation. This console.log is just for debugging.
-                console.log('Navigating to Home Screen...');
-            });
-
-            // Event listener for the new "Clear Local Storage" button
-            const clearStorageButton = document.getElementById('clearStorageButton');
-            if (clearStorageButton) {
-                clearStorageButton.addEventListener('click', () => {
-                    if (confirm('Bist du sicher, dass du ALLE Timer und App-Daten löschen möchtest? Dies kann nicht rückgängig gemacht werden.')) {
-                        localStorage.clear(); // Löscht alles im LocalStorage für diese Domain
-                        alert('Alle App-Daten wurden gelöscht. Die App wird neu geladen.');
-                        window.location.reload(); // Seite neu laden, um den leeren Zustand zu sehen
-                    }
-                });
-            }
-        });
-    </script>
 </body>
 </html>
