@@ -9,7 +9,7 @@
     <title>Sound Settings</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../../js/dataStorage.js"></script>
+    <script src="../js/dataStorage.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -196,13 +196,13 @@
         window.mainGainNode.connect(window.audioContext.destination);
 
         function mapVolumeToGain(volume) {
-            const gainValue = 0.5 + (volume - 50) / 250; // Skaliere 50–200% auf 0.5–2.0
+            const gainValue = 0.5 + (volume - 50) / 125; // Skaliere 50–300% auf 0.5–3.0
             return Math.max(0, gainValue);
         }
 
         function updateVolumeDisplay() {
             volumeValueDisplay.textContent = Math.round(currentVolume);
-            const fillPercentage = ((currentVolume - 50) / 250) * 100; // Skaliere 50–200% auf 0–100%
+            const fillPercentage = ((currentVolume - 50) / 250) * 100; // Skaliere 50–300% auf 0–100%
             volumeFill.style.height = `${Math.max(0, Math.min(100, fillPercentage))}%`;
 
             let displayColor;
@@ -210,7 +210,7 @@
                 const factor = (currentVolume - 50) / (100 - 50);
                 displayColor = interpolateColor(colors.low, colors.mid, factor);
             } else {
-                const factor = (currentVolume - 100) / (300 - 100); // Anpassung für 100–200%
+                const factor = (currentVolume - 100) / (300 - 100); // Anpassung für 100–300%
                 displayColor = interpolateColor(colors.mid, colors.high, factor);
             }
             volumeFill.style.backgroundColor = displayColor;
@@ -244,7 +244,7 @@
             const deltaY = initialMouseY - e.clientY;
             const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
-            currentVolume = Math.max(50, Math.min(300, currentVolume)); // Max 200%
+            currentVolume = Math.max(50, Math.min(300, currentVolume)); // Max 300%
             saveAndUpdateVolume();
         });
 
@@ -272,7 +272,7 @@
             const deltaY = initialMouseY - e.touches[0].clientY;
             const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
-            currentVolume = Math.max(50, Math.min(300, currentVolume)); // Max 200%
+            currentVolume = Math.max(50, Math.min(300, currentVolume)); // Max 300%
             saveAndUpdateVolume();
             e.preventDefault();
         }, { passive: false });
