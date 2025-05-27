@@ -89,6 +89,13 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Debugging: Prüfe dataStorage.js
+            if (typeof loadVolumeBoost === 'undefined' || typeof saveGlobalSignals === 'undefined') {
+                console.error('dataStorage.js nicht geladen oder Funktionen fehlen');
+            } else {
+                console.log('dataStorage.js erfolgreich geladen');
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             const signalType = urlParams.get('signalType');
             if (!signalType) {
@@ -97,6 +104,17 @@
                 return;
             }
             console.log('Signal Type:', signalType);
+
+            // Initialisiere AudioContext und mainGainNode
+            window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
+            window.mainGainNode = window.mainGainNode || window.audioContext.createGain();
+            window.mainGainNode.connect(window.audioContext.destination);
+
+            // Lade volumeBoost
+            const volumeBoost = Number(loadVolumeBoost()) || 100;
+            const gainValue = 0.5 + (volumeBoost - 50) / 100; // Map 50–150% to 0.5–1.5
+            window.mainGainNode.gain.value = Math.max(0, gainValue);
+            console.log(`AudioContext: ${window.audioContext.state}, Gain: ${gainValue}`);
 
             let signals = loadSignals();
             console.log('Geladene Signale:', signals);
@@ -131,29 +149,47 @@
                 div.textContent = signal.name;
                 div.dataset.signalId = signal.id;
                 div.addEventListener('click', () => {
-                signalList.querySelectorAll('.signal-item').forEach(item => item.classList.remove('selected'));
-                div.classList.add('selected');
-                selectedSignalId = signal.id;
-                console.log('Ausgewählter Signal:', signal.id);
-                if (signal.filePath) {
-                    const audio = new Audio(`../../${signal.filePath}`);
-                    const audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioContext.createMediaElementSource(audio);
-                    source.connect(window.mainGainNode || audioContext.createGain());
-                    audio.play().catch(e => console.error('Fehler beim Abspielen:', e));
-                }
-            });
+                    signalList.querySelectorAll('.signal-item').forEach(item => item.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedSignalId = signal.id;
+                    console.log('Ausgewählter Signal:', signal.id);
+                    if (signal.filePath) {
+                        if (window.audioContext.state === 'suspended') {
+                            window.audioContext.resume().then(() => {
+                                console.log('AudioContext resumed');
+                                playSignal(signal.filePath);
+                            }).catch(e => console.error('Fehler beim Resumen:', e));
+                        } else {
+                            playSignal(signal.filePath);
+                        }
+                    }
+                });
                 signalList.appendChild(div);
             });
 
-            document.getElementById('save-button').addEventListener('click', () => {
-    console.log('Speichert:', { signalType, selectedSignalId });
-    const newGlobalSignals = { ...globalSignals, [signalType]: selectedSignalId };
-    saveGlobalSignals(newGlobalSignals);
-    console.log('Gespeicherte Signale:', newGlobalSignals);
-    window.location.href = 'signals-screen.html';
-});
+            function playSignal(filePath) {
+                const audio = new Audio(`../../${filePath}`);
+                try {
+                    const source = window.audioContext.createMediaElementSource(audio);
+                    source.connect(window.mainGainNode);
+                    audio.play().then(() => {
+                        console.log(`Spiele Signal: ${filePath}`);
+                    }).catch(e => console.error('Fehler beim Abspielen:', e));
+                } catch (e) {
+                    console.error('Fehler bei createMediaElementSource:', e);
+                    // Fallback: Spiele ohne mainGainNode
+                    audio.volume = (Number(loadVolumeBoost()) || 100) / 100;
+                    audio.play().catch(e => console.error('Fallback-Fehler:', e));
+                }
+            }
 
+            document.getElementById('save-button').addEventListener('click', () => {
+                console.log('Speichert:', { signalType, selectedSignalId });
+                const newGlobalSignals = { ...globalSignals, [signalType]: selectedSignalId };
+                saveGlobalSignals(newGlobalSignals);
+                console.log('Gespeicherte Signale:', newGlobalSignals);
+                window.location.href = 'signals-screen.html';
+            });
 
             // Scroll-Listener
             const header = document.querySelector('header');
@@ -165,6 +201,6 @@
                 }
             });
         });
-        </script>
+    </script>
 </body>
-</html>
+</html>]]>
