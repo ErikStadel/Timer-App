@@ -5,7 +5,7 @@
   "background_color": "#124559",
   "display": "standalone",
   "scope": "/",
-  "start_url": "Timer-App/home-screen/index.html",
+  "start_url": "https://erikstadel.github.io/Timer-App/home-screen/index.html",
   "icons": [
     {
       "src": "Timer-App/assets/icons/icon-192x192.png",
