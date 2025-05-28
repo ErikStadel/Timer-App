@@ -5,15 +5,15 @@
   "background_color": "#124559",
   "display": "standalone",
   "scope": "/",
-  "start_url": "./home-screen/index.html",
+  "start_url": "Timer-App/home-screen/index.html",
   "icons": [
     {
-      "src": "/assets/icons/icon-192x192.png",
+      "src": "Timer-App/assets/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/assets/icons/icon-512x512.png",
+      "src": "Timer-App/assets/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
