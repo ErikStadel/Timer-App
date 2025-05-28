@@ -5,7 +5,7 @@
   "background_color": "#124559",
   "display": "standalone",
   "scope": "/",
-  "start_url": "/home-screen/index.html",
+  "start_url": "./home-screen/index.html",
   "icons": [
     {
       "src": "/assets/icons/icon-192x192.png",
