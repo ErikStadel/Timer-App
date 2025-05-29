@@ -20,6 +20,7 @@ const defaultSignals = [
     { id: 'signal-chime', name: 'Chime', filePath: 'assets/sounds/chime.mp3' },
     { id: 'signal-gong', name: 'Gong', filePath: 'assets/sounds/gong.mp3' },
     { id: 'signal-whoosh', name: 'Whoosh', filePath: 'assets/sounds/whoosh.mp3' }
+    { id: 'signal-longbeep', name: 'LongBeep', filePath: 'assets/sounds/longbeep.mp3' }
 ];
 
 // Standard-Timer
