@@ -5,10 +5,10 @@ const VOLUME_BOOST_KEY = 'martialArtsVolumeBoost';
 
 // Globale Signale
 const defaultGlobalSignals = {
-    intervalStart: 'signal-bell',
-    restStart: 'signal-chime',
-    halfway: 'signal-beep',
-    fiveSecond: 'signal-applause'
+    intervalStart: 'signal-horn',
+    restStart: 'signal-longbeep',
+    halfway: 'signal-gong',
+    fiveSecond: 'signal-beep'
 };
 
 // Standard-Signale
