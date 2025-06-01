@@ -303,8 +303,7 @@
         </div>
     </div>
 
-    <script>
-        const body = document.body;
+    const body = document.body;
 const mainCircle = document.getElementById('main-circle');
 const circleText = document.getElementById('circle-text');
 const circleCountdown = document.getElementById('circle-countdown');
@@ -334,18 +333,24 @@ let maxRepeats = 1;
 let audioPlayers = {};
 let isAudioInitialized = false;
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 500; // ms
-let soundQueue = []; // Warteschlange für Sounds
+const RETRY_DELAY = 200; // Verkürzt für schnellere Reaktion
+let soundQueue = []; // Warteschlange für Sounds (außer fiveSecond)
 
 // Funktion zum asynchronen Laden von Audiodateien
 async function loadAudioFile(filePath) {
     try {
-        const response = await fetch(`../${filePath}`);
+        const response = await fetch(`../${filePath}`, { cache: 'force-cache' });
         if (!response.ok) {
             throw new Error(`Fehler beim Laden der Audiodatei: ${filePath}, Status: ${response.status}`);
         }
         const audio = new Audio(`../${filePath}`);
         audio.preload = 'auto';
+        // Warte, bis die Audiodatei vollständig geladen ist
+        await new Promise((resolve, reject) => {
+            audio.addEventListener('canplaythrough', resolve, { once: true });
+            audio.addEventListener('error', reject, { once: true });
+        });
+        console.log(`Audiodatei geladen: ${filePath}`);
         return audio;
     } catch (error) {
         console.error(`Fehler beim Laden der Audiodatei ${filePath}:`, error);
@@ -429,11 +434,17 @@ function resumeAudioContext() {
     }
 }
 
-// Funktion zum Hinzufügen eines Sounds zur Warteschlange
-function queueSound(type) {
-    soundQueue.push(type);
-    if (soundQueue.length === 1) {
-        playNextSound();
+// Funktion zum Abspielen eines Sounds (für fiveSecond direkt, andere in Warteschlange)
+async function playSound(type, immediate = false) {
+    if (immediate) {
+        // Direkte Wiedergabe für fiveSecond
+        await playAudio(type, 0);
+    } else {
+        // In Warteschlange für andere Sounds
+        soundQueue.push(type);
+        if (soundQueue.length === 1) {
+            playNextSound();
+        }
     }
 }
 
@@ -461,7 +472,7 @@ async function playNextSound(retryCount = 0) {
             playAudio(type, retryCount);
         }).catch(error => {
             console.error('Fehler beim Fortsetzen des AudioContext:', error);
-            playAudio(type, retryCount); // Fallback: Versuche direkt abzuspielen
+            playmayAudio(type, retryCount); // Fallback: Versuche direkt abzuspielen
         });
     } else {
         playAudio(type, retryCount);
@@ -472,11 +483,12 @@ async function playNextSound(retryCount = 0) {
 async function playAudio(type, retryCount) {
     const globalSignals = loadGlobalSignals();
     const signalId = globalSignals[type];
+    const startTime = performance.now();
     console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
 
     if (!signalId || signalId === '') {
         console.log(`Kein Sound ausgewählt für: ${type}`);
-        soundQueue.shift(); // Entferne Sound aus der Warteschlange
+        if (soundQueue[0] === type) soundQueue.shift(); // Entferne nur, wenn in Warteschlange
         playNextSound(); // Versuche nächsten Sound
         return;
     }
@@ -484,7 +496,7 @@ async function playAudio(type, retryCount) {
     const audio = audioPlayers[type];
     if (!audio) {
         console.warn(`Kein Audio-Player für Signal-Typ: ${type}, signalId: ${signalId}`);
-        soundQueue.shift(); // Entferne Sound aus der Warteschlange
+        if (soundQueue[0] === type) soundQueue.shift(); // Entferne nur, wenn in Warteschlange
         playNextSound(); // Versuche nächsten Sound
         return;
     }
@@ -492,17 +504,18 @@ async function playAudio(type, retryCount) {
     try {
         audio.currentTime = 0;
         await audio.play();
-        console.log(`Sound abgespielt: ${type}`);
-        soundQueue.shift(); // Entferne Sound aus der Warteschlange
+        const endTime = performance.now();
+        console.log(`Sound abgespielt: ${type}, Latenz: ${endTime - startTime}ms`);
+        if (soundQueue[0] === type) soundQueue.shift(); // Entferne nur, wenn in Warteschlange
         playNextSound(); // Versuche nächsten Sound
     } catch (error) {
         console.error(`Fehler beim Abspielen von ${type} (Versuch ${retryCount + 1}):`, error);
         if (retryCount < MAX_RETRIES) {
             console.log(`Wiederhole Sound-Wiedergabe für ${type} in ${RETRY_DELAY}ms`);
-            setTimeout(() => playNextSound(retryCount + 1), RETRY_DELAY);
+            setTimeout(() => playAudio(type, retryCount + 1), RETRY_DELAY);
         } else {
             console.error(`Maximale Wiederholungen erreicht für ${type}. Sound konnte nicht abgespielt werden.`);
-            soundQueue.shift(); // Entferne Sound aus der Warteschlange
+            if (soundQueue[0] === type) soundQueue.shift(); // Entferne nur, wenn in Warteschlange
             playNextSound(); // Versuche nächsten Sound
         }
     }
@@ -580,8 +593,6 @@ function updateSecondaryDisplays() {
 
 function startTimer() {
     if (!isTimerRunning && !isTimerPaused) {
-        initAudio();
-
         currentIntervalIndex = 0;
         currentRepeat = 1;
         const singleCycleTime = timerIntervalsData.reduce((sum, item) => sum + item.duration, 0);
@@ -590,7 +601,7 @@ function startTimer() {
         halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
         const type = timerIntervalsData[currentIntervalIndex].type;
         console.log(`Starte Timer, Intervalltyp: ${type}`);
-        queueSound(type === 'interval' ? 'intervalStart' : 'restStart');
+        playSound(type === 'interval' ? 'intervalStart' : 'restStart'); // Direkte Wiedergabe
     } else if (isTimerPaused) {
         halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
     }
@@ -611,12 +622,12 @@ function startTimer() {
 
         if (timerIntervalsData[currentIntervalIndex].type === 'interval' && 
             currentIntervalTimeRemaining === halfwayPoint) {
-            queueSound('halfway');
+            playSound('halfway'); // In Warteschlange
         }
 
         // 5-Sekunden-Sound jede Sekunde in den letzten 5 Sekunden
         if (currentIntervalTimeRemaining <= 5 && currentIntervalTimeRemaining > 0) {
-            queueSound('fiveSecond');
+            playSound('fiveSecond', true); // Direkte Wiedergabe
             updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type, true);
         } else {
             updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
@@ -647,7 +658,7 @@ function startTimer() {
 
             const type = timerIntervalsData[currentIntervalIndex].type;
             console.log(`Wechsel zu Intervalltyp: ${type}, Index: ${currentIntervalIndex}`);
-            queueSound(type === 'interval' ? 'intervalStart' : 'restStart');
+            playSound(type === 'interval' ? 'intervalStart' : 'restStart'); // Direkte Wiedergabe
 
             updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
             highlightCurrentInterval();
@@ -795,7 +806,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateBackgroundAndCircleColor('initial');
     resetTimerDisplay();
+
+    // Vorab-Laden der Audiodateien
+    initAudio();
 });
-    </script>
 </body>
 </html>
