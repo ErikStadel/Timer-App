@@ -332,92 +332,160 @@
         let maxRepeats = 1;
 
         // Audio Setup
-        let audioPlayers = {};
-        let isAudioInitialized = false;
+let audioPlayers = {};
+let isAudioInitialized = false;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 500; // ms
 
-        function initAudio() {
-            if (!isAudioInitialized) {
-                // Initialisiere AudioContext und mainGainNode
-                window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
-                window.mainGainNode = window.mainGainNode || window.audioContext.createGain();
-                window.mainGainNode.connect(window.audioContext.destination);
-
-                // Lade volumeBoost
-                const volumeBoost = Number(loadVolumeBoost()) || 100;
-                const gainValue = 0.5 + (volumeBoost - 50) / 100; // Map 50–150% to 0.5–1.5
-                window.mainGainNode.gain.value = Math.max(0, gainValue);
-                console.log(`AudioContext: ${window.audioContext.state}, Gain: ${gainValue}`);
-
-                // Lade Sounds
-                const signals = loadSignals();
-                const globalSignals = loadGlobalSignals();
-                Object.keys(globalSignals).forEach(type => {
-                    const signalId = globalSignals[type];
-                    if (signalId && signalId !== '') {
-                        const signal = signals.find(s => s.id === signalId);
-                        if (signal && signal.filePath) {
-                            const audio = new Audio(`../${signal.filePath}`);
-                            try {
-                                const source = window.audioContext.createMediaElementSource(audio);
-                                source.connect(window.mainGainNode);
-                                audioPlayers[type] = audio;
-                                console.log(`Audio-Player erstellt für ${type}: ${signal.filePath}`);
-                            } catch (e) {
-                                console.error(`Fehler bei createMediaElementSource für ${type}:`, e);
-                                // Fallback: Nutze audio.volume
-                                audio.volume = volumeBoost / 100;
-                                audioPlayers[type] = audio;
-                            }
-                        }
-                    }
-                });
-
-                // Resume AudioContext nach Unterbrechungen
-                document.addEventListener('visibilitychange', () => {
-                    if (document.visibilityState === 'visible' && window.audioContext.state === 'suspended') {
-                        window.audioContext.resume().then(() => {
-                            console.log('AudioContext fortgesetzt:', window.audioContext.state);
-                        }).catch(e => console.error('Fehler beim Fortsetzen des AudioContext:', e));
-                    }
-                });
-
-                isAudioInitialized = true;
-            }
+// Funktion zum asynchronen Laden von Audiodateien
+async function loadAudioFile(filePath) {
+    try {
+        const response = await fetch(`../${filePath}`);
+        if (!response.ok) {
+            throw new Error(`Fehler beim Laden der Audiodatei: ${filePath}, Status: ${response.status}`);
         }
+        const audio = new Audio(`../${filePath}`);
+        audio.preload = 'auto';
+        return audio;
+    } catch (error) {
+        console.error(`Fehler beim Laden der Audiodatei ${filePath}:`, error);
+        return null;
+    }
+}
 
-        function playSound(type) {
-            if (!window.audioContext) {
-                console.warn('AudioContext nicht initialisiert für:', type);
-                return;
-            }
-            if (window.audioContext.state === 'suspended') {
-                window.audioContext.resume().then(() => {
-                    console.log('AudioContext fortgesetzt vor Sound-Wiedergabe:', window.audioContext.state);
-                    playAudio(type);
-                }).catch(e => console.error('Fehler beim Fortsetzen des AudioContext:', e));
-            } else {
-                playAudio(type);
-            }
-        }
+// Initialisierung des AudioContext und der Audio-Player
+async function initAudio() {
+    if (isAudioInitialized) {
+        console.log('Audio bereits initialisiert');
+        return;
+    }
 
-        function playAudio(type) {
-            const globalSignals = loadGlobalSignals();
-            const signalId = globalSignals[type];
-            console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
-            if (signalId && signalId !== '') {
-                const audio = audioPlayers[type];
+    // Initialisiere AudioContext
+    try {
+        window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
+        window.mainGainNode = window.audioContext.createGain();
+        window.mainGainNode.connect(window.audioContext.destination);
+
+        // Lade Volume Boost
+        const volumeBoost = Number(loadVolumeBoost()) || 100;
+        const gainValue = 0.5 + (volumeBoost - 50) / 100; // Map 50–150% to 0.5–1.5
+        window.mainGainNode.gain.value = Math.max(0, gainValue);
+        console.log(`AudioContext initialisiert: ${window.audioContext.state}, Gain: ${gainValue}`);
+    } catch (error) {
+        console.error('Fehler beim Initialisieren des AudioContext:', error);
+        // Fallback: Sounds ohne AudioContext
+    }
+
+    // Lade Sounds
+    const signals = loadSignals();
+    const globalSignals = loadGlobalSignals();
+    const audioPromises = Object.keys(globalSignals).map(async (type) => {
+        const signalId = globalSignals[type];
+        if (signalId && signalId !== '') {
+            const signal = signals.find(s => s.id === signalId);
+            if (signal && signal.filePath) {
+                const audio = await loadAudioFile(signal.filePath);
                 if (audio) {
-                    audio.currentTime = 0;
-                    audio.play().then(() => {
-                        console.log(`Sound abgespielt: ${type}`);
-                    }).catch(e => console.error(`Fehler beim Abspielen von ${type}:`, e));
+                    try {
+                        const source = window.audioContext.createMediaElementSource(audio);
+                        source.connect(window.mainGainNode);
+                        audioPlayers[type] = audio;
+                        console.log(`Audio-Player erstellt für ${type}: ${signal.filePath}`);
+                    } catch (error) {
+                        console.error(`Fehler bei createMediaElementSource für ${type}:`, error);
+                        // Fallback: Nutze audio.volume
+                        audio.volume = volumeBoost / 100;
+                        audioPlayers[type] = audio;
+                    }
                 } else {
-                    console.warn(`Kein Audio-Player für Signal-Typ: ${type}, signalId: ${signalId}`);
+                    console.warn(`Audiodatei für ${type} konnte nicht geladen werden: ${signal.filePath}`);
                 }
-            } else {
-                console.log(`Kein Sound ausgewählt für: ${type}`);
             }
         }
+    });
+
+    await Promise.all(audioPromises);
+    isAudioInitialized = true;
+
+    // Resume AudioContext bei Sichtbarkeitsänderungen
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && window.audioContext && window.audioContext.state === 'suspended') {
+            window.audioContext.resume().then(() => {
+                console.log('AudioContext fortgesetzt:', window.audioContext.state);
+            }).catch(error => console.error('Fehler beim Fortsetzen des AudioContext:', error));
+        }
+    });
+
+    // Initiale Resumption bei Benutzerinteraktion
+    document.addEventListener('click', resumeAudioContext, { once: true });
+}
+
+// Resume AudioContext bei Benutzerinteraktion
+function resumeAudioContext() {
+    if (window.audioContext && window.audioContext.state === 'suspended') {
+        window.audioContext.resume().then(() => {
+            console.log('AudioContext nach Benutzerinteraktion fortgesetzt:', window.audioContext.state);
+        }).catch(error => console.error('Fehler beim Fortsetzen des AudioContext:', error));
+    }
+}
+
+// Funktion zum Abspielen von Sounds mit Retry-Logik
+async function playSound(type, retryCount = 0) {
+    if (!isAudioInitialized) {
+        await initAudio();
+    }
+
+    if (!window.audioContext) {
+        console.warn('AudioContext nicht verfügbar für:', type);
+        return;
+    }
+
+    if (window.audioContext.state === 'suspended') {
+        window.audioContext.resume().then(() => {
+            console.log('AudioContext fortgesetzt vor Sound-Wiedergabe:', window.audioContext.state);
+            playAudio(type, retryCount);
+        }).catch(error => {
+            console.error('Fehler beim Fortsetzen des AudioContext:', error);
+            playAudio(type, retryCount); // Fallback: Versuche direkt abzuspielen
+        });
+    } else {
+        playAudio(type, retryCount);
+    }
+}
+
+// Interne Funktion zum Abspielen eines Sounds
+async function playAudio(type, retryCount) {
+    const globalSignals = loadGlobalSignals();
+    const signalId = globalSignals[type];
+    console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
+    
+    if (!signalId || signalId === '') {
+        console.log(`Kein Sound ausgewählt für: ${type}`);
+        return;
+    }
+
+    const audio = audioPlayers[type];
+    if (!audio) {
+        console.warn(`Kein Audio-Player für Signal-Typ: ${type}, signalId: ${signalId}`);
+        return;
+    }
+
+    try {
+        audio.currentTime = 0;
+        await audio.play();
+        console.log(`Sound abgespielt: ${type}`);
+    } catch (error) {
+        console.error(`Fehler beim Abspielen von ${type} (Versuch ${retryCount + 1}):`, error);
+        if (retryCount < MAX_RETRIES) {
+            console.log(`Wiederhole Sound-Wiedergabe für ${type} in ${RETRY_DELAY}ms`);
+            setTimeout(() => playSound(type, retryCount + 1), RETRY_DELAY);
+        } else {
+            console.error(`Maximale Wiederholungen erreicht für ${type}. Sound konnte nicht abgespielt werden.`);
+            // Optional: Benutzerbenachrichtigung
+            // alert(`Sound für ${type} konnte nicht abgespielt werden. Bitte überprüfen Sie die Audioeinstellungen.`);
+        }
+    }
+}
 
         // --- Hilfsfunktionen ---
 
