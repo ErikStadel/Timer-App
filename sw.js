@@ -2,11 +2,14 @@ self.addEventListener('install', event => {
     event.waitUntil(
         caches.open('timer-audio-cache-v1').then(cache => {
             return cache.addAll([
-                // Ersetze mit den tatsächlichen Pfaden deiner MP3-Dateien aus loadSignals()
-                '../sounds/intervalStart.mp3',
-                '../sounds/restStart.mp3',
-                '../sounds/halfway.mp3',
-                '../sounds/fiveSecond.mp3'
+                '/assets/sounds/bell.mp3',
+                '/assets/sounds/horn.mp3',
+                '/assets/sounds/beep.mp3',
+                '/assets/sounds/applause.mp3',
+                '/assets/sounds/chime.mp3',
+                '/assets/sounds/gong.mp3',
+                '/assets/sounds/whoosh.mp3',
+                '/assets/sounds/longbeep.mp3'
             ]);
         })
     );
