@@ -1,7 +1,7 @@
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open('timer-audio-cache-v1').then(cache => {
-            return cache.addAll([
+            const filesToCache = [
                 '/Timer-App/assets/sounds/bell.mp3',
                 '/Timer-App/assets/sounds/horn.mp3',
                 '/Timer-App/assets/sounds/beep.mp3',
@@ -10,7 +10,24 @@ self.addEventListener('install', event => {
                 '/Timer-App/assets/sounds/gong.mp3',
                 '/Timer-App/assets/sounds/whoosh.mp3',
                 '/Timer-App/assets/sounds/longbeep.mp3'
-            ]);
+            ];
+            return Promise.all(
+                filesToCache.map(file => 
+                    fetch(file).then(response => {
+                        if (!response.ok) {
+                            console.error(`Failed to cache ${file}: Status ${response.status}`);
+                            throw new Error(`Failed to cache ${file}`);
+                        }
+                        return cache.put(file, response);
+                    }).catch(error => {
+                        console.error(`Error fetching ${file}:`, error);
+                        throw error;
+                    })
+                )
+            ).catch(error => {
+                console.error('Cache addAll failed:', error);
+                throw error;
+            });
         })
     );
 });
