@@ -96,9 +96,9 @@
             <span>Halfway Signal</span>
             <span id="halfway-signal">Beep</span>
         </div>
-        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=fiveSecond'">
+        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=threeSecond'">
             <span>5 Second Signal</span>
-            <span id="five-second-signal">Applause</span>
+            <span id="three-second-signal">Applause</span>
         </div>
     </div>
 
@@ -111,7 +111,7 @@
                 'intervalStart': document.getElementById('interval-start-signal'),
                 'restStart': document.getElementById('rest-start-signal'),
                 'halfway': document.getElementById('halfway-signal'),
-                'fiveSecond': document.getElementById('five-second-signal')
+                'threeSecond': document.getElementById('three-second-signal')
             };
 
             Object.keys(signalElements).forEach(type => {

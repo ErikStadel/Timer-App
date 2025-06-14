@@ -332,12 +332,12 @@ let maxRepeats = 1;
 
 // Audio Setup
 let audioPlayers = {};
-let audioBuffers = {}; // Für fiveSecond mit AudioBuffer
+let audioBuffers = {}; // Für threeSecond mit AudioBuffer
 let isAudioInitialized = false;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 100; // Noch kürzer für iOS
-let soundQueue = []; // Warteschlange für Sounds (außer fiveSecond)
-const FIVE_SECOND_POOL_SIZE = 5; // Audio-Pool für fiveSecond
+let soundQueue = []; // Warteschlange für Sounds (außer threeSecond)
+const THREE_SECOND_POOL_SIZE = 5; // Audio-Pool für threeSecond
 
 // Funktion zum asynchronen Laden von Audiodateien
 async function loadAudioFile(filePath) {
@@ -395,13 +395,13 @@ async function initAudio() {
                 const result = await loadAudioFile(signal.filePath);
                 if (result) {
                     const { audio, arrayBuffer } = result;
-                    if (type === 'fiveSecond') {
-                        // AudioBuffer für fiveSecond
+                    if (type === 'threeSecond') {
+                        // AudioBuffer für threeSecond
                         try {
-                            audioBuffers.fiveSecond = await window.audioContext.decodeAudioData(arrayBuffer);
-                            console.log(`AudioBuffer erstellt für fiveSecond: ${signal.filePath}`);
+                            audioBuffers.threeSecond = await window.audioContext.decodeAudioData(arrayBuffer);
+                            console.log(`AudioBuffer erstellt für threeSecond: ${signal.filePath}`);
                         } catch (error) {
-                            console.error(`Fehler beim Dekodieren von fiveSecond:`, error);
+                            console.error(`Fehler beim Dekodieren von threeSecond:`, error);
                             // Fallback auf HTMLAudioElement
                             audioPlayers[type] = audio;
                         }
@@ -428,9 +428,9 @@ async function initAudio() {
     await Promise.all(audioPromises);
     isAudioInitialized = true;
 
-    // Audio-Pool für fiveSecond
-    if (audioBuffers.fiveSecond) {
-        audioPlayers.fiveSecondPool = Array(FIVE_SECOND_POOL_SIZE).fill().map(() => ({
+    // Audio-Pool für threeSecond
+    if (audioBuffers.threeSecond) {
+        audioPlayers.threeSecondPool = Array(THREE_SECOND_POOL_SIZE).fill().map(() => ({
             source: null,
             available: true
         }));
@@ -458,15 +458,15 @@ function resumeAudioContext() {
     }
 }
 
-// Funktion zum Abspielen eines Sounds (für fiveSecond direkt mit AudioBuffer, andere in Warteschlange)
+// Funktion zum Abspielen eines Sounds (für threeSecond direkt mit AudioBuffer, andere in Warteschlange)
 async function playSound(type, immediate = false) {
     if (!isAudioInitialized) {
         await initAudio();
     }
 
-    if (type === 'fiveSecond' && audioBuffers.fiveSecond) {
-        // Direkte Wiedergabe mit AudioBuffer für fiveSecond
-        playFiveSecondSound();
+    if (type === 'threeSecond' && audioBuffers.threeSecond) {
+        // Direkte Wiedergabe mit AudioBuffer für threeSecond
+        playThreeSecondSound();
     } else if (immediate) {
         // Direkte Wiedergabe für andere Sounds, falls nötig
         await playAudio(type, 0);
@@ -479,37 +479,37 @@ async function playSound(type, immediate = false) {
     }
 }
 
-// Funktion zum Abspielen des fiveSecond-Sounds mit AudioBuffer
-function playFiveSecondSound() {
-    if (!audioBuffers.fiveSecond || !window.audioContext) {
-        console.warn('AudioBuffer oder AudioContext nicht verfügbar für fiveSecond');
-        playAudio('fiveSecond', 0); // Fallback auf HTMLAudioElement
+// Funktion zum Abspielen des threeSecond-Sounds mit AudioBuffer
+function playThreeSecondSound() {
+    if (!audioBuffers.threeSecond || !window.audioContext) {
+        console.warn('AudioBuffer oder AudioContext nicht verfügbar für threeSecond');
+        playAudio('threeSecond', 0); // Fallback auf HTMLAudioElement
         return;
     }
 
     const startTime = performance.now();
-    const poolItem = audioPlayers.fiveSecondPool.find(item => item.available);
+    const poolItem = audioPlayers.threeSecondPool.find(item => item.available);
     if (!poolItem) {
-        console.warn('Kein verfügbarer Audio-Pool für fiveSecond');
+        console.warn('Kein verfügbarer Audio-Pool für threeSecond');
         return;
     }
 
     try {
         poolItem.available = false;
         poolItem.source = window.audioContext.createBufferSource();
-        poolItem.source.buffer = audioBuffers.fiveSecond;
+        poolItem.source.buffer = audioBuffers.threeSecond;
         poolItem.source.connect(window.mainGainNode);
         poolItem.source.addEventListener('ended', () => {
             poolItem.available = true;
-            console.log('fiveSecond Audio-Pool freigegeben');
+            console.log('threeSecond Audio-Pool freigegeben');
         }, { once: true });
         poolItem.source.start(0);
         const endTime = performance.now();
-        console.log(`fiveSecond abgespielt, Latenz: ${endTime - startTime}ms`);
+        console.log(`threeSecond abgespielt, Latenz: ${endTime - startTime}ms`);
     } catch (error) {
-        console.error(`Fehler beim Abspielen von fiveSecond mit AudioBuffer:`, error);
+        console.error(`Fehler beim Abspielen von threeSecond mit AudioBuffer:`, error);
         poolItem.available = true;
-        playAudio('fiveSecond', 0); // Fallback auf HTMLAudioElement
+        playAudio('threeSecond', 0); // Fallback auf HTMLAudioElement
     }
 }
 
@@ -691,8 +691,8 @@ function startTimer() {
         }
 
         // 5-Sekunden-Sound jede Sekunde in den letzten 5 Sekunden
-        if (currentIntervalTimeRemaining <= 5 && currentIntervalTimeRemaining > 0) {
-            playSound('fiveSecond', true);
+        if (currentIntervalTimeRemaining <= 3 && currentIntervalTimeRemaining > 0) {
+            playSound('threeSecond', true);
             updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type, true);
         } else {
             updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
