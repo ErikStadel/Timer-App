@@ -193,7 +193,7 @@
         .circle-warning { background-color: #fc814a; }
         .circle-initial { background-color: #598392; }
 
-        .confirmation-dialog-overlay {
+        .confirmation-dialog-overlay, .completion-dialog-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -210,12 +210,12 @@
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        .confirmation-dialog-overlay.active {
+        .confirmation-dialog-overlay.active, .completion-dialog-overlay.active {
             opacity: 1;
             visibility: visible;
         }
 
-        .confirmation-dialog {
+        .confirmation-dialog, .completion-dialog {
             background-color: #124559;
             padding: 2rem;
             border-radius: 1rem;
@@ -228,24 +228,25 @@
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        .confirmation-dialog-overlay.active .confirmation-dialog {
+        .confirmation-dialog-overlay.active .confirmation-dialog, 
+        .completion-dialog-overlay.active .completion-dialog {
             transform: translateY(0);
             opacity: 1;
         }
 
-        .confirmation-dialog p {
+        .confirmation-dialog p, .completion-dialog p {
             margin-bottom: 1.5rem;
             font-size: 1.1rem;
             font-weight: 600;
         }
 
-        .confirmation-dialog-buttons {
+        .confirmation-dialog-buttons, .completion-dialog-buttons {
             display: flex;
             justify-content: space-around;
             gap: 1rem;
         }
 
-        .confirmation-dialog-buttons button {
+        .confirmation-dialog-buttons button, .completion-dialog-buttons button {
             flex: 1;
             padding: 0.75rem;
             border-radius: 0.5rem;
@@ -255,12 +256,12 @@
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
 
-        .btn-confirm {
+        .btn-confirm, .btn-restart {
             background-color: #fc814a;
             color: #01161E;
         }
 
-        .btn-cancel {
+        .btn-cancel, .btn-end-dialog {
             background-color: #598392;
             color: #EFF6E0;
         }
@@ -303,591 +304,619 @@
         </div>
     </div>
 
+    <div class="completion-dialog-overlay" id="completion-dialog">
+        <div class="completion-dialog">
+            <p>You are Awesome!</p>
+            <div class="completion-dialog-buttons">
+                <button class="btn-restart" id="restart-timer">Restart</button>
+                <button class="btn-end-dialog" id="end-timer">End</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const body = document.body;
-const mainCircle = document.getElementById('main-circle');
-const circleText = document.getElementById('circle-text');
-const circleCountdown = document.getElementById('circle-countdown');
-const circleTotalCountdown = document.getElementById('circle-total-countdown');
-const currentIntervalNumberDisplay = document.getElementById('current-interval-number');
-const totalCountdownBelowCircle = document.getElementById('total-countdown-below-circle');
-const endButton = document.getElementById('end-button');
-const endConfirmationDialog = document.getElementById('end-confirmation-dialog');
-const cancelEndButton = document.getElementById('cancel-end');
-const confirmEndButton = document.getElementById('confirm-end');
-const intervalListContainer = document.getElementById('interval-list-container');
-const timerTitle = document.getElementById('timer-title');
-let intervalItems = [];
+        const mainCircle = document.getElementById('main-circle');
+        const circleText = document.getElementById('circle-text');
+        const circleCountdown = document.getElementById('circle-countdown');
+        const circleTotalCountdown = document.getElementById('circle-total-countdown');
+        const currentIntervalNumberDisplay = document.getElementById('current-interval-number');
+        const totalCountdownBelowCircle = document.getElementById('total-countdown-below-circle');
+        const endButton = document.getElementById('end-button');
+        const endConfirmationDialog = document.getElementById('end-confirmation-dialog');
+        const cancelEndButton = document.getElementById('cancel-end');
+        const confirmEndButton = document.getElementById('confirm-end');
+        const completionDialog = document.getElementById('completion-dialog');
+        const restartTimerButton = document.getElementById('restart-timer');
+        const endTimerButton = document.getElementById('end-timer');
+        const intervalListContainer = document.getElementById('interval-list-container');
+        const timerTitle = document.getElementById('timer-title');
+        let intervalItems = [];
 
-let isTimerRunning = false;
-let isTimerPaused = false;
-let currentIntervalIndex = 0;
-let currentIntervalTimeRemaining = 0;
-let totalTimeRemaining = 0;
-let timerIntervalId;
-let timerIntervalsData = [];
-let halfwayPoint = 0;
-let currentRepeat = 1;
-let maxRepeats = 1;
+        let isTimerRunning = false;
+        let isTimerPaused = false;
+        let currentIntervalIndex = 0;
+        let currentIntervalTimeRemaining = 0;
+        let totalTimeRemaining = 0;
+        let timerIntervalId;
+        let timerIntervalsData = [];
+        let halfwayPoint = 0;
+        let currentRepeat = 1;
+        let maxRepeats = 1;
 
-// Audio Setup
-let audioPlayers = {};
-let audioBuffers = {}; // Für AudioBuffer von threeSecond, intervalStart, restStart, halfway
-let isAudioInitialized = false;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 100; // Noch kürzer für iOS
-let soundQueue = []; // Warteschlange für Sounds (z.B. lastRound)
-const POOL_SIZE = 3; // Audio-Pool-Größe für threeSecond, intervalStart, restStart, halfway
+        // Audio Setup
+        let audioPlayers = {};
+        let audioBuffers = {}; // Für AudioBuffer von threeSecond, intervalStart, restStart, halfway
+        let isAudioInitialized = false;
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 100; // Noch kürzer für iOS
+        let soundQueue = []; // Warteschlange für Sounds (z.B. lastRound)
+        const POOL_SIZE = 3; // Audio-Pool-Größe für threeSecond, intervalStart, restStart, halfway
 
-// Funktion zum asynchronen Laden von Audiodateien
-async function loadAudioFile(filePath) {
-    try {
-        const response = await fetch(`../${filePath}`, { cache: 'force-cache' });
-        if (!response.ok) {
-            throw new Error(`Fehler beim Laden der Audiodatei: ${filePath}, Status: ${response.status}`);
+        // Funktion zum asynchronen Laden von Audiodateien
+        async function loadAudioFile(filePath) {
+            try {
+                const response = await fetch(`../${filePath}`, { cache: 'force-cache' });
+                if (!response.ok) {
+                    throw new Error(`Fehler beim Laden der Audiodatei: ${filePath}, Status: ${response.status}`);
+                }
+                const arrayBuffer = await response.arrayBuffer();
+                const audio = new Audio(`../${filePath}`);
+                audio.preload = 'auto';
+                await new Promise((resolve, reject) => {
+                    audio.addEventListener('canplaythrough', resolve, { once: true });
+                    audio.addEventListener('error', reject, { once: true });
+                });
+                console.log(`Audiodatei geladen: ${filePath}`);
+                return { audio, arrayBuffer };
+            } catch (error) {
+                console.error(`Fehler beim Laden der Audiodatei ${filePath}:`, error);
+                return null;
+            }
         }
-        const arrayBuffer = await response.arrayBuffer();
-        const audio = new Audio(`../${filePath}`);
-        audio.preload = 'auto';
-        await new Promise((resolve, reject) => {
-            audio.addEventListener('canplaythrough', resolve, { once: true });
-            audio.addEventListener('error', reject, { once: true });
-        });
-        console.log(`Audiodatei geladen: ${filePath}`);
-        return { audio, arrayBuffer };
-    } catch (error) {
-        console.error(`Fehler beim Laden der Audiodatei ${filePath}:`, error);
-        return null;
-    }
-}
 
-// Initialisierung des AudioContext und der Audio-Player
-async function initAudio() {
-    if (isAudioInitialized) {
-        console.log('Audio bereits initialisiert');
-        return;
-    }
+        // Initialisierung des AudioContext und der Audio-Player
+        async function initAudio() {
+            if (isAudioInitialized) {
+                console.log('Audio bereits initialisiert');
+                return;
+            }
 
-    // Initialisiere AudioContext
-    try {
-        window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
-        window.mainGainNode = window.audioContext.createGain();
-        window.mainGainNode.connect(window.audioContext.destination);
+            // Initialisiere AudioContext
+            try {
+                window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
+                window.mainGainNode = window.audioContext.createGain();
+                window.mainGainNode.connect(window.audioContext.destination);
 
-        // Lade Volume Boost
-        const volumeBoost = Number(loadVolumeBoost()) || 100;
-        const gainValue = 0.5 + (volumeBoost - 50) / 100; // Map 50–150% to 0.5–1.5
-        window.mainGainNode.gain.value = Math.max(0, gainValue);
-        console.log(`AudioContext initialisiert: ${window.audioContext.state}, Gain: ${gainValue}`);
-    } catch (error) {
-        console.error('Fehler beim Initialisieren des AudioContext:', error);
-        // Fallback: Sounds ohne AudioContext
-    }
+                // Lade Volume Boost
+                const volumeBoost = Number(loadVolumeBoost()) || 100;
+                const gainValue = 0.5 + (volumeBoost - 50) / 100; // Map 50–150% to 0.5–1.5
+                window.mainGainNode.gain.value = Math.max(0, gainValue);
+                console.log(`AudioContext initialisiert: ${window.audioContext.state}, Gain: ${gainValue}`);
+            } catch (error) {
+                console.error('Fehler beim Initialisieren des AudioContext:', error);
+                // Fallback: Sounds ohne AudioContext
+            }
 
-    // Lade Sounds
-    const signals = loadSignals();
-    const globalSignals = loadGlobalSignals();
-    const audioPromises = Object.keys(globalSignals).map(async (type) => {
-        const signalId = globalSignals[type];
-        if (signalId && signalId !== '') {
-            const signal = signals.find(s => s.id === signalId);
-            if (signal && signal.filePath) {
-                const result = await loadAudioFile(signal.filePath);
-                if (result) {
-                    const { audio, arrayBuffer } = result;
-                    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
-                        // AudioBuffer für threeSecond, intervalStart, restStart, halfway
-                        try {
-                            audioBuffers[type] = await window.audioContext.decodeAudioData(arrayBuffer);
-                            console.log(`AudioBuffer erstellt für ${type}: ${signal.filePath}`);
-                        } catch (error) {
-                            console.error(`Fehler beim Dekodieren von ${type}:`, error);
-                            // Fallback auf HTMLAudioElement
-                            audioPlayers[type] = audio;
-                        }
-                    } else {
-                        try {
-                            const source = window.audioContext.createMediaElementSource(audio);
-                            source.connect(window.mainGainNode);
-                            audioPlayers[type] = audio;
-                            console.log(`Audio-Player erstellt für ${type}: ${signal.filePath}`);
-                        } catch (error) {
-                            console.error(`Fehler bei createMediaElementSource für ${type}:`, error);
-                            // Fallback: Nutze audio.volume
-                            audio.volume = volumeBoost / 100;
-                            audioPlayers[type] = audio;
+            // Lade Sounds
+            const signals = loadSignals();
+            const globalSignals = loadGlobalSignals();
+            const audioPromises = Object.keys(globalSignals).map(async (type) => {
+                const signalId = globalSignals[type];
+                if (signalId && signalId !== '') {
+                    const signal = signals.find(s => s.id === signalId);
+                    if (signal && signal.filePath) {
+                        const result = await loadAudioFile(signal.filePath);
+                        if (result) {
+                            const { audio, arrayBuffer } = result;
+                            if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
+                                // AudioBuffer für threeSecond, intervalStart, restStart, halfway
+                                try {
+                                    audioBuffers[type] = await window.audioContext.decodeAudioData(arrayBuffer);
+                                    console.log(`AudioBuffer erstellt für ${type}: ${signal.filePath}`);
+                                } catch (error) {
+                                    console.error(`Fehler beim Dekodieren von ${type}:`, error);
+                                    // Fallback auf HTMLAudioElement
+                                    audioPlayers[type] = audio;
+                                }
+                            } else {
+                                try {
+                                    const source = window.audioContext.createMediaElementSource(audio);
+                                    source.connect(window.mainGainNode);
+                                    audioPlayers[type] = audio;
+                                    console.log(`Audio-Player erstellt für ${type}: ${signal.filePath}`);
+                                } catch (error) {
+                                    console.error(`Fehler bei createMediaElementSource für ${type}:`, error);
+                                    // Fallback: Nutze audio.volume
+                                    audio.volume = volumeBoost / 100;
+                                    audioPlayers[type] = audio;
+                                }
+                            }
+                        } else {
+                            console.warn(`Audiodatei für ${type} konnte nicht geladen werden: ${signal.filePath}`);
                         }
                     }
-                } else {
-                    console.warn(`Audiodatei für ${type} konnte nicht geladen werden: ${signal.filePath}`);
+                }
+            });
+
+            await Promise.all(audioPromises);
+            isAudioInitialized = true;
+
+            // Audio-Pools für threeSecond, intervalStart, restStart, halfway
+            ['threeSecond', 'intervalStart', 'restStart', 'halfway'].forEach(type => {
+                if (audioBuffers[type]) {
+                    audioPlayers[`${type}Pool`] = Array(POOL_SIZE).fill().map(() => ({
+                        source: null,
+                        available: true
+                    }));
+                }
+            });
+
+            // Resume AudioContext bei Sichtbarkeitsänderungen
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && window.audioContext && window.audioContext.state === 'suspended') {
+                    window.audioContext.resume().then(() => {
+                        console.log('AudioContext fortgesetzt:', window.audioContext.state);
+                    }).catch(error => console.error('Fehler beim Fortsetzen des AudioContext:', error));
+                }
+            });
+
+            // Initiale Resumption bei Benutzerinteraktion
+            document.addEventListener('click', resumeAudioContext, { once: true });
+        }
+
+        // Resume AudioContext bei Benutzerinteraktion
+        function resumeAudioContext() {
+            if (window.audioContext && window.audioContext.state === 'suspended') {
+                window.audioContext.resume().then(() => {
+                    console.log('AudioContext nach Benutzerinteraktion fortgesetzt:', window.audioContext.state);
+                }).catch(error => console.error('Fehler beim Fortsetzen des AudioContext:', error));
+            }
+        }
+
+        // Funktion zum Abspielen eines Sounds aus einem Audio-Pool
+        function playPooledSound(type) {
+            if (!audioBuffers[type] || !window.audioContext) {
+                console.warn(`AudioBuffer oder AudioContext nicht verfügbar für ${type}`);
+                playAudio(type, 0); // Fallback auf HTMLAudioElement
+                return;
+            }
+
+            const startTime = performance.now();
+            const pool = audioPlayers[`${type}Pool`];
+            const poolItem = pool.find(item => item.available);
+            if (!poolItem) {
+                console.warn(`Kein verfügbarer Audio-Pool für ${type}`);
+                return;
+            }
+
+            try {
+                poolItem.available = false;
+                poolItem.source = window.audioContext.createBufferSource();
+                poolItem.source.buffer = audioBuffers[type];
+                poolItem.source.connect(window.mainGainNode);
+                poolItem.source.addEventListener('ended', () => {
+                    poolItem.available = true;
+                    console.log(`${type} Audio-Pool freigegeben`);
+                }, { once: true });
+                poolItem.source.start(0);
+                const endTime = performance.now();
+                console.log(`${type} abgespielt, Latenz: ${endTime - startTime}ms`);
+            } catch (error) {
+                console.error(`Fehler beim Abspielen von ${type} mit AudioBuffer:`, error);
+                poolItem.available = true;
+                playAudio(type, 0); // Fallback auf HTMLAudioElement
+            }
+        }
+
+        // Funktion zum Abspielen eines Sounds (für threeSecond, intervalStart, restStart, halfway über Pool, andere in Warteschlange)
+        async function playSound(type, immediate = false) {
+            if (!isAudioInitialized) {
+                await initAudio();
+            }
+
+            if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
+                // Wiedergabe über Audio-Pool
+                playPooledSound(type);
+            } else if (immediate) {
+                // Direkte Wiedergabe für andere Sounds
+                await playAudio(type, 0);
+            } else {
+                // In Warteschlange für andere Sounds (z.B. lastRound)
+                soundQueue.push(type);
+                if (soundQueue.length === 1) {
+                    playNextSound();
                 }
             }
         }
-    });
 
-    await Promise.all(audioPromises);
-    isAudioInitialized = true;
+        // Funktion zum Abspielen des nächsten Sounds in der Warteschlange
+        async function playNextSound(retryCount = 0) {
+            if (soundQueue.length === 0) {
+                // Zeige Completion-Dialog nach lastRound
+                if (soundQueue[0] === 'lastRound') {
+                    completionDialog.classList.add('active');
+                }
+                return;
+            }
 
-    // Audio-Pools für threeSecond, intervalStart, restStart, halfway
-    ['threeSecond', 'intervalStart', 'restStart', 'halfway'].forEach(type => {
-        if (audioBuffers[type]) {
-            audioPlayers[`${type}Pool`] = Array(POOL_SIZE).fill().map(() => ({
-                source: null,
-                available: true
-            }));
-        }
-    });
+            const type = soundQueue[0];
+            if (!isAudioInitialized) {
+                await initAudio();
+            }
 
-    // Resume AudioContext bei Sichtbarkeitsänderungen
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && window.audioContext && window.audioContext.state === 'suspended') {
-            window.audioContext.resume().then(() => {
-                console.log('AudioContext fortgesetzt:', window.audioContext.state);
-            }).catch(error => console.error('Fehler beim Fortsetzen des AudioContext:', error));
-        }
-    });
+            if (!window.audioContext) {
+                console.warn('AudioContext nicht verfügbar für:', type);
+                soundQueue.shift();
+                playNextSound();
+                return;
+            }
 
-    // Initiale Resumption bei Benutzerinteraktion
-    document.addEventListener('click', resumeAudioContext, { once: true });
-}
-
-// Resume AudioContext bei Benutzerinteraktion
-function resumeAudioContext() {
-    if (window.audioContext && window.audioContext.state === 'suspended') {
-        window.audioContext.resume().then(() => {
-            console.log('AudioContext nach Benutzerinteraktion fortgesetzt:', window.audioContext.state);
-        }).catch(error => console.error('Fehler beim Fortsetzen des AudioContext:', error));
-    }
-}
-
-// Funktion zum Abspielen eines Sounds aus einem Audio-Pool
-function playPooledSound(type) {
-    if (!audioBuffers[type] || !window.audioContext) {
-        console.warn(`AudioBuffer oder AudioContext nicht verfügbar für ${type}`);
-        playAudio(type, 0); // Fallback auf HTMLAudioElement
-        return;
-    }
-
-    const startTime = performance.now();
-    const pool = audioPlayers[`${type}Pool`];
-    const poolItem = pool.find(item => item.available);
-    if (!poolItem) {
-        console.warn(`Kein verfügbarer Audio-Pool für ${type}`);
-        return;
-    }
-
-    try {
-        poolItem.available = false;
-        poolItem.source = window.audioContext.createBufferSource();
-        poolItem.source.buffer = audioBuffers[type];
-        poolItem.source.connect(window.mainGainNode);
-        poolItem.source.addEventListener('ended', () => {
-            poolItem.available = true;
-            console.log(`${type} Audio-Pool freigegeben`);
-        }, { once: true });
-        poolItem.source.start(0);
-        const endTime = performance.now();
-        console.log(`${type} abgespielt, Latenz: ${endTime - startTime}ms`);
-    } catch (error) {
-        console.error(`Fehler beim Abspielen von ${type} mit AudioBuffer:`, error);
-        poolItem.available = true;
-        playAudio(type, 0); // Fallback auf HTMLAudioElement
-    }
-}
-
-// Funktion zum Abspielen eines Sounds (für threeSecond, intervalStart, restStart, halfway über Pool, andere in Warteschlange)
-async function playSound(type, immediate = false) {
-    if (!isAudioInitialized) {
-        await initAudio();
-    }
-
-    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
-        // Wiedergabe über Audio-Pool
-        playPooledSound(type);
-    } else if (immediate) {
-        // Direkte Wiedergabe für andere Sounds
-        await playAudio(type, 0);
-    } else {
-        // In Warteschlange für andere Sounds (z.B. lastRound)
-        soundQueue.push(type);
-        if (soundQueue.length === 1) {
-            playNextSound();
-        }
-    }
-}
-
-// Funktion zum Abspielen des nächsten Sounds in der Warteschlange
-async function playNextSound(retryCount = 0) {
-    if (soundQueue.length === 0) {
-        return;
-    }
-
-    const type = soundQueue[0];
-    if (!isAudioInitialized) {
-        await initAudio();
-    }
-
-    if (!window.audioContext) {
-        console.warn('AudioContext nicht verfügbar für:', type);
-        soundQueue.shift();
-        playNextSound();
-        return;
-    }
-
-    if (window.audioContext.state === 'suspended') {
-        window.audioContext.resume().then(() => {
-            console.log('AudioContext fortgesetzt vor Sound-Wiedergabe:', window.audioContext.state);
-            playAudio(type, retryCount);
-        }).catch(error => {
-            console.error('Fehler beim Fortsetzen des AudioContext:', error);
-            playAudio(type, retryCount);
-        });
-    } else {
-        playAudio(type, retryCount);
-    }
-}
-
-// Interne Funktion zum Abspielen eines Sounds
-async function playAudio(type, retryCount) {
-    const globalSignals = loadGlobalSignals();
-    const signalId = globalSignals[type];
-    const startTime = performance.now();
-    console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
-
-    if (!signalId || signalId === '') {
-        console.log(`Kein Sound ausgewählt für: ${type}`);
-        if (soundQueue[0] === type) soundQueue.shift();
-        playNextSound();
-        return;
-    }
-
-    const audio = audioPlayers[type];
-    if (!audio) {
-        console.warn(`Kein Audio-Player für Signal-Typ: ${type}, signalId: ${signalId}`);
-        if (soundQueue[0] === type) soundQueue.shift();
-        playNextSound();
-        return;
-    }
-
-    try {
-        audio.currentTime = 0;
-        await audio.play();
-        const endTime = performance.now();
-        console.log(`Sound abgespielt: ${type}, Latenz: ${endTime - startTime}ms`);
-        if (soundQueue[0] === type) soundQueue.shift();
-        playNextSound();
-    } catch (error) {
-        console.error(`Fehler beim Abspielen von ${type} (Versuch ${retryCount + 1}):`, error);
-        if (retryCount < MAX_RETRIES) {
-            console.log(`Wiederhole Sound-Wiedergabe für ${type} in ${RETRY_DELAY}ms`);
-            setTimeout(() => playAudio(type, retryCount + 1), RETRY_DELAY);
-        } else {
-            console.error(`Maximale Wiederholungen erreicht für ${type}. Sound konnte nicht abgespielt werden.`);
-            if (soundQueue[0] === type) soundQueue.shift();
-            playNextSound();
-        }
-    }
-}
-
-// --- Hilfsfunktionen ---
-
-function formatTime(seconds) {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-}
-
-function updateBackgroundAndCircleColor(type, isWarning = false) {
-    body.classList.remove('bg-interval', 'bg-rest', 'bg-warning', 'bg-initial');
-    mainCircle.classList.remove('circle-interval', 'circle-rest', 'circle-warning', 'circle-initial');
-
-    if (isWarning) {
-        body.classList.add('bg-warning');
-        mainCircle.classList.add('circle-warning');
-    } else if (type === 'interval') {
-        body.classList.add('bg-interval');
-        mainCircle.classList.add('circle-interval');
-    } else if (type === 'rest') {
-        body.classList.add('bg-rest');
-        mainCircle.classList.add('circle-rest');
-    } else {
-        body.classList.add('bg-initial');
-        mainCircle.classList.add('circle-initial');
-    }
-}
-
-function highlightCurrentInterval() {
-    intervalItems.forEach((item, index) => {
-        item.classList.remove('active');
-        if (index === currentIntervalIndex) {
-            item.classList.add('active');
-            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    });
-}
-
-function updateCircleContent() {
-    if (isTimerRunning && !isTimerPaused) {
-        circleText.classList.add('hidden');
-        circleCountdown.textContent = formatTime(currentIntervalTimeRemaining);
-        circleCountdown.classList.remove('hidden');
-        circleTotalCountdown.classList.add('hidden');
-    } else if (isTimerPaused) {
-        circleText.textContent = 'START';
-        circleText.classList.remove('hidden');
-        circleCountdown.classList.add('hidden');
-        circleTotalCountdown.classList.add('hidden');
-    } else {
-        circleText.textContent = 'START';
-        circleText.classList.remove('hidden');
-        circleCountdown.classList.add('hidden');
-        circleTotalCountdown.classList.add('hidden');
-    }
-}
-
-function updateSecondaryDisplays() {
-    const intervalsPerCycle = timerIntervalsData.filter(item => item.type === 'interval').length;
-    let intervalCount = (currentRepeat - 1) * intervalsPerCycle;
-    for (let i = 0; i <= currentIntervalIndex; i++) {
-        if (timerIntervalsData[i].type === 'interval') {
-            intervalCount++;
-        }
-    }
-    currentIntervalNumberDisplay.textContent = intervalCount.toString().padStart(2, '0');
-    totalCountdownBelowCircle.textContent = `Gesamt: ${formatTime(totalTimeRemaining)}`;
-}
-
-// --- Timer-Logik ---
-
-function startTimer() {
-    if (!isTimerRunning && !isTimerPaused) {
-        currentIntervalIndex = 0;
-        currentRepeat = 1;
-        const singleCycleTime = timerIntervalsData.reduce((sum, item) => sum + item.duration, 0);
-        totalTimeRemaining = singleCycleTime * maxRepeats;
-        currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
-        halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
-        const type = timerIntervalsData[currentIntervalIndex].type;
-        console.log(`Starte Timer, Intervalltyp: ${type}`);
-        playSound(type === 'interval' ? 'intervalStart' : 'restStart');
-    } else if (isTimerPaused) {
-        halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
-    }
-
-    isTimerRunning = true;
-    isTimerPaused = false;
-
-    updateCircleContent();
-    updateSecondaryDisplays();
-    highlightCurrentInterval();
-    updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
-
-    timerIntervalId = setInterval(() => {
-        if (isTimerPaused) return;
-
-        currentIntervalTimeRemaining--;
-        totalTimeRemaining--;
-
-        if (timerIntervalsData[currentIntervalIndex].type === 'interval' && 
-            currentIntervalTimeRemaining === halfwayPoint) {
-            playSound('halfway');
+            if (window.audioContext.state === 'suspended') {
+                window.audioContext.resume().then(() => {
+                    console.log('AudioContext fortgesetzt vor Sound-Wiedergabe:', window.audioContext.state);
+                    playAudio(type, retryCount);
+                }).catch(error => {
+                    console.error('Fehler beim Fortsetzen des AudioContext:', error);
+                    playAudio(type, retryCount);
+                });
+            } else {
+                playAudio(type, retryCount);
+            }
         }
 
-        // 5-Sekunden-Sound jede Sekunde in den letzten 5 Sekunden
-        if (currentIntervalTimeRemaining <= 3 && currentIntervalTimeRemaining > 0) {
-            playSound('threeSecond');
-            updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type, true);
-        } else {
-            updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
-        }
+        // Interne Funktion zum Abspielen eines Sounds
+        async function playAudio(type, retryCount) {
+            const globalSignals = loadGlobalSignals();
+            const signalId = globalSignals[type];
+            const startTime = performance.now();
+            console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
 
-        updateCircleContent();
-        updateSecondaryDisplays();
+            if (!signalId || signalId === '') {
+                console.log(`Kein Sound ausgewählt für: ${type}`);
+                if (soundQueue[0] === type) soundQueue.shift();
+                playNextSound();
+                return;
+            }
 
-        if (currentIntervalTimeRemaining <= 0) {
-            currentIntervalIndex++;
-            if (currentIntervalIndex >= timerIntervalsData.length) {
-                currentRepeat++;
-                if (currentRepeat <= maxRepeats) {
-                    currentIntervalIndex = 0;
+            const audio = audioPlayers[type];
+            if (!audio) {
+                console.warn(`Kein Audio-Player für Signal-Typ: ${type}, signalId: ${signalId}`);
+                if (soundQueue[0] === type) soundQueue.shift();
+                playNextSound();
+                return;
+            }
+
+            try {
+                audio.currentTime = 0;
+                await audio.play();
+                const endTime = performance.now();
+                console.log(`Sound abgespielt: ${type}, Latenz: ${endTime - startTime}ms`);
+                if (soundQueue[0] === type) soundQueue.shift();
+                playNextSound();
+            } catch (error) {
+                console.error(`Fehler beim Abspielen von ${type} (Versuch ${retryCount + 1}):`, error);
+                if (retryCount < MAX_RETRIES) {
+                    console.log(`Wiederhole Sound-Wiedergabe für ${type} in ${RETRY_DELAY}ms`);
+                    setTimeout(() => playAudio(type, retryCount + 1), RETRY_DELAY);
                 } else {
+                    console.error(`Maximale Wiederholungen erreicht für ${type}. Sound konnte nicht abgespielt werden.`);
+                    if (soundQueue[0] === type) soundQueue.shift();
+                    playNextSound();
+                }
+            }
+        }
+
+        // --- Hilfsfunktionen ---
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateBackgroundAndCircleColor(type, isWarning = false) {
+            body.classList.remove('bg-interval', 'bg-rest', 'bg-warning', 'bg-initial');
+            mainCircle.classList.remove('circle-interval', 'circle-rest', 'circle-warning', 'circle-initial');
+
+            if (isWarning) {
+                body.classList.add('bg-warning');
+                mainCircle.classList.add('circle-warning');
+            } else if (type === 'interval') {
+                body.classList.add('bg-interval');
+                mainCircle.classList.add('circle-interval');
+            } else if (type === 'rest') {
+                body.classList.add('bg-rest');
+                mainCircle.classList.add('circle-rest');
+            } else {
+                body.classList.add('bg-initial');
+                mainCircle.classList.add('circle-initial');
+            }
+        }
+
+        function highlightCurrentInterval() {
+            intervalItems.forEach((item, index) => {
+                item.classList.remove('active');
+                if (index === currentIntervalIndex) {
+                    item.classList.add('active');
+                    item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+
+        function updateCircleContent() {
+            if (isTimerRunning && !isTimerPaused) {
+                circleText.classList.add('hidden');
+                circleCountdown.textContent = formatTime(currentIntervalTimeRemaining);
+                circleCountdown.classList.remove('hidden');
+                circleTotalCountdown.classList.add('hidden');
+            } else if (isTimerPaused) {
+                circleText.textContent = 'START';
+                circleText.classList.remove('hidden');
+                circleCountdown.classList.add('hidden');
+                circleTotalCountdown.classList.add('hidden');
+            } else {
+                circleText.textContent = 'START';
+                circleText.classList.remove('hidden');
+                circleCountdown.classList.add('hidden');
+                circleTotalCountdown.classList.add('hidden');
+            }
+        }
+
+        function updateSecondaryDisplays() {
+            const intervalsPerCycle = timerIntervalsData.filter(item => item.type === 'interval').length;
+            let intervalCount = (currentRepeat - 1) * intervalsPerCycle;
+            for (let i = 0; i <= currentIntervalIndex; i++) {
+                if (timerIntervalsData[i].type === 'interval') {
+                    intervalCount++;
+                }
+            }
+            currentIntervalNumberDisplay.textContent = intervalCount.toString().padStart(2, '0');
+            totalCountdownBelowCircle.textContent = `Gesamt: ${formatTime(totalTimeRemaining)}`;
+        }
+
+        // --- Timer-Logik ---
+
+        function startTimer() {
+            if (!isTimerRunning && !isTimerPaused) {
+                currentIntervalIndex = 0;
+                currentRepeat = 1;
+                const singleCycleTime = timerIntervalsData.reduce((sum, item) => sum + item.duration, 0);
+                totalTimeRemaining = singleCycleTime * maxRepeats;
+                currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
+                halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
+                const type = timerIntervalsData[currentIntervalIndex].type;
+                console.log(`Starte Timer, Intervalltyp: ${type}`);
+                playSound(type === 'interval' ? 'intervalStart' : 'restStart');
+            } else if (isTimerPaused) {
+                halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
+            }
+
+            isTimerRunning = true;
+            isTimerPaused = false;
+
+            updateCircleContent();
+            updateSecondaryDisplays();
+            highlightCurrentInterval();
+            updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
+
+            timerIntervalId = setInterval(() => {
+                if (isTimerPaused) return;
+
+                currentIntervalTimeRemaining--;
+                totalTimeRemaining--;
+
+                if (timerIntervalsData[currentIntervalIndex].type === 'interval' && 
+                    currentIntervalTimeRemaining === halfwayPoint) {
+                    playSound('halfway');
+                }
+
+                // 5-Sekunden-Sound jede Sekunde in den letzten 5 Sekunden
+                if (currentIntervalTimeRemaining <= 3 && currentIntervalTimeRemaining > 0) {
+                    playSound('threeSecond');
+                    updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type, true);
+                } else {
+                    updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
+                }
+
+                updateCircleContent();
+                updateSecondaryDisplays();
+
+                if (currentIntervalTimeRemaining <= 0) {
+                    currentIntervalIndex++;
+                    if (currentIntervalIndex >= timerIntervalsData.length) {
+                        currentRepeat++;
+                        if (currentRepeat <= maxRepeats) {
+                            currentIntervalIndex = 0;
+                        } else {
+                            playSound('lastRound');
+                            clearInterval(timerIntervalId);
+                            isTimerRunning = false;
+                            isTimerPaused = false;
+                            resetTimer();
+                            updateBackgroundAndCircleColor('initial');
+                            console.log('Timer beendet!');
+                            return;
+                        }
+                    }
+
+                    currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
+                    halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
+
+                    const type = timerIntervalsData[currentIntervalIndex].type;
+                    console.log(`Wechsel zu Intervalltyp: ${type}, Index: ${currentIntervalIndex}`);
+                    playSound(type === 'interval' ? 'intervalStart' : 'restStart');
+
+                    updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
+                    highlightCurrentInterval();
+                }
+
+                if (totalTimeRemaining <= 0) {
                     playSound('lastRound');
                     clearInterval(timerIntervalId);
                     isTimerRunning = false;
                     isTimerPaused = false;
                     resetTimer();
                     updateBackgroundAndCircleColor('initial');
-                    console.log('Timer beendet!');
-                    return;
+                    console.log('Gesamtzeit abgelaufen!');
                 }
-            }
-
-            currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
-            halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
-
-            const type = timerIntervalsData[currentIntervalIndex].type;
-            console.log(`Wechsel zu Intervalltyp: ${type}, Index: ${currentIntervalIndex}`);
-            playSound(type === 'interval' ? 'intervalStart' : 'restStart');
-
-            updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
-            highlightCurrentInterval();
+            }, 1000);
         }
 
-        if (totalTimeRemaining <= 0) {
-            playSound('lastRound');
+        function pauseTimer() {
+            isTimerPaused = true;
+            clearInterval(timerIntervalId);
+            updateCircleContent();
+        }
+
+        function resetTimer() {
             clearInterval(timerIntervalId);
             isTimerRunning = false;
             isTimerPaused = false;
-            resetTimer();
+            currentIntervalIndex = 0;
+            currentRepeat = 1;
+            totalTimeRemaining = 0;
+            currentIntervalTimeRemaining = 0;
+            halfwayPoint = 0;
+            intervalItems = [];
+            soundQueue = [];
+            audioPlayers = {};
+            audioBuffers = {};
+            isAudioInitialized = false;
+
+            resetTimerDisplay();
             updateBackgroundAndCircleColor('initial');
-            console.log('Gesamtzeit abgelaufen!');
+            intervalItems.forEach(item => item.classList.remove('active'));
         }
-    }, 1000);
-}
 
-function pauseTimer() {
-    isTimerPaused = true;
-    clearInterval(timerIntervalId);
-    updateCircleContent();
-}
+        function resetTimerDisplay() {
+            circleText.textContent = 'START';
+            circleText.classList.remove('hidden');
+            circleCountdown.classList.add('hidden');
+            circleTotalCountdown.classList.add('hidden');
+            currentIntervalNumberDisplay.textContent = '00';
+            totalCountdownBelowCircle.textContent = 'Gesamt: 00:00';
+        }
 
-function resetTimer() {
-    clearInterval(timerIntervalId);
-    isTimerRunning = false;
-    isTimerPaused = false;
-    currentIntervalIndex = 0;
-    currentRepeat = 1;
-    totalTimeRemaining = 0;
-    currentIntervalTimeRemaining = 0;
-    halfwayPoint = 0;
-    intervalItems = [];
-    soundQueue = [];
-    audioPlayers = {};
-    audioBuffers = {};
-    isAudioInitialized = false;
+        // --- Event Listener ---
 
-    resetTimerDisplay();
-    updateBackgroundAndCircleColor('initial');
-    intervalItems.forEach(item => item.classList.remove('active'));
-}
+        mainCircle.addEventListener('click', () => {
+            if (isTimerRunning && !isTimerPaused) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        });
 
-function resetTimerDisplay() {
-    circleText.textContent = 'START';
-    circleText.classList.remove('hidden');
-    circleCountdown.classList.add('hidden');
-    circleTotalCountdown.classList.add('hidden');
-    currentIntervalNumberDisplay.textContent = '00';
-    totalCountdownBelowCircle.textContent = 'Gesamt: 00:00';
-}
+        endButton.addEventListener('click', () => {
+            endConfirmationDialog.classList.add('active');
+            pauseTimer();
+        });
 
-// --- Event Listener ---
+        cancelEndButton.addEventListener('click', () => {
+            endConfirmationDialog.classList.remove('active');
+        });
 
-mainCircle.addEventListener('click', () => {
-    if (isTimerRunning && !isTimerPaused) {
-        pauseTimer();
-    } else {
-        startTimer();
-    }
-});
+        confirmEndButton.addEventListener('click', () => {
+            endConfirmationDialog.classList.remove('active');
+            resetTimer();
+            window.location.href = '../home-screen/index.html';
+        });
 
-endButton.addEventListener('click', () => {
-    endConfirmationDialog.classList.add('active');
-    pauseTimer();
-});
+        restartTimerButton.addEventListener('click', () => {
+            completionDialog.classList.remove('active');
+            // Timer ist bereits durch resetTimer zurückgesetzt, kein weiterer Aufruf nötig
+        });
 
-cancelEndButton.addEventListener('click', () => {
-    endConfirmationDialog.classList.remove('active');
-});
+        endTimerButton.addEventListener('click', () => {
+            completionDialog.classList.remove('active');
+            resetTimer();
+            window.location.href = '../home-screen/index.html';
+        });
 
-confirmEndButton.addEventListener('click', () => {
-    endConfirmationDialog.classList.remove('active');
-    resetTimer();
-    window.location.href = '../home-screen/index.html';
-});
+        // --- Initialisierung ---
 
-// --- Initialisierung ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Debugging: Prüfe dataStorage.js
+            if (typeof loadVolumeBoost === 'undefined' || typeof loadSignals === 'undefined') {
+                console.error('dataStorage.js nicht geladen oder Funktionen fehlen');
+            } else {
+                console.log('dataStorage.js erfolgreich geladen');
+            }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Debugging: Prüfe dataStorage.js
-    if (typeof loadVolumeBoost === 'undefined' || typeof loadSignals === 'undefined') {
-        console.error('dataStorage.js nicht geladen oder Funktionen fehlen');
-    } else {
-        console.log('dataStorage.js erfolgreich geladen');
-    }
+            const urlParams = new URLSearchParams(window.location.search);
+            const timerId = urlParams.get('timerId');
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const timerId = urlParams.get('timerId');
+            if (!timerId) {
+                console.error('Keine timerId in der URL gefunden');
+                alert('Timer-ID fehlt. Bitte erneut versuchen.');
+                window.location.href = '../home-screen/index.html';
+                return;
+            }
 
-    if (!timerId) {
-        console.error('Keine timerId in der URL gefunden');
-        alert('Timer-ID fehlt. Bitte erneut versuchen.');
-        window.location.href = '../home-screen/index.html';
-        return;
-    }
+            const timers = loadTimers();
+            const timer = timers.find(t => t.id === timerId);
+            if (!timer) {
+                console.error('Timer nicht gefunden:', timerId);
+                alert('Timer nicht gefunden. Bitte versuchen Sie erneut.');
+                window.location.href = '../home-screen/index.html';
+                return;
+            }
 
-    const timers = loadTimers();
-    const timer = timers.find(t => t.id === timerId);
-    if (!timer) {
-        console.error('Timer nicht gefunden:', timerId);
-        alert('Timer nicht gefunden. Bitte versuchen Sie erneut.');
-        window.location.href = '../home-screen/index.html';
-        return;
-    }
+            timerTitle.textContent = timer.name || 'Mein Timer';
+            maxRepeats = timer.repeat || 1;
 
-    timerTitle.textContent = timer.name || 'Mein Timer';
-    maxRepeats = timer.repeat || 1;
-
-    timerIntervalsData = [];
-    timer.intervals.forEach(interval => {
-        if (interval.durationInterval > 0) {
-            timerIntervalsData.push({
-                type: 'interval',
-                name: interval.name,
-                duration: interval.durationInterval
+            timerIntervalsData = [];
+            timer.intervals.forEach(interval => {
+                if (interval.durationInterval > 0) {
+                    timerIntervalsData.push({
+                        type: 'interval',
+                        name: interval.name,
+                        duration: interval.durationInterval
+                    });
+                }
+                if (interval.durationRest > 0) {
+                    timerIntervalsData.push({
+                        type: 'rest',
+                        name: 'Rest',
+                        duration: interval.durationRest
+                    });
+                }
             });
-        }
-        if (interval.durationRest > 0) {
-            timerIntervalsData.push({
-                type: 'rest',
-                name: 'Rest',
-                duration: interval.durationRest
+
+            const listContainer = document.getElementById('interval-list-container');
+            listContainer.innerHTML = '';
+            timerIntervalsData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.classList.add('interval-item');
+                div.setAttribute('data-type', item.type);
+                div.setAttribute('data-duration', item.duration);
+                if (item.name) div.setAttribute('data-name', item.name);
+
+                const itemName = item.type === 'rest' ? 'Rest' : (item.name || `Intervall ${Math.floor(index / 2) + 1}`);
+
+                div.innerHTML = `
+                    <span class="interval-item-name">${itemName}</span>
+                    <span class="interval-item-time">${formatTime(item.duration)}</span>
+                `;
+                listContainer.appendChild(div);
             });
+
+            intervalItems = Array.from(document.querySelectorAll('.interval-item'));
+
+            updateBackgroundAndCircleColor('initial');
+            resetTimerDisplay();
+
+            // Vorab-Laden der Audiodateien
+            initAudio();
+        });
+
+        // Service Worker Registrierung
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('../sw.js').then(() => {
+                console.log('Service Worker registriert');
+            }).catch(error => console.error('Service Worker Fehler:', error));
         }
-    });
-
-    const listContainer = document.getElementById('interval-list-container');
-    listContainer.innerHTML = '';
-    timerIntervalsData.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.classList.add('interval-item');
-        div.setAttribute('data-type', item.type);
-        div.setAttribute('data-duration', item.duration);
-        if (item.name) div.setAttribute('data-name', item.name);
-
-        const itemName = item.type === 'rest' ? 'Rest' : (item.name || `Intervall ${Math.floor(index / 2) + 1}`);
-
-        div.innerHTML = `
-            <span class="interval-item-name">${itemName}</span>
-            <span class="interval-item-time">${formatTime(item.duration)}</span>
-        `;
-        listContainer.appendChild(div);
-    });
-
-    intervalItems = Array.from(document.querySelectorAll('.interval-item'));
-
-    updateBackgroundAndCircleColor('initial');
-    resetTimerDisplay();
-
-    // Vorab-Laden der Audiodateien
-    initAudio();
-});
-
-// Service Worker Registrierung
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('../sw.js').then(() => {
-        console.log('Service Worker registriert');
-    }).catch(error => console.error('Service Worker Fehler:', error));
-}
     </script>
 </body>
 </html>
