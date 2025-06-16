@@ -337,7 +337,7 @@ let isAudioInitialized = false;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 100; // Noch kürzer für iOS
 let soundQueue = []; // Warteschlange für Sounds (z.B. lastRound)
-const POOL_SIZE = 5; // Audio-Pool-Größe für threeSecond, intervalStart, restStart, halfway
+const POOL_SIZE = 3; // Audio-Pool-Größe für threeSecond, intervalStart, restStart, halfway
 
 // Funktion zum asynchronen Laden von Audiodateien
 async function loadAudioFile(filePath) {
