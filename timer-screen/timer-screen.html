@@ -332,12 +332,12 @@ let maxRepeats = 1;
 
 // Audio Setup
 let audioPlayers = {};
-let audioBuffers = {}; // Für AudioBuffer von threeSecond, intervalStart, restStart
+let audioBuffers = {}; // Für AudioBuffer von threeSecond, intervalStart, restStart, halfway
 let isAudioInitialized = false;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 100; // Noch kürzer für iOS
-let soundQueue = []; // Warteschlange für Sounds (z.B. halfway, lastRound)
-const POOL_SIZE = 5; // Audio-Pool-Größe für threeSecond, intervalStart, restStart
+let soundQueue = []; // Warteschlange für Sounds (z.B. lastRound)
+const POOL_SIZE = 5; // Audio-Pool-Größe für threeSecond, intervalStart, restStart, halfway
 
 // Funktion zum asynchronen Laden von Audiodateien
 async function loadAudioFile(filePath) {
@@ -395,8 +395,8 @@ async function initAudio() {
                 const result = await loadAudioFile(signal.filePath);
                 if (result) {
                     const { audio, arrayBuffer } = result;
-                    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart') {
-                        // AudioBuffer für threeSecond, intervalStart, restStart
+                    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
+                        // AudioBuffer für threeSecond, intervalStart, restStart, halfway
                         try {
                             audioBuffers[type] = await window.audioContext.decodeAudioData(arrayBuffer);
                             console.log(`AudioBuffer erstellt für ${type}: ${signal.filePath}`);
@@ -428,8 +428,8 @@ async function initAudio() {
     await Promise.all(audioPromises);
     isAudioInitialized = true;
 
-    // Audio-Pools für threeSecond, intervalStart, restStart
-    ['threeSecond', 'intervalStart', 'restStart'].forEach(type => {
+    // Audio-Pools für threeSecond, intervalStart, restStart, halfway
+    ['threeSecond', 'intervalStart', 'restStart', 'halfway'].forEach(type => {
         if (audioBuffers[type]) {
             audioPlayers[`${type}Pool`] = Array(POOL_SIZE).fill().map(() => ({
                 source: null,
@@ -495,20 +495,20 @@ function playPooledSound(type) {
     }
 }
 
-// Funktion zum Abspielen eines Sounds (für threeSecond, intervalStart, restStart über Pool, andere in Warteschlange)
+// Funktion zum Abspielen eines Sounds (für threeSecond, intervalStart, restStart, halfway über Pool, andere in Warteschlange)
 async function playSound(type, immediate = false) {
     if (!isAudioInitialized) {
         await initAudio();
     }
 
-    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart') {
+    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
         // Wiedergabe über Audio-Pool
         playPooledSound(type);
     } else if (immediate) {
         // Direkte Wiedergabe für andere Sounds
         await playAudio(type, 0);
     } else {
-        // In Warteschlange für andere Sounds (z.B. halfway, lastRound)
+        // In Warteschlange für andere Sounds (z.B. lastRound)
         soundQueue.push(type);
         if (soundQueue.length === 1) {
             playNextSound();
