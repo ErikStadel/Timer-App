@@ -458,7 +458,7 @@ function resumeAudioContext() {
     }
 }
 
-// Funktion zum Abspielen eines Sounds (für threeSecond direkt mit AudioBuffer, andere in Warteschlange)
+// Funktion zum Abspielen eines Sounds (für threeSecond, intervalStart und restStart direkt, andere in Warteschlange)
 async function playSound(type, immediate = false) {
     if (!isAudioInitialized) {
         await initAudio();
@@ -467,11 +467,11 @@ async function playSound(type, immediate = false) {
     if (type === 'threeSecond' && audioBuffers.threeSecond) {
         // Direkte Wiedergabe mit AudioBuffer für threeSecond
         playThreeSecondSound();
-    } else if (immediate) {
-        // Direkte Wiedergabe für andere Sounds, falls nötig
+    } else if (type === 'intervalStart' || type === 'restStart' || immediate) {
+        // Direkte Wiedergabe für intervalStart, restStart und immediate
         await playAudio(type, 0);
     } else {
-        // In Warteschlange für andere Sounds
+        // In Warteschlange für andere Sounds (z.B. halfway, lastRound)
         soundQueue.push(type);
         if (soundQueue.length === 1) {
             playNextSound();
@@ -666,7 +666,7 @@ function startTimer() {
         halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
         const type = timerIntervalsData[currentIntervalIndex].type;
         console.log(`Starte Timer, Intervalltyp: ${type}`);
-        playSound(type === 'interval' ? 'intervalStart' : 'restStart');
+        playSound(type === 'interval' ? 'intervalStart' : 'restStart', true);
     } else if (isTimerPaused) {
         halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
     }
@@ -724,7 +724,7 @@ function startTimer() {
 
             const type = timerIntervalsData[currentIntervalIndex].type;
             console.log(`Wechsel zu Intervalltyp: ${type}, Index: ${currentIntervalIndex}`);
-            playSound(type === 'interval' ? 'intervalStart' : 'restStart');
+            playSound(type === 'interval' ? 'intervalStart' : 'restStart', true);
 
             updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
             highlightCurrentInterval();
