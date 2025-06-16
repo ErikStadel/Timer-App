@@ -332,12 +332,12 @@ let maxRepeats = 1;
 
 // Audio Setup
 let audioPlayers = {};
-let audioBuffers = {}; // Für threeSecond mit AudioBuffer
+let audioBuffers = {}; // Für AudioBuffer von threeSecond, intervalStart, restStart
 let isAudioInitialized = false;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 100; // Noch kürzer für iOS
-let soundQueue = []; // Warteschlange für Sounds (außer threeSecond)
-const THREE_SECOND_POOL_SIZE = 5; // Audio-Pool für threeSecond
+let soundQueue = []; // Warteschlange für Sounds (z.B. halfway, lastRound)
+const POOL_SIZE = 5; // Audio-Pool-Größe für threeSecond, intervalStart, restStart
 
 // Funktion zum asynchronen Laden von Audiodateien
 async function loadAudioFile(filePath) {
@@ -395,13 +395,13 @@ async function initAudio() {
                 const result = await loadAudioFile(signal.filePath);
                 if (result) {
                     const { audio, arrayBuffer } = result;
-                    if (type === 'threeSecond') {
-                        // AudioBuffer für threeSecond
+                    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart') {
+                        // AudioBuffer für threeSecond, intervalStart, restStart
                         try {
-                            audioBuffers.threeSecond = await window.audioContext.decodeAudioData(arrayBuffer);
-                            console.log(`AudioBuffer erstellt für threeSecond: ${signal.filePath}`);
+                            audioBuffers[type] = await window.audioContext.decodeAudioData(arrayBuffer);
+                            console.log(`AudioBuffer erstellt für ${type}: ${signal.filePath}`);
                         } catch (error) {
-                            console.error(`Fehler beim Dekodieren von threeSecond:`, error);
+                            console.error(`Fehler beim Dekodieren von ${type}:`, error);
                             // Fallback auf HTMLAudioElement
                             audioPlayers[type] = audio;
                         }
@@ -428,13 +428,15 @@ async function initAudio() {
     await Promise.all(audioPromises);
     isAudioInitialized = true;
 
-    // Audio-Pool für threeSecond
-    if (audioBuffers.threeSecond) {
-        audioPlayers.threeSecondPool = Array(THREE_SECOND_POOL_SIZE).fill().map(() => ({
-            source: null,
-            available: true
-        }));
-    }
+    // Audio-Pools für threeSecond, intervalStart, restStart
+    ['threeSecond', 'intervalStart', 'restStart'].forEach(type => {
+        if (audioBuffers[type]) {
+            audioPlayers[`${type}Pool`] = Array(POOL_SIZE).fill().map(() => ({
+                source: null,
+                available: true
+            }));
+        }
+    });
 
     // Resume AudioContext bei Sichtbarkeitsänderungen
     document.addEventListener('visibilitychange', () => {
@@ -458,17 +460,52 @@ function resumeAudioContext() {
     }
 }
 
-// Funktion zum Abspielen eines Sounds (für threeSecond, intervalStart und restStart direkt, andere in Warteschlange)
+// Funktion zum Abspielen eines Sounds aus einem Audio-Pool
+function playPooledSound(type) {
+    if (!audioBuffers[type] || !window.audioContext) {
+        console.warn(`AudioBuffer oder AudioContext nicht verfügbar für ${type}`);
+        playAudio(type, 0); // Fallback auf HTMLAudioElement
+        return;
+    }
+
+    const startTime = performance.now();
+    const pool = audioPlayers[`${type}Pool`];
+    const poolItem = pool.find(item => item.available);
+    if (!poolItem) {
+        console.warn(`Kein verfügbarer Audio-Pool für ${type}`);
+        return;
+    }
+
+    try {
+        poolItem.available = false;
+        poolItem.source = window.audioContext.createBufferSource();
+        poolItem.source.buffer = audioBuffers[type];
+        poolItem.source.connect(window.mainGainNode);
+        poolItem.source.addEventListener('ended', () => {
+            poolItem.available = true;
+            console.log(`${type} Audio-Pool freigegeben`);
+        }, { once: true });
+        poolItem.source.start(0);
+        const endTime = performance.now();
+        console.log(`${type} abgespielt, Latenz: ${endTime - startTime}ms`);
+    } catch (error) {
+        console.error(`Fehler beim Abspielen von ${type} mit AudioBuffer:`, error);
+        poolItem.available = true;
+        playAudio(type, 0); // Fallback auf HTMLAudioElement
+    }
+}
+
+// Funktion zum Abspielen eines Sounds (für threeSecond, intervalStart, restStart über Pool, andere in Warteschlange)
 async function playSound(type, immediate = false) {
     if (!isAudioInitialized) {
         await initAudio();
     }
 
-    if (type === 'threeSecond' && audioBuffers.threeSecond) {
-        // Direkte Wiedergabe mit AudioBuffer für threeSecond
-        playThreeSecondSound();
-    } else if (type === 'intervalStart' || type === 'restStart' || immediate) {
-        // Direkte Wiedergabe für intervalStart, restStart und immediate
+    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart') {
+        // Wiedergabe über Audio-Pool
+        playPooledSound(type);
+    } else if (immediate) {
+        // Direkte Wiedergabe für andere Sounds
         await playAudio(type, 0);
     } else {
         // In Warteschlange für andere Sounds (z.B. halfway, lastRound)
@@ -476,40 +513,6 @@ async function playSound(type, immediate = false) {
         if (soundQueue.length === 1) {
             playNextSound();
         }
-    }
-}
-
-// Funktion zum Abspielen des threeSecond-Sounds mit AudioBuffer
-function playThreeSecondSound() {
-    if (!audioBuffers.threeSecond || !window.audioContext) {
-        console.warn('AudioBuffer oder AudioContext nicht verfügbar für threeSecond');
-        playAudio('threeSecond', 0); // Fallback auf HTMLAudioElement
-        return;
-    }
-
-    const startTime = performance.now();
-    const poolItem = audioPlayers.threeSecondPool.find(item => item.available);
-    if (!poolItem) {
-        console.warn('Kein verfügbarer Audio-Pool für threeSecond');
-        return;
-    }
-
-    try {
-        poolItem.available = false;
-        poolItem.source = window.audioContext.createBufferSource();
-        poolItem.source.buffer = audioBuffers.threeSecond;
-        poolItem.source.connect(window.mainGainNode);
-        poolItem.source.addEventListener('ended', () => {
-            poolItem.available = true;
-            console.log('threeSecond Audio-Pool freigegeben');
-        }, { once: true });
-        poolItem.source.start(0);
-        const endTime = performance.now();
-        console.log(`threeSecond abgespielt, Latenz: ${endTime - startTime}ms`);
-    } catch (error) {
-        console.error(`Fehler beim Abspielen von threeSecond mit AudioBuffer:`, error);
-        poolItem.available = true;
-        playAudio('threeSecond', 0); // Fallback auf HTMLAudioElement
     }
 }
 
@@ -666,7 +669,7 @@ function startTimer() {
         halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
         const type = timerIntervalsData[currentIntervalIndex].type;
         console.log(`Starte Timer, Intervalltyp: ${type}`);
-        playSound(type === 'interval' ? 'intervalStart' : 'restStart', true);
+        playSound(type === 'interval' ? 'intervalStart' : 'restStart');
     } else if (isTimerPaused) {
         halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
     }
@@ -692,7 +695,7 @@ function startTimer() {
 
         // 5-Sekunden-Sound jede Sekunde in den letzten 5 Sekunden
         if (currentIntervalTimeRemaining <= 3 && currentIntervalTimeRemaining > 0) {
-            playSound('threeSecond', true);
+            playSound('threeSecond');
             updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type, true);
         } else {
             updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
@@ -724,7 +727,7 @@ function startTimer() {
 
             const type = timerIntervalsData[currentIntervalIndex].type;
             console.log(`Wechsel zu Intervalltyp: ${type}, Index: ${currentIntervalIndex}`);
-            playSound(type === 'interval' ? 'intervalStart' : 'restStart', true);
+            playSound(type === 'interval' ? 'intervalStart' : 'restStart');
 
             updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
             highlightCurrentInterval();
