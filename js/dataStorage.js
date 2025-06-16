@@ -8,7 +8,8 @@ const defaultGlobalSignals = {
     intervalStart: 'signal-horn',
     restStart: 'signal-longbeep',
     halfway: 'signal-gong',
-    threeSecond: 'signal-beep'
+    threeSecond: 'signal-beep',
+    lastRound: 'signal-applause'
 };
 
 // Standard-Signale

@@ -35,7 +35,7 @@
             margin: 0;
             padding: 0;
             background-color: #01161E;
-            font-family: 'Karla', sans-serif;
+            font-family: 'Karla', 'sans-serif';
             overscroll-behavior: none;
             scroll-padding-top: 4rem;
             scroll-behavior: smooth;
@@ -86,19 +86,23 @@
     <div class="p-4">
         <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=intervalStart'">
             <span>Interval Start</span>
-            <span id="interval-start-signal">Bell</span>
+            <span id="interval-start-signal">Horn</span>
         </div>
         <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=restStart'">
             <span>Rest Start</span>
-            <span id="rest-start-signal">Chime</span>
+            <span id="rest-start-signal">Bell</span>
         </div>
         <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=halfway'">
             <span>Halfway Signal</span>
-            <span id="halfway-signal">Beep</span>
+            <span id="halfway-signal">Gong</span>
         </div>
         <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=threeSecond'">
             <span>3 Second Signal</span>
-            <span id="three-second-signal">Applause</span>
+            <span id="three-second-signal">Beep</span>
+        </div>
+        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=lastRound'">
+            <span>Last Round</span>
+            <span id="last-round-signal">Applause</span>
         </div>
     </div>
 
@@ -111,7 +115,8 @@
                 'intervalStart': document.getElementById('interval-start-signal'),
                 'restStart': document.getElementById('rest-start-signal'),
                 'halfway': document.getElementById('halfway-signal'),
-                'threeSecond': document.getElementById('three-second-signal')
+                'threeSecond': document.getElementById('three-second-signal'),
+                'lastRound': document.getElementById('last-round-signal')
             };
 
             Object.keys(signalElements).forEach(type => {
