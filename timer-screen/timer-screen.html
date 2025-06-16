@@ -533,10 +533,6 @@
         // Funktion zum Abspielen des nächsten Sounds in der Warteschlange
         async function playNextSound(retryCount = 0) {
             if (soundQueue.length === 0) {
-                // Zeige Completion-Dialog nach lastRound
-                if (soundQueue[0] === 'lastRound') {
-                    completionDialog.classList.add('active');
-                }
                 return;
             }
 
@@ -736,6 +732,7 @@
                             resetTimer();
                             updateBackgroundAndCircleColor('initial');
                             console.log('Timer beendet!');
+                            completionDialog.classList.add('active');
                             return;
                         }
                     }
@@ -759,6 +756,7 @@
                     resetTimer();
                     updateBackgroundAndCircleColor('initial');
                     console.log('Gesamtzeit abgelaufen!');
+                    completionDialog.classList.add('active');
                 }
             }, 1000);
         }
