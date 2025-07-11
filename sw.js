@@ -1,6 +1,8 @@
+// v2: Timer-Screen überarbeitet
+
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open('timer-audio-cache-v1').then(cache => {
+        caches.open('timer-audio-cache-v2').then(cache => {
             const filesToCache = [
                 '/Timer-App/assets/sounds/bell.mp3',
                 '/Timer-App/assets/sounds/horn.mp3',
@@ -9,7 +11,8 @@ self.addEventListener('install', event => {
                 '/Timer-App/assets/sounds/chime.mp3',
                 '/Timer-App/assets/sounds/gong.mp3',
                 '/Timer-App/assets/sounds/whoosh.mp3',
-                '/Timer-App/assets/sounds/longbeep.mp3'
+                '/Timer-App/assets/sounds/longbeep.mp3',
+                '/Timer-App/timer-screen/timer-screen.html'
             ];
             return Promise.all(
                 filesToCache.map(file => 
@@ -37,5 +40,17 @@ self.addEventListener('fetch', event => {
         caches.match(event.request).then(response => {
             return response || fetch(event.request);
         })
+    );
+});
+
+// Cleanup alter Caches
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(keys => 
+            Promise.all(
+                keys.filter(key => key !== 'timer-audio-cache-v2')
+                    .map(key => caches.delete(key))
+            )
+        )
     );
 });
