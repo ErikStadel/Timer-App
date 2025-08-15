@@ -295,7 +295,26 @@
         </div>
       </div>
     </div>
-  </div>
+    <div class="signals-button" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background-color: white; margin-top: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <span style="flex-grow: 1; text-align: center;">Signals</span>
+        <span id="signals-status" style="padding-right: 15px;">default</span>
+    </div>
+</div>
+
+<script>
+    const signalsButton = document.querySelector('.signals-button');
+    signalsButton.addEventListener('click', () => {
+        window.location.href = 'interval-signals.html';
+    });
+
+    window.addEventListener('load', () => {
+        const savedSignals = JSON.parse(localStorage.getItem('intervalSignals'));
+        if (savedSignals) {
+            document.getElementById('signals-status').textContent = 'modified';
+        }
+    });
+</script>
+
 
   <script>
     const wheels = document.querySelectorAll('.wheel');
