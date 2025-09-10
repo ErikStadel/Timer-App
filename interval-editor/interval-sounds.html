@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -30,7 +31,8 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
     <style>
-        html, body {
+        html,
+        body {
             height: 100%;
             margin: 0;
             padding: 0;
@@ -40,6 +42,7 @@
             scroll-padding-top: 4rem;
             scroll-behavior: smooth;
         }
+
         header {
             position: sticky;
             top: 0;
@@ -48,6 +51,7 @@
             background-color: #01161E;
             transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
         }
+
         header::before {
             content: "";
             position: absolute;
@@ -58,10 +62,12 @@
             background-color: #01161E;
             z-index: -1;
         }
+
         header.scrolled {
             background-color: rgba(1, 22, 30, 0.7);
             backdrop-filter: blur(6px);
         }
+
         .signal-item {
             background-color: rgba(255, 255, 255, 0.08);
             padding: 0.75rem 1rem;
@@ -70,11 +76,12 @@
             font-size: 1.1rem;
             cursor: pointer;
         }
+
         .signal-item.selected {
             background-color: #83c5be;
             color: #01161E;
         }
-        
+
         /* Neue Styles für Select-Boxen */
         .sound-select {
             width: 100%;
@@ -86,24 +93,24 @@
             font-size: 1rem;
             margin-bottom: 1.5rem;
         }
-        
+
         .sound-select:focus {
             outline: none;
             border-color: #83c5be;
             box-shadow: 0 0 0 2px rgba(131, 197, 190, 0.3);
         }
-        
+
         .sound-group {
             margin-bottom: 2rem;
         }
-        
+
         .sound-group-label {
             display: block;
             margin-bottom: 0.5rem;
             color: #83c5be;
             font-weight: 600;
         }
-        
+
         /* Style für die "Global" Option */
         .global-default-option {
             font-style: italic;
@@ -111,10 +118,12 @@
         }
     </style>
 </head>
+
 <body class="text-light">
     <header id="header" class="text-light shadow-md">
         <div class="w-full flex justify-between items-center">
-            <a href="../interval-editor/interval-editor.html" id="back-button" class="text-accent font-semibold hover:underline">Back</a>
+            <a href="../interval-editor/interval-editor.html" id="back-button"
+                class="text-accent font-semibold hover:underline">Back</a>
             <h1 class="text-xl font-bold text-accent tracking-wide">Interval Sounds</h1>
             <button id="save-button" class="text-accent font-semibold hover:underline">Save</button>
         </div>
@@ -122,7 +131,7 @@
 
     <div class="p-4">
         <h2 class="text-accent font-semibold text-lg mb-6">Customize Sounds for this Interval</h2>
-        
+
         <div id="sound-controls">
             <!-- Sound-Auswahl wird hier per JavaScript eingefügt -->
         </div>
@@ -197,24 +206,24 @@
 
             // Erstelle die Sound-Auswahl-Elemente
             const soundControlsContainer = document.getElementById('sound-controls');
-            
+
             // Für jeden Sound-Typ eine Select-Box erstellen
             SOUND_TYPES.forEach(soundType => {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'sound-group';
-                
+
                 const label = document.createElement('label');
                 label.className = 'sound-group-label';
                 label.textContent = soundType.name;
                 label.htmlFor = `select-${soundType.id}`;
-                
+
                 const select = document.createElement('select');
                 select.className = 'sound-select';
                 select.id = `select-${soundType.id}`;
-                
+
                 // 1. Prüfe auf individuellen Wert
                 const individualSignalId = interval.signals[soundType.id];
-                
+
                 // 2. Bestimme den anzuzeigenden Wert
                 let displayValue;
                 if (individualSignalId !== undefined && individualSignalId !== null) {
@@ -224,11 +233,11 @@
                     // Kein individueller Wert -> "Global" anzeigen
                     displayValue = '__GLOBAL__';
                 }
-                
+
                 // 3. Globalen Standard-Sound ermitteln für die "Global" Option
                 const globalSignalId = globalSignals[soundType.id] || '';
                 const globalSignalName = getSignalNameById(globalSignalId);
-                
+
                 // 4. Erstelle eine spezielle "Global" Option
                 const globalOption = document.createElement('option');
                 globalOption.value = '__GLOBAL__';
@@ -238,7 +247,7 @@
                     globalOption.selected = true; // Wenn kein individueller Wert gesetzt ist, wähle "Global"
                 }
                 select.appendChild(globalOption);
-                
+
                 // 5. Optionen hinzufügen
                 allSignals.forEach(signal => {
                     const option = document.createElement('option');
@@ -249,9 +258,9 @@
                     }
                     select.appendChild(option);
                 });
-                
+
                 // Event-Listener für Vorschau
-                select.addEventListener('change', function() {
+                select.addEventListener('change', function () {
                     let selectedSignal;
                     if (this.value === '__GLOBAL__') {
                         // Wenn "Global" ausgewählt ist, spiele den globalen Sound ab
@@ -261,7 +270,7 @@
                         // Ansonsten spiele den ausgewählten individuellen Sound ab
                         selectedSignal = allSignals.find(s => s.id === this.value);
                     }
-                    
+
                     if (selectedSignal && selectedSignal.filePath) {
                         if (window.audioContext.state === 'suspended') {
                             window.audioContext.resume().then(() => {
@@ -272,7 +281,7 @@
                         }
                     }
                 });
-                
+
                 groupDiv.appendChild(label);
                 groupDiv.appendChild(select);
                 soundControlsContainer.appendChild(groupDiv);
@@ -280,12 +289,24 @@
 
             // Sound abspielen
             function playSignal(filePath) {
-                const audio = new Audio(`../../${filePath}`);
+                // Bestimme die korrekte Basis-URL basierend auf dem aktuellen Pfad
+                const currentPath = window.location.pathname;
+                let basePath;
+
+                if (currentPath.includes('Timer-App')) {
+                    // Wir sind auf GitHub Pages
+                    basePath = window.location.origin + '/Timer-App/';
+                } else {
+                    // Lokale Entwicklung - verwende relativen Pfad
+                    basePath = '../../';
+                }
+
+                const audio = new Audio(`${basePath}${filePath}`);
                 try {
                     const source = window.audioContext.createMediaElementSource(audio);
                     source.connect(window.mainGainNode);
                     audio.play().then(() => {
-                        console.log(`Spiele Signal: ${filePath}`);
+                        console.log(`Spiele Signal: ${basePath}${filePath}`);
                     }).catch(e => console.error('Fehler beim Abspielen:', e));
                 } catch (e) {
                     console.error('Fehler bei createMediaElementSource:', e);
@@ -306,12 +327,12 @@
                         if (!timers[timerIndex].intervals[intervalIndex].signals) {
                             timers[timerIndex].intervals[intervalIndex].signals = {};
                         }
-                        
+
                         // Für jeden Sound-Typ den ausgewählten Wert speichern
                         SOUND_TYPES.forEach(soundType => {
                             const selectElement = document.getElementById(`select-${soundType.id}`);
                             const selectedValue = selectElement.value;
-                            
+
                             if (selectedValue === '__GLOBAL__') {
                                 // Wenn "Global" ausgewählt ist, lösche den Eintrag
                                 // Dies sorgt dafür, dass der globale Standard verwendet wird
@@ -320,14 +341,16 @@
                                 // Speichere den individuellen Wert (auch wenn er "None" ist)
                                 timers[timerIndex].intervals[intervalIndex].signals[soundType.id] = selectedValue;
                             }
+                            console.log('Speichere Sounds für Intervall:', intervalId);
+                            console.log('Aktuelles signals-Objekt:', timers[timerIndex].intervals[intervalIndex].signals);
                         });
-                        
+
                         // Speichern
                         saveTimers(timers);
                         console.log('Alle Sounds gespeichert für Intervall:', intervalId);
                     }
                 }
-                
+
                 // Zurück zum Intervall-Editor
                 window.location.href = `../interval-editor/interval-editor.html?timerId=${timerId}&intervalId=${intervalId}`;
             });
@@ -344,4 +367,5 @@
         });
     </script>
 </body>
+
 </html>
