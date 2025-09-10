@@ -103,6 +103,12 @@
             color: #83c5be;
             font-weight: 600;
         }
+        
+        /* Style für die "Global" Option */
+        .global-default-option {
+            font-style: italic;
+            color: #AEC3B0;
+        }
     </style>
 </head>
 <body class="text-light">
@@ -158,6 +164,7 @@
 
             // Daten laden
             const signals = loadSignals();
+            const globalSignals = loadGlobalSignals(); // Lade die globalen Einstellungen
             const noneOption = { id: '', name: 'None' };
             const allSignals = [noneOption, ...signals];
 
@@ -198,32 +205,54 @@
                 select.className = 'sound-select';
                 select.id = `select-${soundType.id}`;
                 
-                // Aktuell ausgewählten Sound ermitteln
-                const selectedSignalId = interval.signals[soundType.id] !== undefined 
-                    ? interval.signals[soundType.id] 
-                    : ''; // Globaler Standard wird nicht hier angezeigt, sondern im Timer-Screen verwendet
+                // Aktuell ausgewählten individuellen Sound ermitteln
+                const individualSignalId = interval.signals[soundType.id];
+                
+                // Globalen Standard-Sound ermitteln
+                const globalSignalId = globalSignals[soundType.id] || '';
+                const globalSignal = allSignals.find(s => s.id === globalSignalId);
+                const globalSignalName = globalSignal ? globalSignal.name : 'None';
+                
+                // Erstelle eine spezielle "Global" Option
+                const globalOption = document.createElement('option');
+                globalOption.value = '__GLOBAL__';
+                globalOption.textContent = `Global (${globalSignalName})`;
+                globalOption.className = 'global-default-option';
+                if (individualSignalId === undefined || individualSignalId === null) {
+                    globalOption.selected = true; // Wenn kein individueller Wert gesetzt ist, wähle "Global"
+                }
+                select.appendChild(globalOption);
                 
                 // Optionen hinzufügen
                 allSignals.forEach(signal => {
                     const option = document.createElement('option');
                     option.value = signal.id;
                     option.textContent = signal.name;
-                    if (signal.id === selectedSignalId) {
-                        option.selected = true;
+                    if (signal.id === individualSignalId) {
+                        option.selected = true; // Wähle den individuellen Wert, falls gesetzt
                     }
                     select.appendChild(option);
                 });
                 
                 // Event-Listener für Vorschau
                 select.addEventListener('change', function() {
-                    const selectedOption = allSignals.find(s => s.id === this.value);
-                    if (selectedOption && selectedOption.filePath) {
+                    let selectedSignal;
+                    if (this.value === '__GLOBAL__') {
+                        // Wenn "Global" ausgewählt ist, spiele den globalen Sound ab
+                        const globalId = globalSignals[soundType.id] || '';
+                        selectedSignal = allSignals.find(s => s.id === globalId);
+                    } else {
+                        // Ansonsten spiele den ausgewählten individuellen Sound ab
+                        selectedSignal = allSignals.find(s => s.id === this.value);
+                    }
+                    
+                    if (selectedSignal && selectedSignal.filePath) {
                         if (window.audioContext.state === 'suspended') {
                             window.audioContext.resume().then(() => {
-                                playSignal(selectedOption.filePath);
+                                playSignal(selectedSignal.filePath);
                             }).catch(e => console.error('Fehler beim Resumen:', e));
                         } else {
-                            playSignal(selectedOption.filePath);
+                            playSignal(selectedSignal.filePath);
                         }
                     }
                 });
@@ -267,8 +296,14 @@
                             const selectElement = document.getElementById(`select-${soundType.id}`);
                             const selectedValue = selectElement.value;
                             
-                            // Leerer String für "None" speichern
-                            timers[timerIndex].intervals[intervalIndex].signals[soundType.id] = selectedValue;
+                            if (selectedValue === '__GLOBAL__') {
+                                // Wenn "Global" ausgewählt ist, lösche den Eintrag oder setze ihn auf undefined
+                                // Dies sorgt dafür, dass der globale Standard verwendet wird
+                                delete timers[timerIndex].intervals[intervalIndex].signals[soundType.id];
+                            } else {
+                                // Speichere den individuellen Wert (auch wenn er "None" ist)
+                                timers[timerIndex].intervals[intervalIndex].signals[soundType.id] = selectedValue;
+                            }
                         });
                         
                         // Speichern
