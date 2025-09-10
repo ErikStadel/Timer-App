@@ -928,26 +928,7 @@
                 return;
             }
 
-            timerIntervalsData = [];
-            timer.intervals.forEach((interval, intervalIndex) => {
-                if (interval.durationInterval > 0) {
-                    timerIntervalsData.push({
-                        type: 'interval',
-                        name: interval.name,
-                        duration: interval.durationInterval,
-                        sourceIntervalId: interval.id // <-- Hinzufügen
-                    });
-                }
-                if (interval.durationRest > 0) {
-                    timerIntervalsData.push({
-                        type: 'rest',
-                        name: 'Rest',
-                        duration: interval.durationRest,
-                        sourceIntervalId: interval.id // <-- Hinzufügen
-                    });
-                }
-            });
-
+            
             const timers = loadTimers();
             const timer = timers.find(t => t.id === timerId);
             if (!timer) {
