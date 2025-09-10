@@ -432,45 +432,45 @@
       let currentIntervalId = intervalId || generateUniqueId();
 
       if (editSoundsButton) {
-    editSoundsButton.addEventListener('click', () => {
-        // Aktuellen Stand speichern
-        saveCurrentTabValues();
+        editSoundsButton.addEventListener('click', () => {
+          // Aktuellen Stand speichern
+          saveCurrentTabValues();
 
-        // Timer laden
-        const timers = loadTimers();
-        const timer = timers.find(t => t.id === timerId);
+          // Timer laden
+          const timers = loadTimers();
+          const timer = timers.find(t => t.id === timerId);
 
-        // Prüfen ob Intervall schon existiert
-        let interval = null;
-        if (intervalId) {
+          // Prüfen ob Intervall schon existiert
+          let interval = null;
+          if (intervalId) {
             interval = timer.intervals.find(i => i.id === intervalId);
-        } else {
+          } else {
             interval = timer.intervals.find(i => i.id === currentIntervalId);
-        }
+          }
 
-        const name = intervalNameInput.value.trim() || 'Intervall';
-        const updatedInterval = {
+          const name = intervalNameInput.value.trim() || 'Intervall';
+          const updatedInterval = {
             id: currentIntervalId,
             name,
             durationInterval: tempInterval.durationInterval,
             durationRest: tempInterval.durationRest,
             signals: interval?.signals || {} // WICHTIG: Behalte existierende signals bei
-        };
+          };
 
-        if (!interval) {
+          if (!interval) {
             // Neues Intervall speichern
             timer.intervals.push(updatedInterval);
             saveTimers(timers);
-        } else {
+          } else {
             // Existierendes aktualisieren - behalte signals bei
             const idx = timer.intervals.findIndex(i => i.id === currentIntervalId);
             timer.intervals[idx] = updatedInterval;
             saveTimers(timers);
-        }
+          }
 
-        window.location.href = `interval-sounds.html?timerId=${timerId}&intervalId=${currentIntervalId}`;
-    });
-}
+          window.location.href = `interval-sounds.html?timerId=${timerId}&intervalId=${currentIntervalId}`;
+        });
+      }
 
       if (!timerId) {
         console.error('Keine timerId in der URL gefunden');
@@ -564,17 +564,30 @@
         saveCurrentTabValues(); // Aktuellen Tab speichern
         const name = intervalNameInput.value.trim() || 'Intervall';
 
+        // Finde das bestehende Intervall um signals zu bewahren
+        const timers = loadTimers();
+        const timer = timers.find(t => t.id === timerId);
+        let existingInterval = null;
+
+        if (intervalId) {
+          existingInterval = timer.intervals.find(i => i.id === intervalId);
+        } else {
+          existingInterval = timer.intervals.find(i => i.id === currentIntervalId);
+        }
+
         // Neues Intervall erstellen oder bestehendes aktualisieren
         const updatedInterval = {
           id: currentIntervalId,
           name,
           durationInterval: tempInterval.durationInterval,
-          durationRest: tempInterval.durationRest
+          durationRest: tempInterval.durationRest,
+          // WICHTIG: Bestehende signals beibehalten!
+          signals: existingInterval?.signals || {}
         };
 
-        // Bestehenden signalId beibehalten, falls vorhanden
-        if (interval && interval.signalId) {
-          updatedInterval.signalId = interval.signalId;
+        // Bestehenden signalId beibehalten, falls vorhanden (für Rückwärtskompatibilität)
+        if (existingInterval && existingInterval.signalId) {
+          updatedInterval.signalId = existingInterval.signalId;
         }
 
         if (intervalId) {
@@ -586,6 +599,8 @@
 
         // Timer speichern
         saveTimers(timers);
+
+        console.log('Gespeichertes Intervall:', updatedInterval); // Debug-Log
 
         // Zurück zu timer-editor.html
         window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
