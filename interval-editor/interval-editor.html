@@ -286,13 +286,13 @@
         </div>
       </div>
     </div>
-<button id="editSoundsButton"
-    class="w-full bg-primary text-light rounded-xl py-2 font-semibold hover:bg-primary/80 transition-all mt-4">
-    Edit Sounds
-  </button>
+    <button id="editSoundsButton"
+      class="w-full bg-primary text-light rounded-xl py-2 font-semibold hover:bg-primary/80 transition-all mt-4">
+      Edit Sounds
+    </button>
   </div>
 
-  
+
 
   <script>
     const wheels = document.querySelectorAll('.wheel');
@@ -429,12 +429,13 @@
       const urlParams = new URLSearchParams(window.location.search);
       const timerId = urlParams.get('timerId');
       const intervalId = urlParams.get('intervalId');
+      let currentIntervalId = intervalId || generateUniqueId();
 
       if (editSoundsButton) {
-          editSoundsButton.addEventListener('click', () => {
-            window.location.href = `interval-sounds.html?timerId=${timerId}&intervalId=${intervalId}`;
-          });
-        }
+        editSoundsButton.addEventListener('click', () => {
+          window.location.href = `interval-sounds.html?timerId=${timerId}&intervalId=${currentIntervalId}`;
+        });
+      }
 
       if (!timerId) {
         console.error('Keine timerId in der URL gefunden');
@@ -442,7 +443,7 @@
         window.location.href = '../timer-editor/timer-editor.html';
         return;
       }
-      
+
 
       // Back-Link aktualisieren
       const backButton = document.querySelector('.back');
@@ -530,7 +531,7 @@
 
         // Neues Intervall erstellen oder bestehendes aktualisieren
         const updatedInterval = {
-          id: intervalId || generateUniqueId(),
+          id: currentIntervalId,
           name,
           durationInterval: tempInterval.durationInterval,
           durationRest: tempInterval.durationRest
