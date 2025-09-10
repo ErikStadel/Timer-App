@@ -188,6 +188,13 @@
                 interval.signals = {};
             }
 
+            // Hilfsfunktion, um den Namen eines Signals anhand seiner ID zu finden
+            function getSignalNameById(signalId) {
+                if (!signalId) return 'None';
+                const signal = allSignals.find(s => s.id === signalId);
+                return signal ? signal.name : 'Unknown';
+            }
+
             // Erstelle die Sound-Auswahl-Elemente
             const soundControlsContainer = document.getElementById('sound-controls');
             
@@ -205,31 +212,40 @@
                 select.className = 'sound-select';
                 select.id = `select-${soundType.id}`;
                 
-                // Aktuell ausgewählten individuellen Sound ermitteln
+                // 1. Prüfe auf individuellen Wert
                 const individualSignalId = interval.signals[soundType.id];
                 
-                // Globalen Standard-Sound ermitteln
-                const globalSignalId = globalSignals[soundType.id] || '';
-                const globalSignal = allSignals.find(s => s.id === globalSignalId);
-                const globalSignalName = globalSignal ? globalSignal.name : 'None';
+                // 2. Bestimme den anzuzeigenden Wert
+                let displayValue;
+                if (individualSignalId !== undefined && individualSignalId !== null) {
+                    // Es gibt einen individuellen Wert -> diesen anzeigen
+                    displayValue = individualSignalId;
+                } else {
+                    // Kein individueller Wert -> "Global" anzeigen
+                    displayValue = '__GLOBAL__';
+                }
                 
-                // Erstelle eine spezielle "Global" Option
+                // 3. Globalen Standard-Sound ermitteln für die "Global" Option
+                const globalSignalId = globalSignals[soundType.id] || '';
+                const globalSignalName = getSignalNameById(globalSignalId);
+                
+                // 4. Erstelle eine spezielle "Global" Option
                 const globalOption = document.createElement('option');
                 globalOption.value = '__GLOBAL__';
                 globalOption.textContent = `Global (${globalSignalName})`;
                 globalOption.className = 'global-default-option';
-                if (individualSignalId === undefined || individualSignalId === null) {
+                if (displayValue === '__GLOBAL__') {
                     globalOption.selected = true; // Wenn kein individueller Wert gesetzt ist, wähle "Global"
                 }
                 select.appendChild(globalOption);
                 
-                // Optionen hinzufügen
+                // 5. Optionen hinzufügen
                 allSignals.forEach(signal => {
                     const option = document.createElement('option');
                     option.value = signal.id;
                     option.textContent = signal.name;
-                    if (signal.id === individualSignalId) {
-                        option.selected = true; // Wähle den individuellen Wert, falls gesetzt
+                    if (displayValue === signal.id) {
+                        option.selected = true; // Wähle den anzuzeigenden Wert (individuell oder global)
                     }
                     select.appendChild(option);
                 });
@@ -297,7 +313,7 @@
                             const selectedValue = selectElement.value;
                             
                             if (selectedValue === '__GLOBAL__') {
-                                // Wenn "Global" ausgewählt ist, lösche den Eintrag oder setze ihn auf undefined
+                                // Wenn "Global" ausgewählt ist, lösche den Eintrag
                                 // Dies sorgt dafür, dass der globale Standard verwendet wird
                                 delete timers[timerIndex].intervals[intervalIndex].signals[soundType.id];
                             } else {
