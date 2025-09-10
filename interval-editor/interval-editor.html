@@ -286,12 +286,13 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <button id="editSoundsButton"
+<button id="editSoundsButton"
     class="w-full bg-primary text-light rounded-xl py-2 font-semibold hover:bg-primary/80 transition-all mt-4">
     Edit Sounds
   </button>
+  </div>
+
+  
 
   <script>
     const wheels = document.querySelectorAll('.wheel');
@@ -545,7 +546,7 @@
 
         if (editSoundsButton) {
           editSoundsButton.addEventListener('click', () => {
-            window.location.href = `../interval-sounds/interval-sounds.html?timerId=${currentTimerId}&intervalId=${intervalId}`;
+            window.location.href = `./interval-sounds.html?timerId=${currentTimerId}&intervalId=${intervalId}`;
           });
         }
 
