@@ -430,12 +430,19 @@
       const timerId = urlParams.get('timerId');
       const intervalId = urlParams.get('intervalId');
 
+      if (editSoundsButton) {
+          editSoundsButton.addEventListener('click', () => {
+            window.location.href = `interval-sounds.html?timerId=${currentTimerId}&intervalId=${intervalId}`;
+          });
+        }
+
       if (!timerId) {
         console.error('Keine timerId in der URL gefunden');
         alert('Timer-ID fehlt. Bitte erneut versuchen.');
         window.location.href = '../timer-editor/timer-editor.html';
         return;
       }
+      
 
       // Back-Link aktualisieren
       const backButton = document.querySelector('.back');
@@ -543,12 +550,6 @@
 
         // Timer speichern
         saveTimers(timers);
-
-        if (editSoundsButton) {
-          editSoundsButton.addEventListener('click', () => {
-            window.location.href = `interval-sounds.html?timerId=${currentTimerId}&intervalId=${intervalId}`;
-          });
-        }
 
         // Zurück zu timer-editor.html
         window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
