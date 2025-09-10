@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8" />
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Timer Screen</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,12 +30,10 @@
             },
         };
     </script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-        rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
     <style>
-        html, body {
+        html,
+        body {
             height: 100%;
             overflow: hidden;
             font-family: 'Karla', sans-serif;
@@ -118,9 +114,11 @@
             -ms-overflow-style: none;
             margin-bottom: 1rem;
         }
+
         .interval-list-container::-webkit-scrollbar {
             display: none;
         }
+
         .interval-list-container {
             touch-action: pan-y;
         }
@@ -183,17 +181,40 @@
             color: #EFF6E0;
         }
 
-        .bg-interval { background-color: #fd5c34; }
-        .bg-rest { background-color: #629471; }
-        .bg-warning { background-color: #fc814a; }
-        .bg-initial { background-color: #124559; }
+        .bg-interval {
+            background-color: #fd5c34;
+        }
 
-        .circle-interval { background-color: #fd5c34; }
-        .circle-rest { background-color: #629471; }
-        .circle-warning { background-color: #fc814a; }
-        .circle-initial { background-color: #598392; }
+        .bg-rest {
+            background-color: #629471;
+        }
 
-        .confirmation-dialog-overlay, .completion-dialog-overlay {
+        .bg-warning {
+            background-color: #fc814a;
+        }
+
+        .bg-initial {
+            background-color: #124559;
+        }
+
+        .circle-interval {
+            background-color: #fd5c34;
+        }
+
+        .circle-rest {
+            background-color: #629471;
+        }
+
+        .circle-warning {
+            background-color: #fc814a;
+        }
+
+        .circle-initial {
+            background-color: #598392;
+        }
+
+        .confirmation-dialog-overlay,
+        .completion-dialog-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -210,12 +231,14 @@
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        .confirmation-dialog-overlay.active, .completion-dialog-overlay.active {
+        .confirmation-dialog-overlay.active,
+        .completion-dialog-overlay.active {
             opacity: 1;
             visibility: visible;
         }
 
-        .confirmation-dialog, .completion-dialog {
+        .confirmation-dialog,
+        .completion-dialog {
             background-color: #124559;
             padding: 2rem;
             border-radius: 1rem;
@@ -228,25 +251,28 @@
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        .confirmation-dialog-overlay.active .confirmation-dialog, 
+        .confirmation-dialog-overlay.active .confirmation-dialog,
         .completion-dialog-overlay.active .completion-dialog {
             transform: translateY(0);
             opacity: 1;
         }
 
-        .confirmation-dialog p, .completion-dialog p {
+        .confirmation-dialog p,
+        .completion-dialog p {
             margin-bottom: 1.5rem;
             font-size: 1.1rem;
             font-weight: 600;
         }
 
-        .confirmation-dialog-buttons, .completion-dialog-buttons {
+        .confirmation-dialog-buttons,
+        .completion-dialog-buttons {
             display: flex;
             justify-content: space-around;
             gap: 1rem;
         }
 
-        .confirmation-dialog-buttons button, .completion-dialog-buttons button {
+        .confirmation-dialog-buttons button,
+        .completion-dialog-buttons button {
             flex: 1;
             padding: 0.75rem;
             border-radius: 0.5rem;
@@ -256,12 +282,14 @@
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
 
-        .btn-confirm, .btn-restart {
+        .btn-confirm,
+        .btn-restart {
             background-color: #fc814a;
             color: #01161E;
         }
 
-        .btn-cancel, .btn-end-dialog {
+        .btn-cancel,
+        .btn-end-dialog {
             background-color: #598392;
             color: #EFF6E0;
         }
@@ -373,6 +401,27 @@
                 console.error(`Fehler beim Laden der Audiodatei ${filePath}:`, error);
                 return null;
             }
+        }
+
+        function getCurrentSignalId(signalType, intervalIndex) {
+            // 1. Aktuelles flaches Intervall aus der abgeleiteten Liste
+            const currentFlatInterval = timerIntervalsData[intervalIndex];
+
+            // 2. ID des ursprünglichen Intervalls
+            const sourceIntervalId = currentFlatInterval.sourceIntervalId;
+
+            if (sourceIntervalId) {
+                // 3. Ursprüngliches Intervall-Objekt finden
+                const sourceInterval = timer.intervals.find(i => i.id === sourceIntervalId);
+
+                // 4. Prüfen, ob individueller Sound gesetzt ist
+                if (sourceInterval && sourceInterval.signals && sourceInterval.signals[signalType]) {
+                    return sourceInterval.signals[signalType]; // Individueller Sound
+                }
+            }
+
+            // 5. Fallback auf globalen Sound
+            return globalSignals[signalType] || '';
         }
 
         // Initialisierung des AudioContext und der Audio-Player
@@ -682,10 +731,14 @@
                 currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
                 halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
                 const type = timerIntervalsData[currentIntervalIndex].type;
-                console.log(`Starte Timer, Intervalltyp: ${type}`);
-                playSound(type === 'interval' ? 'intervalStart' : 'restStart');
-            } else if (isTimerPaused) {
-                halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
+                const signalType = type === 'interval' ? 'intervalStart' : 'restStart';
+                const signalId = getCurrentSignalId(signalType, currentIntervalIndex);
+
+                if (signalId) {
+                    playSoundById(signalId);
+                } else {
+                    playSound(type === 'interval' ? 'intervalStart' : 'restStart');
+                }
             }
 
             isTimerRunning = true;
@@ -702,7 +755,7 @@
                 currentIntervalTimeRemaining--;
                 totalTimeRemaining--;
 
-                if (timerIntervalsData[currentIntervalIndex].type === 'interval' && 
+                if (timerIntervalsData[currentIntervalIndex].type === 'interval' &&
                     currentIntervalTimeRemaining === halfwayPoint) {
                     playSound('halfway');
                 }
@@ -741,8 +794,14 @@
                     halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
 
                     const type = timerIntervalsData[currentIntervalIndex].type;
-                    console.log(`Wechsel zu Intervalltyp: ${type}, Index: ${currentIntervalIndex}`);
-                    playSound(type === 'interval' ? 'intervalStart' : 'restStart');
+                    const signalType = type === 'interval' ? 'intervalStart' : 'restStart';
+                    const signalId = getCurrentSignalId(signalType, currentIntervalIndex);
+
+                    if (signalId) {
+                        playSoundById(signalId);
+                    } else {
+                        playSound(type === 'interval' ? 'intervalStart' : 'restStart');
+                    }
 
                     updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
                     highlightCurrentInterval();
@@ -759,6 +818,23 @@
                     completionDialog.classList.add('active');
                 }
             }, 1000);
+        }
+
+        function playSoundById(signalId) {
+            if (!signalId || signalId === '') {
+                console.log('Kein Sound ausgewählt');
+                return;
+            }
+
+            const signals = loadSignals();
+            const signal = signals.find(s => s.id === signalId);
+
+            if (!signal || !signal.filePath) {
+                console.warn(`Signal nicht gefunden oder kein Dateipfad: ${signalId}`);
+                return;
+            }
+
+            playAudio(signal.filePath, 0);
         }
 
         function pauseTimer() {
@@ -852,6 +928,26 @@
                 return;
             }
 
+            timerIntervalsData = [];
+            timer.intervals.forEach((interval, intervalIndex) => {
+                if (interval.durationInterval > 0) {
+                    timerIntervalsData.push({
+                        type: 'interval',
+                        name: interval.name,
+                        duration: interval.durationInterval,
+                        sourceIntervalId: interval.id // <-- Hinzufügen
+                    });
+                }
+                if (interval.durationRest > 0) {
+                    timerIntervalsData.push({
+                        type: 'rest',
+                        name: 'Rest',
+                        duration: interval.durationRest,
+                        sourceIntervalId: interval.id // <-- Hinzufügen
+                    });
+                }
+            });
+
             const timers = loadTimers();
             const timer = timers.find(t => t.id === timerId);
             if (!timer) {
@@ -917,4 +1013,5 @@
         }
     </script>
 </body>
+
 </html>

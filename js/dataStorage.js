@@ -60,7 +60,9 @@ function loadTimers() {
                     id: interval.id,
                     name: interval.name,
                     durationInterval: interval.durationInterval || 0,
-                    durationRest: interval.durationRest || 0
+                    durationRest: interval.durationRest || 0,
+                    // Hinzufügen des signals-Objekts falls nicht vorhanden
+                    signals: interval.signals || {}
                 }))
             }));
         }

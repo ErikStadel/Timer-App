@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Intervall Editor</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -32,10 +30,7 @@
       },
     };
   </script>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
   <style>
     .tab-btn {
       cursor: pointer;
@@ -152,13 +147,9 @@
 
   <div class="relative bg-background rounded-3xl p-8 w-full max-w-md shadow-2xl shadow-black/40 mt-16">
     <div class="flex justify-center items-center mb-6">
-      <input
-        type="text"
-        id="intervalNameInput"
+      <input type="text" id="intervalNameInput"
         class="bg-transparent text-2xl font-bold text-accent border-b border-accent focus:outline-none text-center w-full"
-        placeholder="Intervall"
-        onclick="this.select()"
-      />
+        placeholder="Intervall" onclick="this.select()" />
     </div>
 
     <div class="flex justify-center space-x-4 mb-6">
@@ -297,6 +288,11 @@
     </div>
   </div>
 
+  <button id="editSoundsButton"
+    class="w-full bg-primary text-light rounded-xl py-2 font-semibold hover:bg-primary/80 transition-all mt-4">
+    Edit Sounds
+  </button>
+
   <script>
     const wheels = document.querySelectorAll('.wheel');
     const intervalNameInput = document.getElementById('intervalNameInput');
@@ -305,93 +301,94 @@
     const contentInterval = document.getElementById('content-interval');
     const contentRest = document.getElementById('content-rest');
     const saveIntervalButton = document.getElementById('saveIntervalButton');
+    const editSoundsButton = document.getElementById('editSoundsButton');
 
     // Temporäres Intervall für Tabwechsel
     let tempInterval = { durationInterval: 0, durationRest: 0 };
 
     // --- Wheel-Funktionalität ---
     wheels.forEach((wheel) => {
-        setTimeout(() => updateWheel(wheel), 10);
-        wheel.addEventListener('scroll', () => updateWheel(wheel));
+      setTimeout(() => updateWheel(wheel), 10);
+      wheel.addEventListener('scroll', () => updateWheel(wheel));
     });
 
     function updateWheel(wheel) {
-        const items = wheel.getElementsByClassName('wheel-item');
-        clearTimeout(wheel.scrollTimeout);
+      const items = wheel.getElementsByClassName('wheel-item');
+      clearTimeout(wheel.scrollTimeout);
 
-        wheel.scrollTimeout = setTimeout(() => {
-            const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
-            let closestItem = null;
-            let minDistance = Infinity;
+      wheel.scrollTimeout = setTimeout(() => {
+        const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
+        let closestItem = null;
+        let minDistance = Infinity;
 
-            Array.from(items).forEach((item) => {
-                const rect = item.getBoundingClientRect();
-                const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
+        Array.from(items).forEach((item) => {
+          const rect = item.getBoundingClientRect();
+          const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
 
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestItem = item;
-                }
-                item.classList.remove('selected');
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestItem = item;
+          }
+          item.classList.remove('selected');
+        });
+
+        if (closestItem) {
+          closestItem.classList.add('selected');
+          const currentScrollTop = wheel.scrollTop;
+          const targetScrollTop = closestItem.offsetTop - wheel.offsetHeight / 2 + closestItem.offsetHeight / 2;
+          if (Math.abs(currentScrollTop - targetScrollTop) > 1) {
+            wheel.scrollTo({
+              top: targetScrollTop,
+              behavior: 'smooth'
             });
-
-            if (closestItem) {
-                closestItem.classList.add('selected');
-                const currentScrollTop = wheel.scrollTop;
-                const targetScrollTop = closestItem.offsetTop - wheel.offsetHeight / 2 + closestItem.offsetHeight / 2;
-                if (Math.abs(currentScrollTop - targetScrollTop) > 1) {
-                     wheel.scrollTo({
-                        top: targetScrollTop,
-                        behavior: 'smooth'
-                    });
-                }
-            }
-        }, 50);
+          }
+        }
+      }, 50);
     }
 
     function setWheelValue(wheelId, value) {
-        const wheel = document.getElementById(wheelId);
-        if (!wheel) return;
+      const wheel = document.getElementById(wheelId);
+      if (!wheel) return;
 
-        const items = Array.from(wheel.querySelectorAll('.wheel-item'));
-        const validValues = items.map(item => item.textContent);
-        let targetValue = value;
+      const items = Array.from(wheel.querySelectorAll('.wheel-item'));
+      const validValues = items.map(item => item.textContent);
+      let targetValue = value;
 
-        // Falls der Wert nicht in den validValues existiert, finde den nächstgelegenen
-        if (!validValues.includes(value)) {
-            const numericValue = parseInt(value, 10);
-            const numericValidValues = validValues.map(v => parseInt(v, 10));
-            const closest = numericValidValues.reduce((prev, curr) =>
-                Math.abs(curr - numericValue) < Math.abs(prev - numericValue) ? curr : prev
-            );
-            targetValue = closest.toString().padStart(2, '0');
-        }
+      // Falls der Wert nicht in den validValues existiert, finde den nächstgelegenen
+      if (!validValues.includes(value)) {
+        const numericValue = parseInt(value, 10);
+        const numericValidValues = validValues.map(v => parseInt(v, 10));
+        const closest = numericValidValues.reduce((prev, curr) =>
+          Math.abs(curr - numericValue) < Math.abs(prev - numericValue) ? curr : prev
+        );
+        targetValue = closest.toString().padStart(2, '0');
+      }
 
-        const itemToSelect = items.find(item => item.textContent === targetValue);
-        if (itemToSelect) {
-            wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
-            updateWheel(wheel);
-            console.log(`setWheelValue: ${wheelId} = ${targetValue}`); // Debugging
-        }
+      const itemToSelect = items.find(item => item.textContent === targetValue);
+      if (itemToSelect) {
+        wheel.scrollTop = itemToSelect.offsetTop - wheel.offsetHeight / 2 + itemToSelect.offsetHeight / 2;
+        updateWheel(wheel);
+        console.log(`setWheelValue: ${wheelId} = ${targetValue}`); // Debugging
+      }
     }
 
     // --- Tabwechsel-Speicherlogik ---
     function saveCurrentTabValues() {
-        if (contentInterval.classList.contains('active')) {
-            const intervalMinutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
-            const intervalSecondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
-            const intervalMinutes = parseInt(intervalMinutesElement ? intervalMinutesElement.textContent : 0);
-            const intervalSeconds = parseInt(intervalSecondsElement ? intervalSecondsElement.textContent : 0);
-            tempInterval.durationInterval = intervalMinutes * 60 + intervalSeconds;
-            console.log('Saved Interval:', tempInterval.durationInterval); // Debugging
-        } else if (contentRest.classList.contains('active')) {
-            const restMinutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
-            const restSecondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
-            const restMinutes = parseInt(restMinutesElement ? restMinutesElement.textContent : 0);
-            const restSeconds = parseInt(restSecondsElement ? restSecondsElement.textContent : 0);
-            tempInterval.durationRest = restMinutes * 60 + restSeconds;
-            console.log('Saved Rest:', tempInterval.durationRest); // Debugging
-        }
+      if (contentInterval.classList.contains('active')) {
+        const intervalMinutesElement = document.querySelector('#minutes-wheel .wheel-item.selected');
+        const intervalSecondsElement = document.querySelector('#seconds-wheel .wheel-item.selected');
+        const intervalMinutes = parseInt(intervalMinutesElement ? intervalMinutesElement.textContent : 0);
+        const intervalSeconds = parseInt(intervalSecondsElement ? intervalSecondsElement.textContent : 0);
+        tempInterval.durationInterval = intervalMinutes * 60 + intervalSeconds;
+        console.log('Saved Interval:', tempInterval.durationInterval); // Debugging
+      } else if (contentRest.classList.contains('active')) {
+        const restMinutesElement = document.querySelector('#minutes-wheel-rest .wheel-item.selected');
+        const restSecondsElement = document.querySelector('#seconds-wheel-rest .wheel-item.selected');
+        const restMinutes = parseInt(restMinutesElement ? restMinutesElement.textContent : 0);
+        const restSeconds = parseInt(restSecondsElement ? restSecondsElement.textContent : 0);
+        tempInterval.durationRest = restMinutes * 60 + restSeconds;
+        console.log('Saved Rest:', tempInterval.durationRest); // Debugging
+      }
     }
 
     // --- Tab-Funktionalität ---
@@ -406,7 +403,7 @@
       contentRest.classList.remove('active');
 
       setTimeout(() => {
-          document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
+        document.querySelectorAll('#content-interval .wheel').forEach(updateWheel);
       }, 0);
     });
 
@@ -421,135 +418,142 @@
       contentInterval.classList.remove('active');
 
       setTimeout(() => {
-          document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
+        document.querySelectorAll('#content-rest .wheel').forEach(updateWheel);
       }, 100); // Verzögerung für sichtbares Rendering
     });
 
     // --- Initialisierung und Datenlogik ---
     document.addEventListener('DOMContentLoaded', () => {
-        // URL-Parameter auslesen
-        const urlParams = new URLSearchParams(window.location.search);
-        const timerId = urlParams.get('timerId');
-        const intervalId = urlParams.get('intervalId');
+      // URL-Parameter auslesen
+      const urlParams = new URLSearchParams(window.location.search);
+      const timerId = urlParams.get('timerId');
+      const intervalId = urlParams.get('intervalId');
 
-        if (!timerId) {
-            console.error('Keine timerId in der URL gefunden');
-            alert('Timer-ID fehlt. Bitte erneut versuchen.');
-            window.location.href = '../timer-editor/timer-editor.html';
-            return;
+      if (!timerId) {
+        console.error('Keine timerId in der URL gefunden');
+        alert('Timer-ID fehlt. Bitte erneut versuchen.');
+        window.location.href = '../timer-editor/timer-editor.html';
+        return;
+      }
+
+      // Back-Link aktualisieren
+      const backButton = document.querySelector('.back');
+      if (backButton) {
+        backButton.onclick = () => window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
+      }
+
+      // Timer laden
+      const timers = loadTimers();
+      const timer = timers.find(t => t.id === timerId);
+      if (!timer) {
+        console.error('Timer nicht gefunden:', timerId);
+        alert('Timer nicht gefunden. Bitte versuchen Sie erneut.');
+        window.location.href = '../timer-editor/timer-editor.html';
+        return;
+      }
+
+      // Beide Tabs für Initialisierung sichtbar machen
+      contentInterval.classList.add('active');
+      contentRest.classList.add('active');
+
+      // Intervall laden
+      let interval = null;
+      if (intervalId) {
+        interval = timer.intervals.find(i => i.id === intervalId);
+        if (!interval) {
+          console.error('Intervall nicht gefunden:', intervalId);
+          alert('Intervall nicht gefunden.');
+          window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
+          return;
+        }
+        console.log('Geladenes Intervall:', interval); // Debugging
+        intervalNameInput.value = interval.name || 'Intervall';
+
+        // Setze durationInterval
+        let intervalMinutes = Math.floor(interval.durationInterval / 60);
+        let intervalSeconds = interval.durationInterval % 60;
+        intervalSeconds = Math.round(intervalSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
+        if (intervalSeconds >= 60) { // Korrigiere 60 Sekunden
+          intervalMinutes += Math.floor(intervalSeconds / 60);
+          intervalSeconds = intervalSeconds % 60;
+        }
+        console.log('intervalMinutes:', intervalMinutes, 'intervalSeconds:', intervalSeconds); // Debugging
+        setWheelValue('minutes-wheel', intervalMinutes.toString().padStart(2, '0'));
+        setWheelValue('seconds-wheel', intervalSeconds.toString().padStart(2, '0'));
+
+        // Setze durationRest
+        let restMinutes = Math.floor(interval.durationRest / 60);
+        let restSeconds = interval.durationRest % 60;
+        restSeconds = Math.round(restSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
+        if (restSeconds >= 60) {
+          restMinutes += Math.floor(restSeconds / 60);
+          restSeconds = restSeconds % 60;
+        }
+        console.log('restMinutes:', restMinutes, 'restSeconds:', restSeconds); // Debugging
+        setWheelValue('minutes-wheel-rest', restMinutes.toString().padStart(2, '0'));
+        setWheelValue('seconds-wheel-rest', restSeconds.toString().padStart(2, '0'));
+
+        // Initialisiere tempInterval mit geladenen Werten
+        tempInterval.durationInterval = interval.durationInterval;
+        tempInterval.durationRest = interval.durationRest;
+      } else {
+        // Standardwerte für neues Intervall
+        intervalNameInput.value = 'Intervall';
+        setWheelValue('minutes-wheel', '00');
+        setWheelValue('seconds-wheel', '00');
+        setWheelValue('minutes-wheel-rest', '00');
+        setWheelValue('seconds-wheel-rest', '00');
+        tempInterval = { durationInterval: 0, durationRest: 0 };
+      }
+
+      // Alle Wheels initialisieren
+      wheels.forEach((wheel) => {
+        updateWheel(wheel);
+      });
+
+      // Nach Initialisierung Rest-Tab ausblenden
+      contentRest.classList.remove('active');
+      tabInterval.click(); // Interval-Tab aktivieren
+
+      // Save-Button Logik
+      saveIntervalButton.addEventListener('click', () => {
+        saveCurrentTabValues(); // Aktuellen Tab speichern
+        const name = intervalNameInput.value.trim() || 'Intervall';
+
+        // Neues Intervall erstellen oder bestehendes aktualisieren
+        const updatedInterval = {
+          id: intervalId || generateUniqueId(),
+          name,
+          durationInterval: tempInterval.durationInterval,
+          durationRest: tempInterval.durationRest
+        };
+
+        // Bestehenden signalId beibehalten, falls vorhanden
+        if (interval && interval.signalId) {
+          updatedInterval.signalId = interval.signalId;
         }
 
-        // Back-Link aktualisieren
-        const backButton = document.querySelector('.back');
-        if (backButton) {
-            backButton.onclick = () => window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
-        }
-
-        // Timer laden
-        const timers = loadTimers();
-        const timer = timers.find(t => t.id === timerId);
-        if (!timer) {
-            console.error('Timer nicht gefunden:', timerId);
-            alert('Timer nicht gefunden. Bitte versuchen Sie erneut.');
-            window.location.href = '../timer-editor/timer-editor.html';
-            return;
-        }
-
-        // Beide Tabs für Initialisierung sichtbar machen
-        contentInterval.classList.add('active');
-        contentRest.classList.add('active');
-
-        // Intervall laden
-        let interval = null;
         if (intervalId) {
-            interval = timer.intervals.find(i => i.id === intervalId);
-            if (!interval) {
-                console.error('Intervall nicht gefunden:', intervalId);
-                alert('Intervall nicht gefunden.');
-                window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
-                return;
-            }
-            console.log('Geladenes Intervall:', interval); // Debugging
-            intervalNameInput.value = interval.name || 'Intervall';
-
-            // Setze durationInterval
-            let intervalMinutes = Math.floor(interval.durationInterval / 60);
-            let intervalSeconds = interval.durationInterval % 60;
-            intervalSeconds = Math.round(intervalSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
-            if (intervalSeconds >= 60) { // Korrigiere 60 Sekunden
-                intervalMinutes += Math.floor(intervalSeconds / 60);
-                intervalSeconds = intervalSeconds % 60;
-            }
-            console.log('intervalMinutes:', intervalMinutes, 'intervalSeconds:', intervalSeconds); // Debugging
-            setWheelValue('minutes-wheel', intervalMinutes.toString().padStart(2, '0'));
-            setWheelValue('seconds-wheel', intervalSeconds.toString().padStart(2, '0'));
-
-            // Setze durationRest
-            let restMinutes = Math.floor(interval.durationRest / 60);
-            let restSeconds = interval.durationRest % 60;
-            restSeconds = Math.round(restSeconds / 5) * 5; // Runde auf 00, 05, ..., 55
-            if (restSeconds >= 60) {
-                restMinutes += Math.floor(restSeconds / 60);
-                restSeconds = restSeconds % 60;
-            }
-            console.log('restMinutes:', restMinutes, 'restSeconds:', restSeconds); // Debugging
-            setWheelValue('minutes-wheel-rest', restMinutes.toString().padStart(2, '0'));
-            setWheelValue('seconds-wheel-rest', restSeconds.toString().padStart(2, '0'));
-
-            // Initialisiere tempInterval mit geladenen Werten
-            tempInterval.durationInterval = interval.durationInterval;
-            tempInterval.durationRest = interval.durationRest;
+          const index = timer.intervals.findIndex(i => i.id === intervalId);
+          timer.intervals[index] = updatedInterval;
         } else {
-            // Standardwerte für neues Intervall
-            intervalNameInput.value = 'Intervall';
-            setWheelValue('minutes-wheel', '00');
-            setWheelValue('seconds-wheel', '00');
-            setWheelValue('minutes-wheel-rest', '00');
-            setWheelValue('seconds-wheel-rest', '00');
-            tempInterval = { durationInterval: 0, durationRest: 0 };
+          timer.intervals.push(updatedInterval);
         }
 
-        // Alle Wheels initialisieren
-        wheels.forEach((wheel) => {
-            updateWheel(wheel);
-        });
+        // Timer speichern
+        saveTimers(timers);
 
-        // Nach Initialisierung Rest-Tab ausblenden
-        contentRest.classList.remove('active');
-        tabInterval.click(); // Interval-Tab aktivieren
+        if (editSoundsButton) {
+          editSoundsButton.addEventListener('click', () => {
+            window.location.href = `../interval-sounds/interval-sounds.html?timerId=${currentTimerId}&intervalId=${intervalId}`;
+          });
+        }
 
-        // Save-Button Logik
-        saveIntervalButton.addEventListener('click', () => {
-            saveCurrentTabValues(); // Aktuellen Tab speichern
-            const name = intervalNameInput.value.trim() || 'Intervall';
-
-            // Neues Intervall erstellen oder bestehendes aktualisieren
-            const updatedInterval = {
-                id: intervalId || generateUniqueId(),
-                name,
-                durationInterval: tempInterval.durationInterval,
-                durationRest: tempInterval.durationRest
-            };
-
-            // Bestehenden signalId beibehalten, falls vorhanden
-            if (interval && interval.signalId) {
-                updatedInterval.signalId = interval.signalId;
-            }
-
-            if (intervalId) {
-                const index = timer.intervals.findIndex(i => i.id === intervalId);
-                timer.intervals[index] = updatedInterval;
-            } else {
-                timer.intervals.push(updatedInterval);
-            }
-
-            // Timer speichern
-            saveTimers(timers);
-
-            // Zurück zu timer-editor.html
-            window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
-        });
+        // Zurück zu timer-editor.html
+        window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
+      });
     });
   </script>
 </body>
+
 </html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interval Sounds</title>
+    <script src="https://cdn.tailwindcss.com  "></script>
+    <script src="../../js/dataStorage.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#01161E',
+                        background: '#124559',
+                        primary: '#598392',
+                        secondary: '#AEC3B0',
+                        light: '#EFF6E0',
+                        accent: '#83c5be',
+                        rest: '#629471',
+                        interval: '#fd5c34',
+                        warning: '#fc814a',
+                    },
+                    fontFamily: {
+                        karla: ['Karla', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #01161E;
+            font-family: 'Karla', sans-serif;
+            overscroll-behavior: none;
+            scroll-padding-top: 4rem;
+            scroll-behavior: smooth;
+        }
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 1rem;
+            background-color: #01161E;
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+        }
+        header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
+        }
+        header.scrolled {
+            background-color: rgba(1, 22, 30, 0.7);
+            backdrop-filter: blur(6px);
+        }
+        .signal-item {
+            background-color: rgba(255, 255, 255, 0.08);
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        .signal-item.selected {
+            background-color: #83c5be;
+            color: #01161E;
+        }
+    </style>
+</head>
+<body class="text-light">
+    <header id="header" class="text-light shadow-md">
+        <div class="w-full flex justify-between items-center">
+            <a href="../interval-editor/interval-editor.html" id="back-button" class="text-accent font-semibold hover:underline">Back</a>
+            <h1 class="text-xl font-bold text-accent tracking-wide">Interval Sounds</h1>
+            <button id="save-button" class="text-accent font-semibold hover:underline">Save</button>
+        </div>
+    </header>
+
+    <div class="p-4">
+        <h2 class="text-accent font-semibold text-lg mb-4" id="signal-type-title">Select Sound</h2>
+        <div id="signal-list"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // URL-Parameter auslesen
+            const urlParams = new URLSearchParams(window.location.search);
+            const timerId = urlParams.get('timerId');
+            const intervalId = urlParams.get('intervalId');
+            const signalType = urlParams.get('signalType') || 'intervalStart'; // Standardmäßig intervalStart
+
+            if (!timerId || !intervalId) {
+                console.error('Keine timerId oder intervalId in der URL gefunden');
+                window.location.href = '../timer-editor/timer-editor.html';
+                return;
+            }
+
+            // Back-Link aktualisieren
+            const backButton = document.getElementById('back-button');
+            backButton.href = `../interval-editor/interval-editor.html?timerId=${timerId}&intervalId=${intervalId}`;
+
+            // Titel aktualisieren
+            const titleElement = document.getElementById('signal-type-title');
+            if (signalType === 'intervalStart') {
+                titleElement.textContent = 'Interval Start Sound';
+            } else if (signalType === 'restStart') {
+                titleElement.textContent = 'Rest Start Sound';
+            }
+
+            // Audio initialisieren
+            window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
+            window.mainGainNode = window.mainGainNode || window.audioContext.createGain();
+            window.mainGainNode.connect(window.audioContext.destination);
+
+            const volumeBoost = Number(loadVolumeBoost()) || 100;
+            const gainValue = 0.5 + (volumeBoost - 50) / 125;
+            window.mainGainNode.gain.value = Math.max(0, gainValue);
+
+            // Daten laden
+            const signals = loadSignals();
+            const noneOption = { id: '', name: 'None', filePath: '' };
+            const allSignals = [noneOption, ...signals];
+
+            let timers = loadTimers();
+            const timer = timers.find(t => t.id === timerId);
+            if (!timer) {
+                console.error('Timer nicht gefunden:', timerId);
+                window.location.href = '../timer-editor/timer-editor.html';
+                return;
+            }
+
+            const interval = timer.intervals.find(i => i.id === intervalId);
+            if (!interval) {
+                console.error('Intervall nicht gefunden:', intervalId);
+                window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
+                return;
+            }
+
+            // Aktuell ausgewählten Sound ermitteln
+            let selectedSignalId = interval.signals && interval.signals[signalType] !== undefined 
+                ? interval.signals[signalType] 
+                : ''; // Wenn nicht gesetzt, leer (None)
+
+            // Signalliste rendern
+            const signalList = document.getElementById('signal-list');
+            signalList.innerHTML = '';
+
+            allSignals.forEach(signal => {
+                const div = document.createElement('div');
+                div.classList.add('signal-item');
+                if (signal.id === selectedSignalId) {
+                    div.classList.add('selected');
+                }
+                div.textContent = signal.name;
+                div.dataset.signalId = signal.id;
+                
+                div.addEventListener('click', () => {
+                    signalList.querySelectorAll('.signal-item').forEach(item => item.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedSignalId = signal.id;
+                    
+                    // Sound-Vorschau
+                    if (signal.filePath) {
+                        if (window.audioContext.state === 'suspended') {
+                            window.audioContext.resume().then(() => {
+                                playSignal(signal.filePath);
+                            }).catch(e => console.error('Fehler beim Resumen:', e));
+                        } else {
+                            playSignal(signal.filePath);
+                        }
+                    }
+                });
+                
+                signalList.appendChild(div);
+            });
+
+            // Sound abspielen
+            function playSignal(filePath) {
+                const audio = new Audio(`../../${filePath}`);
+                try {
+                    const source = window.audioContext.createMediaElementSource(audio);
+                    source.connect(window.mainGainNode);
+                    audio.play().then(() => {
+                        console.log(`Spiele Signal: ${filePath}`);
+                    }).catch(e => console.error('Fehler beim Abspielen:', e));
+                } catch (e) {
+                    console.error('Fehler bei createMediaElementSource:', e);
+                    audio.volume = Math.min(1.0, (Number(loadVolumeBoost()) || 100) / 100);
+                    audio.play().catch(e => console.error('Fallback-Fehler:', e));
+                }
+            }
+
+            // Speichern
+            document.getElementById('save-button').addEventListener('click', () => {
+                // Timer aktualisieren
+                timers = loadTimers(); // Neu laden für Konsistenz
+                const timerIndex = timers.findIndex(t => t.id === timerId);
+                if (timerIndex !== -1) {
+                    const intervalIndex = timers[timerIndex].intervals.findIndex(i => i.id === intervalId);
+                    if (intervalIndex !== -1) {
+                        // signals-Objekt initialisieren falls nicht vorhanden
+                        if (!timers[timerIndex].intervals[intervalIndex].signals) {
+                            timers[timerIndex].intervals[intervalIndex].signals = {};
+                        }
+                        
+                        // Signal-ID setzen (leerer String für "None")
+                        timers[timerIndex].intervals[intervalIndex].signals[signalType] = selectedSignalId;
+                        
+                        // Speichern
+                        saveTimers(timers);
+                        console.log('Gespeichert:', { timerId, intervalId, signalType, selectedSignalId });
+                    }
+                }
+                
+                // Zurück zum Intervall-Editor
+                window.location.href = `../interval-editor/interval-editor.html?timerId=${timerId}&intervalId=${intervalId}`;
+            });
+
+            // Scroll-Listener für Header
+            const header = document.querySelector('header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 0) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
