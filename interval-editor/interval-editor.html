@@ -433,6 +433,43 @@
 
       if (editSoundsButton) {
         editSoundsButton.addEventListener('click', () => {
+          // Falls es ein neues Intervall ist (d.h. noch nicht gespeichert)
+          // dann vorab speichern!
+
+          // Aktuellen Stand speichern
+          saveCurrentTabValues(); // damit Dauer etc. stimmt
+
+          // Timer laden
+          const timers = loadTimers();
+          const timer = timers.find(t => t.id === timerId);
+
+          // Prüfen ob Intervall schon existiert
+          let interval = null;
+          if (intervalId) {
+            interval = timer.intervals.find(i => i.id === intervalId);
+          } else {
+            interval = timer.intervals.find(i => i.id === currentIntervalId);
+          }
+
+          const name = intervalNameInput.value.trim() || 'Intervall';
+          const updatedInterval = {
+            id: currentIntervalId,
+            name,
+            durationInterval: tempInterval.durationInterval,
+            durationRest: tempInterval.durationRest
+          };
+
+          if (!interval) {
+            // Neues Intervall speichern
+            timer.intervals.push(updatedInterval);
+            saveTimers(timers);
+          } else {
+            // Existierendes aktualisieren
+            const idx = timer.intervals.findIndex(i => i.id === currentIntervalId);
+            timer.intervals[idx] = updatedInterval;
+            saveTimers(timers);
+          }
+
           window.location.href = `interval-sounds.html?timerId=${timerId}&intervalId=${currentIntervalId}`;
         });
       }

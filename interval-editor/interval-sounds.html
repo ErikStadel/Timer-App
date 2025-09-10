@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Interval Sounds</title>
-    <script src="https://cdn.tailwindcss.com  "></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="../js/dataStorage.js"></script>
     <script>
         tailwind.config = {
@@ -74,6 +74,35 @@
             background-color: #83c5be;
             color: #01161E;
         }
+        
+        /* Neue Styles für Select-Boxen */
+        .sound-select {
+            width: 100%;
+            background-color: #124559;
+            color: #EFF6E0;
+            border: 1px solid rgba(239, 246, 224, 0.1);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .sound-select:focus {
+            outline: none;
+            border-color: #83c5be;
+            box-shadow: 0 0 0 2px rgba(131, 197, 190, 0.3);
+        }
+        
+        .sound-group {
+            margin-bottom: 2rem;
+        }
+        
+        .sound-group-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #83c5be;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="text-light">
@@ -86,17 +115,27 @@
     </header>
 
     <div class="p-4">
-        <h2 class="text-accent font-semibold text-lg mb-4" id="signal-type-title">Select Sound</h2>
-        <div id="signal-list"></div>
+        <h2 class="text-accent font-semibold text-lg mb-6">Customize Sounds for this Interval</h2>
+        
+        <div id="sound-controls">
+            <!-- Sound-Auswahl wird hier per JavaScript eingefügt -->
+        </div>
     </div>
 
     <script>
+        // Definiere die verfügbaren Sound-Typen mit lesbaren Namen
+        const SOUND_TYPES = [
+            { id: 'intervalStart', name: 'Interval Start' },
+            { id: 'restStart', name: 'Rest Start' },
+            { id: 'halfway', name: 'Halfway Signal' },
+            { id: 'threeSecond', name: '3 Second Signal' }
+        ];
+
         document.addEventListener('DOMContentLoaded', () => {
             // URL-Parameter auslesen
             const urlParams = new URLSearchParams(window.location.search);
             const timerId = urlParams.get('timerId');
             const intervalId = urlParams.get('intervalId');
-            const signalType = urlParams.get('signalType') || 'intervalStart'; // Standardmäßig intervalStart
 
             if (!timerId || !intervalId) {
                 console.error('Keine timerId oder intervalId in der URL gefunden');
@@ -107,14 +146,6 @@
             // Back-Link aktualisieren
             const backButton = document.getElementById('back-button');
             backButton.href = `../interval-editor/interval-editor.html?timerId=${timerId}&intervalId=${intervalId}`;
-
-            // Titel aktualisieren
-            const titleElement = document.getElementById('signal-type-title');
-            if (signalType === 'intervalStart') {
-                titleElement.textContent = 'Interval Start Sound';
-            } else if (signalType === 'restStart') {
-                titleElement.textContent = 'Rest Start Sound';
-            }
 
             // Audio initialisieren
             window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
@@ -127,7 +158,7 @@
 
             // Daten laden
             const signals = loadSignals();
-            const noneOption = { id: '', name: 'None', filePath: '' };
+            const noneOption = { id: '', name: 'None' };
             const allSignals = [noneOption, ...signals];
 
             let timers = loadTimers();
@@ -145,42 +176,61 @@
                 return;
             }
 
-            // Aktuell ausgewählten Sound ermitteln
-            let selectedSignalId = interval.signals && interval.signals[signalType] !== undefined 
-                ? interval.signals[signalType] 
-                : ''; // Wenn nicht gesetzt, leer (None)
+            // Stelle sicher, dass interval.signals existiert
+            if (!interval.signals) {
+                interval.signals = {};
+            }
 
-            // Signalliste rendern
-            const signalList = document.getElementById('signal-list');
-            signalList.innerHTML = '';
-
-            allSignals.forEach(signal => {
-                const div = document.createElement('div');
-                div.classList.add('signal-item');
-                if (signal.id === selectedSignalId) {
-                    div.classList.add('selected');
-                }
-                div.textContent = signal.name;
-                div.dataset.signalId = signal.id;
+            // Erstelle die Sound-Auswahl-Elemente
+            const soundControlsContainer = document.getElementById('sound-controls');
+            
+            // Für jeden Sound-Typ eine Select-Box erstellen
+            SOUND_TYPES.forEach(soundType => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'sound-group';
                 
-                div.addEventListener('click', () => {
-                    signalList.querySelectorAll('.signal-item').forEach(item => item.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedSignalId = signal.id;
-                    
-                    // Sound-Vorschau
-                    if (signal.filePath) {
+                const label = document.createElement('label');
+                label.className = 'sound-group-label';
+                label.textContent = soundType.name;
+                label.htmlFor = `select-${soundType.id}`;
+                
+                const select = document.createElement('select');
+                select.className = 'sound-select';
+                select.id = `select-${soundType.id}`;
+                
+                // Aktuell ausgewählten Sound ermitteln
+                const selectedSignalId = interval.signals[soundType.id] !== undefined 
+                    ? interval.signals[soundType.id] 
+                    : ''; // Globaler Standard wird nicht hier angezeigt, sondern im Timer-Screen verwendet
+                
+                // Optionen hinzufügen
+                allSignals.forEach(signal => {
+                    const option = document.createElement('option');
+                    option.value = signal.id;
+                    option.textContent = signal.name;
+                    if (signal.id === selectedSignalId) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+                
+                // Event-Listener für Vorschau
+                select.addEventListener('change', function() {
+                    const selectedOption = allSignals.find(s => s.id === this.value);
+                    if (selectedOption && selectedOption.filePath) {
                         if (window.audioContext.state === 'suspended') {
                             window.audioContext.resume().then(() => {
-                                playSignal(signal.filePath);
+                                playSignal(selectedOption.filePath);
                             }).catch(e => console.error('Fehler beim Resumen:', e));
                         } else {
-                            playSignal(signal.filePath);
+                            playSignal(selectedOption.filePath);
                         }
                     }
                 });
                 
-                signalList.appendChild(div);
+                groupDiv.appendChild(label);
+                groupDiv.appendChild(select);
+                soundControlsContainer.appendChild(groupDiv);
             });
 
             // Sound abspielen
@@ -212,12 +262,18 @@
                             timers[timerIndex].intervals[intervalIndex].signals = {};
                         }
                         
-                        // Signal-ID setzen (leerer String für "None")
-                        timers[timerIndex].intervals[intervalIndex].signals[signalType] = selectedSignalId;
+                        // Für jeden Sound-Typ den ausgewählten Wert speichern
+                        SOUND_TYPES.forEach(soundType => {
+                            const selectElement = document.getElementById(`select-${soundType.id}`);
+                            const selectedValue = selectElement.value;
+                            
+                            // Leerer String für "None" speichern
+                            timers[timerIndex].intervals[intervalIndex].signals[soundType.id] = selectedValue;
+                        });
                         
                         // Speichern
                         saveTimers(timers);
-                        console.log('Gespeichert:', { timerId, intervalId, signalType, selectedSignalId });
+                        console.log('Alle Sounds gespeichert für Intervall:', intervalId);
                     }
                 }
                 
