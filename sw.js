@@ -1,4 +1,4 @@
-// v2: Timer-Screen überarbeitet
+// v3: Custom Sounds implementiert
 
 self.addEventListener('install', event => {
     event.waitUntil(
