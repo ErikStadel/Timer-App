@@ -636,7 +636,7 @@
                     allTimers[timerIndex].intervals = intervals;
                     saveTimers(allTimers);
                 }
-                return; // Keine Navigation
+                return;
             }
 
             const timerName = timerNameInput.value.trim();
@@ -655,30 +655,24 @@
                 return;
             }
 
+            // Aktuelle Timer aus localStorage laden (für neueste Daten)
             let allTimers = loadTimers();
+            const currentTimer = allTimers.find(t => t.id === currentTimerId);
 
-            // FIXED: Preserve all existing interval properties including custom sounds
             let timerToSave = {
                 id: currentTimerId,
                 name: timerName,
                 repeat: repeatCount,
                 intervals: intervals.map(interval => {
-                    // Create a complete copy of the interval to preserve all properties
-                    const savedInterval = {
-                        id: interval.id,
-                        name: interval.name,
-                        durationInterval: interval.durationInterval,
-                        durationRest: interval.durationRest,
-                        // IMPORTANT: Preserve the signals object for custom sounds
-                        signals: interval.signals || {}
+                    // Hole die aktuellste Version des Intervals aus localStorage
+                    const storedInterval = currentTimer?.intervals.find(i => i.id === interval.id);
+
+                    return {
+                        ...storedInterval, // Alle gespeicherten Eigenschaften (inklusive signals!)
+                        ...interval, // Aktuelle Eigenschaften aus dem Editor
+                        // Stelle sicher dass signals erhalten bleibt
+                        signals: storedInterval?.signals || interval.signals || {}
                     };
-
-                    // Keep backward compatibility: if old signalId exists, preserve it
-                    if (interval.signalId) {
-                        savedInterval.signalId = interval.signalId;
-                    }
-
-                    return savedInterval;
                 })
             };
 
@@ -690,7 +684,7 @@
             }
 
             saveTimers(allTimers);
-            console.log('Timer saved with preserved sound settings:', timerToSave); // Debug log
+            console.log('Timer gespeichert mit Sound-Einstellungen:', timerToSave);
             window.location.href = '../home-screen/index.html';
         });
 
@@ -750,6 +744,10 @@
             timerNameInput.value = timerToLoad.name;
             repeatInput.value = timerToLoad.repeat;
             intervals = JSON.parse(JSON.stringify(timerToLoad.intervals || []));
+            intervals = intervals.map(interval => ({
+                ...interval,
+                signals: interval.signals || {} // Stelle sicher dass signals-Objekt existiert
+            }));
             renderIntervalList();
 
             timerNameInput.addEventListener('input', () => {
