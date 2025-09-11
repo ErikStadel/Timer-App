@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="de">
-
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Timer Screen</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,10 +32,12 @@
             },
         };
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
+        rel="stylesheet"
+    />
     <style>
-        html,
-        body {
+        html, body {
             height: 100%;
             overflow: hidden;
             font-family: 'Karla', sans-serif;
@@ -114,11 +118,9 @@
             -ms-overflow-style: none;
             margin-bottom: 1rem;
         }
-
         .interval-list-container::-webkit-scrollbar {
             display: none;
         }
-
         .interval-list-container {
             touch-action: pan-y;
         }
@@ -181,40 +183,17 @@
             color: #EFF6E0;
         }
 
-        .bg-interval {
-            background-color: #fd5c34;
-        }
+        .bg-interval { background-color: #fd5c34; }
+        .bg-rest { background-color: #629471; }
+        .bg-warning { background-color: #fc814a; }
+        .bg-initial { background-color: #124559; }
 
-        .bg-rest {
-            background-color: #629471;
-        }
+        .circle-interval { background-color: #fd5c34; }
+        .circle-rest { background-color: #629471; }
+        .circle-warning { background-color: #fc814a; }
+        .circle-initial { background-color: #598392; }
 
-        .bg-warning {
-            background-color: #fc814a;
-        }
-
-        .bg-initial {
-            background-color: #124559;
-        }
-
-        .circle-interval {
-            background-color: #fd5c34;
-        }
-
-        .circle-rest {
-            background-color: #629471;
-        }
-
-        .circle-warning {
-            background-color: #fc814a;
-        }
-
-        .circle-initial {
-            background-color: #598392;
-        }
-
-        .confirmation-dialog-overlay,
-        .completion-dialog-overlay {
+        .confirmation-dialog-overlay, .completion-dialog-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -231,14 +210,12 @@
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        .confirmation-dialog-overlay.active,
-        .completion-dialog-overlay.active {
+        .confirmation-dialog-overlay.active, .completion-dialog-overlay.active {
             opacity: 1;
             visibility: visible;
         }
 
-        .confirmation-dialog,
-        .completion-dialog {
+        .confirmation-dialog, .completion-dialog {
             background-color: #124559;
             padding: 2rem;
             border-radius: 1rem;
@@ -251,28 +228,25 @@
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        .confirmation-dialog-overlay.active .confirmation-dialog,
+        .confirmation-dialog-overlay.active .confirmation-dialog, 
         .completion-dialog-overlay.active .completion-dialog {
             transform: translateY(0);
             opacity: 1;
         }
 
-        .confirmation-dialog p,
-        .completion-dialog p {
+        .confirmation-dialog p, .completion-dialog p {
             margin-bottom: 1.5rem;
             font-size: 1.1rem;
             font-weight: 600;
         }
 
-        .confirmation-dialog-buttons,
-        .completion-dialog-buttons {
+        .confirmation-dialog-buttons, .completion-dialog-buttons {
             display: flex;
             justify-content: space-around;
             gap: 1rem;
         }
 
-        .confirmation-dialog-buttons button,
-        .completion-dialog-buttons button {
+        .confirmation-dialog-buttons button, .completion-dialog-buttons button {
             flex: 1;
             padding: 0.75rem;
             border-radius: 0.5rem;
@@ -282,14 +256,12 @@
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
 
-        .btn-confirm,
-        .btn-restart {
+        .btn-confirm, .btn-restart {
             background-color: #fc814a;
             color: #01161E;
         }
 
-        .btn-cancel,
-        .btn-end-dialog {
+        .btn-cancel, .btn-end-dialog {
             background-color: #598392;
             color: #EFF6E0;
         }
@@ -371,31 +343,45 @@
         let halfwayPoint = 0;
         let currentRepeat = 1;
         let maxRepeats = 1;
+        let currentTimer = null; // Aktueller Timer für Sound-Auswahl
 
         // Audio Setup
         let audioPlayers = {};
-        let audioBuffers = {}; // Für AudioBuffer von threeSecond, intervalStart, restStart, halfway
+        let audioBuffers = {};
         let isAudioInitialized = false;
         const MAX_RETRIES = 3;
-        const RETRY_DELAY = 100; // Noch kürzer für iOS
-        let soundQueue = []; // Warteschlange für Sounds (z.B. lastRound)
-        const POOL_SIZE = 3; // Audio-Pool-Größe für threeSecond, intervalStart, restStart, halfway
+        const RETRY_DELAY = 100;
+        let soundQueue = [];
+        const POOL_SIZE = 3;
 
         // Funktion zum asynchronen Laden von Audiodateien
         async function loadAudioFile(filePath) {
             try {
-                const response = await fetch(`../${filePath}`, { cache: 'force-cache' });
+                // Bestimme die korrekte Basis-URL
+                const currentPath = window.location.pathname;
+                let basePath;
+                
+                if (currentPath.includes('Timer-App')) {
+                    // GitHub Pages
+                    basePath = window.location.origin + '/Timer-App/';
+                } else {
+                    // Lokale Entwicklung
+                    basePath = '../';
+                }
+                
+                const fullPath = `${basePath}${filePath}`;
+                const response = await fetch(fullPath, { cache: 'force-cache' });
                 if (!response.ok) {
-                    throw new Error(`Fehler beim Laden der Audiodatei: ${filePath}, Status: ${response.status}`);
+                    throw new Error(`Fehler beim Laden der Audiodatei: ${fullPath}, Status: ${response.status}`);
                 }
                 const arrayBuffer = await response.arrayBuffer();
-                const audio = new Audio(`../${filePath}`);
+                const audio = new Audio(fullPath);
                 audio.preload = 'auto';
                 await new Promise((resolve, reject) => {
                     audio.addEventListener('canplaythrough', resolve, { once: true });
                     audio.addEventListener('error', reject, { once: true });
                 });
-                console.log(`Audiodatei geladen: ${filePath}`);
+                console.log(`Audiodatei geladen: ${fullPath}`);
                 return { audio, arrayBuffer };
             } catch (error) {
                 console.error(`Fehler beim Laden der Audiodatei ${filePath}:`, error);
@@ -403,25 +389,28 @@
             }
         }
 
-        function getCurrentSignalId(signalType, intervalIndex) {
-            // 1. Aktuelles flaches Intervall aus der abgeleiteten Liste
-            const currentFlatInterval = timerIntervalsData[intervalIndex];
-
-            // 2. ID des ursprünglichen Intervalls
-            const sourceIntervalId = currentFlatInterval.sourceIntervalId;
-
-            if (sourceIntervalId) {
-                // 3. Ursprüngliches Intervall-Objekt finden
-                const sourceInterval = timer.intervals.find(i => i.id === sourceIntervalId);
-
-                // 4. Prüfen, ob individueller Sound gesetzt ist
-                if (sourceInterval && sourceInterval.signals && sourceInterval.signals[signalType]) {
-                    return sourceInterval.signals[signalType]; // Individueller Sound
-                }
+        // Hilfsfunktion, um den Sound für ein bestimmtes Intervall und Sound-Typ zu bestimmen
+        function getSoundIdForInterval(timerIntervalIndex, soundType) {
+            if (!currentTimer || !currentTimer.intervals) {
+                return null;
             }
-
-            // 5. Fallback auf globalen Sound
-            return globalSignals[signalType] || '';
+            
+            const interval = currentTimer.intervals[timerIntervalIndex];
+            if (!interval) {
+                return null;
+            }
+            
+            // Prüfe, ob es einen intervallspezifischen Sound gibt
+            if (interval.signals && interval.signals[soundType] && interval.signals[soundType] !== '') {
+                console.log(`Custom Sound für Intervall ${timerIntervalIndex}, ${soundType}: ${interval.signals[soundType]}`);
+                return interval.signals[soundType];
+            }
+            
+            // Fallback auf globalen Sound
+            const globalSignals = loadGlobalSignals();
+            const globalSoundId = globalSignals[soundType] || '';
+            console.log(`Global Sound für ${soundType}: ${globalSoundId}`);
+            return globalSoundId;
         }
 
         // Initialisierung des AudioContext und der Audio-Player
@@ -439,50 +428,87 @@
 
                 // Lade Volume Boost
                 const volumeBoost = Number(loadVolumeBoost()) || 100;
-                const gainValue = 0.5 + (volumeBoost - 50) / 100; // Map 50–150% to 0.5–1.5
+                const gainValue = 0.5 + (volumeBoost - 50) / 100;
                 window.mainGainNode.gain.value = Math.max(0, gainValue);
                 console.log(`AudioContext initialisiert: ${window.audioContext.state}, Gain: ${gainValue}`);
             } catch (error) {
                 console.error('Fehler beim Initialisieren des AudioContext:', error);
-                // Fallback: Sounds ohne AudioContext
             }
 
-            // Lade Sounds
+           // Sammle alle benötigten Sounds
             const signals = loadSignals();
             const globalSignals = loadGlobalSignals();
-            const audioPromises = Object.keys(globalSignals).map(async (type) => {
-                const signalId = globalSignals[type];
-                if (signalId && signalId !== '') {
-                    const signal = signals.find(s => s.id === signalId);
-                    if (signal && signal.filePath) {
-                        const result = await loadAudioFile(signal.filePath);
-                        if (result) {
-                            const { audio, arrayBuffer } = result;
-                            if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
-                                // AudioBuffer für threeSecond, intervalStart, restStart, halfway
-                                try {
-                                    audioBuffers[type] = await window.audioContext.decodeAudioData(arrayBuffer);
-                                    console.log(`AudioBuffer erstellt für ${type}: ${signal.filePath}`);
-                                } catch (error) {
-                                    console.error(`Fehler beim Dekodieren von ${type}:`, error);
-                                    // Fallback auf HTMLAudioElement
-                                    audioPlayers[type] = audio;
-                                }
-                            } else {
-                                try {
-                                    const source = window.audioContext.createMediaElementSource(audio);
-                                    source.connect(window.mainGainNode);
-                                    audioPlayers[type] = audio;
-                                    console.log(`Audio-Player erstellt für ${type}: ${signal.filePath}`);
-                                } catch (error) {
-                                    console.error(`Fehler bei createMediaElementSource für ${type}:`, error);
-                                    // Fallback: Nutze audio.volume
-                                    audio.volume = volumeBoost / 100;
-                                    audioPlayers[type] = audio;
+            const soundsToLoad = new Map();
+            
+            const soundTypes = ['intervalStart', 'restStart', 'halfway', 'threeSecond', 'lastRound'];
+            
+            // Globale Sounds sammeln
+            soundTypes.forEach(type => {
+                const globalSignalId = globalSignals[type];
+                if (globalSignalId && globalSignalId !== '') {
+                    const globalSignal = signals.find(s => s.id === globalSignalId);
+                    if (globalSignal && globalSignal.filePath) {
+                        soundsToLoad.set(globalSignalId, {
+                            signalId: globalSignalId,
+                            filePath: globalSignal.filePath,
+                            type: type
+                        });
+                    }
+                }
+            });
+            
+            // Intervallspezifische Sounds sammeln
+            if (currentTimer && currentTimer.intervals) {
+                currentTimer.intervals.forEach((interval, intervalIndex) => {
+                    if (interval.signals) {
+                        soundTypes.forEach(type => {
+                            const customSignalId = interval.signals[type];
+                            if (customSignalId && customSignalId !== '' && !soundsToLoad.has(customSignalId)) {
+                                const customSignal = signals.find(s => s.id === customSignalId);
+                                if (customSignal && customSignal.filePath) {
+                                    soundsToLoad.set(customSignalId, {
+                                        signalId: customSignalId,
+                                        filePath: customSignal.filePath,
+                                        type: type
+                                    });
                                 }
                             }
-                        } else {
-                            console.warn(`Audiodatei für ${type} konnte nicht geladen werden: ${signal.filePath}`);
+                        });
+                    }
+                });
+            }
+
+            console.log(`Lade ${soundsToLoad.size} einzigartige Sounds...`);
+
+            // Lade alle gesammelten Sounds
+            const audioPromises = Array.from(soundsToLoad.values()).map(async (soundInfo) => {
+                const result = await loadAudioFile(soundInfo.filePath);
+                if (result) {
+                    const { audio, arrayBuffer } = result;
+                    const signalId = soundInfo.signalId;
+                    const type = soundInfo.type;
+                    
+                    // Unterscheide zwischen verschiedenen Sound-Typen für Performance-Optimierung
+                    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
+                        // AudioBuffer für häufig verwendete Sounds
+                        try {
+                            audioBuffers[signalId] = await window.audioContext.decodeAudioData(arrayBuffer);
+                            console.log(`AudioBuffer erstellt für ${signalId}: ${soundInfo.filePath}`);
+                        } catch (error) {
+                            console.error(`Fehler beim Dekodieren von ${signalId}:`, error);
+                            audioPlayers[signalId] = audio;
+                        }
+                    } else {
+                        // HTMLAudioElement für andere Sounds
+                        try {
+                            const source = window.audioContext.createMediaElementSource(audio);
+                            source.connect(window.mainGainNode);
+                            audioPlayers[signalId] = audio;
+                            console.log(`Audio-Player erstellt für ${signalId}: ${soundInfo.filePath}`);
+                        } catch (error) {
+                            console.error(`Fehler bei createMediaElementSource für ${signalId}:`, error);
+                            audio.volume = volumeBoost / 100;
+                            audioPlayers[signalId] = audio;
                         }
                     }
                 }
@@ -524,55 +550,77 @@
         }
 
         // Funktion zum Abspielen eines Sounds aus einem Audio-Pool
-        function playPooledSound(type) {
-            if (!audioBuffers[type] || !window.audioContext) {
-                console.warn(`AudioBuffer oder AudioContext nicht verfügbar für ${type}`);
-                playAudio(type, 0); // Fallback auf HTMLAudioElement
+        function playPooledSound(signalId) {
+            if (!audioBuffers[signalId] || !window.audioContext) {
+                console.warn(`AudioBuffer oder AudioContext nicht verfügbar für ${signalId}`);
+                playAudio(signalId, 0);
                 return;
             }
 
             const startTime = performance.now();
-            const pool = audioPlayers[`${type}Pool`];
+            const pool = audioPlayers[`${signalId}Pool`];
+            if (!pool) {
+                console.warn(`Kein Audio-Pool für ${signalId}`);
+                playAudio(signalId, 0);
+                return;
+            }
+            
             const poolItem = pool.find(item => item.available);
             if (!poolItem) {
-                console.warn(`Kein verfügbarer Audio-Pool für ${type}`);
+                console.warn(`Kein verfügbarer Audio-Pool für ${signalId}`);
                 return;
             }
 
             try {
                 poolItem.available = false;
                 poolItem.source = window.audioContext.createBufferSource();
-                poolItem.source.buffer = audioBuffers[type];
+                poolItem.source.buffer = audioBuffers[signalId];
                 poolItem.source.connect(window.mainGainNode);
                 poolItem.source.addEventListener('ended', () => {
                     poolItem.available = true;
-                    console.log(`${type} Audio-Pool freigegeben`);
+                    console.log(`${signalId} Audio-Pool freigegeben`);
                 }, { once: true });
                 poolItem.source.start(0);
                 const endTime = performance.now();
-                console.log(`${type} abgespielt, Latenz: ${endTime - startTime}ms`);
+                console.log(`${signalId} abgespielt, Latenz: ${endTime - startTime}ms`);
             } catch (error) {
-                console.error(`Fehler beim Abspielen von ${type} mit AudioBuffer:`, error);
+                console.error(`Fehler beim Abspielen von ${signalId} mit AudioBuffer:`, error);
                 poolItem.available = true;
-                playAudio(type, 0); // Fallback auf HTMLAudioElement
+                playAudio(signalId, 0);
             }
         }
 
-        // Funktion zum Abspielen eines Sounds (für threeSecond, intervalStart, restStart, halfway über Pool, andere in Warteschlange)
+        // Funktion zum Abspielen eines Sounds
         async function playSound(type, immediate = false) {
             if (!isAudioInitialized) {
                 await initAudio();
             }
+            
+            // Ermittle den korrekten Sound basierend auf dem aktuellen Intervall
+            let signalId;
+            if (type === 'lastRound') {
+                // lastRound ist immer global
+                const globalSignals = loadGlobalSignals();
+                signalId = globalSignals[type] || '';
+            } else {
+                // Für andere Sound-Typen ermittle den intervallspezifischen oder globalen Sound
+                const timerIntervalIndex = Math.floor(currentIntervalIndex / 2);
+                signalId = getSoundIdForInterval(timerIntervalIndex, type);
+            }
+            
+            if (!signalId || signalId === '') {
+                console.log(`Kein Sound ausgewählt für: ${type}`);
+                return;
+            }
+            
+            console.log(`Spiele Sound: type=${type}, intervalIndex=${currentIntervalIndex}, signalId=${signalId}`);
 
             if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
-                // Wiedergabe über Audio-Pool
-                playPooledSound(type);
+                playPooledSound(signalId);
             } else if (immediate) {
-                // Direkte Wiedergabe für andere Sounds
-                await playAudio(type, 0);
+                await playAudio(signalId, 0);
             } else {
-                // In Warteschlange für andere Sounds (z.B. lastRound)
-                soundQueue.push(type);
+                soundQueue.push(signalId);
                 if (soundQueue.length === 1) {
                     playNextSound();
                 }
@@ -585,13 +633,13 @@
                 return;
             }
 
-            const type = soundQueue[0];
+            const signalId = soundQueue[0];
             if (!isAudioInitialized) {
                 await initAudio();
             }
 
             if (!window.audioContext) {
-                console.warn('AudioContext nicht verfügbar für:', type);
+                console.warn('AudioContext nicht verfügbar für:', signalId);
                 soundQueue.shift();
                 playNextSound();
                 return;
@@ -600,34 +648,25 @@
             if (window.audioContext.state === 'suspended') {
                 window.audioContext.resume().then(() => {
                     console.log('AudioContext fortgesetzt vor Sound-Wiedergabe:', window.audioContext.state);
-                    playAudio(type, retryCount);
+                    playAudio(signalId, retryCount);
                 }).catch(error => {
                     console.error('Fehler beim Fortsetzen des AudioContext:', error);
-                    playAudio(type, retryCount);
+                    playAudio(signalId, retryCount);
                 });
             } else {
-                playAudio(type, retryCount);
+                playAudio(signalId, retryCount);
             }
         }
 
         // Interne Funktion zum Abspielen eines Sounds
-        async function playAudio(type, retryCount) {
-            const globalSignals = loadGlobalSignals();
-            const signalId = globalSignals[type];
+        async function playAudio(signalId, retryCount) {
             const startTime = performance.now();
-            console.log(`Spiele Sound für Typ: ${type}, signalId: ${signalId}`);
+            console.log(`Spiele Sound mit signalId: ${signalId}`);
 
-            if (!signalId || signalId === '') {
-                console.log(`Kein Sound ausgewählt für: ${type}`);
-                if (soundQueue[0] === type) soundQueue.shift();
-                playNextSound();
-                return;
-            }
-
-            const audio = audioPlayers[type];
+            const audio = audioPlayers[signalId];
             if (!audio) {
-                console.warn(`Kein Audio-Player für Signal-Typ: ${type}, signalId: ${signalId}`);
-                if (soundQueue[0] === type) soundQueue.shift();
+                console.warn(`Kein Audio-Player für signalId: ${signalId}`);
+                if (soundQueue[0] === signalId) soundQueue.shift();
                 playNextSound();
                 return;
             }
@@ -636,17 +675,17 @@
                 audio.currentTime = 0;
                 await audio.play();
                 const endTime = performance.now();
-                console.log(`Sound abgespielt: ${type}, Latenz: ${endTime - startTime}ms`);
-                if (soundQueue[0] === type) soundQueue.shift();
+                console.log(`Sound abgespielt: ${signalId}, Latenz: ${endTime - startTime}ms`);
+                if (soundQueue[0] === signalId) soundQueue.shift();
                 playNextSound();
             } catch (error) {
-                console.error(`Fehler beim Abspielen von ${type} (Versuch ${retryCount + 1}):`, error);
+                console.error(`Fehler beim Abspielen von ${signalId} (Versuch ${retryCount + 1}):`, error);
                 if (retryCount < MAX_RETRIES) {
-                    console.log(`Wiederhole Sound-Wiedergabe für ${type} in ${RETRY_DELAY}ms`);
-                    setTimeout(() => playAudio(type, retryCount + 1), RETRY_DELAY);
+                    console.log(`Wiederhole Sound-Wiedergabe für ${signalId} in ${RETRY_DELAY}ms`);
+                    setTimeout(() => playAudio(signalId, retryCount + 1), RETRY_DELAY);
                 } else {
-                    console.error(`Maximale Wiederholungen erreicht für ${type}. Sound konnte nicht abgespielt werden.`);
-                    if (soundQueue[0] === type) soundQueue.shift();
+                    console.error(`Maximale Wiederholungen erreicht für ${signalId}. Sound konnte nicht abgespielt werden.`);
+                    if (soundQueue[0] === signalId) soundQueue.shift();
                     playNextSound();
                 }
             }
@@ -731,14 +770,10 @@
                 currentIntervalTimeRemaining = timerIntervalsData[currentIntervalIndex].duration;
                 halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
                 const type = timerIntervalsData[currentIntervalIndex].type;
-                const signalType = type === 'interval' ? 'intervalStart' : 'restStart';
-                const signalId = getCurrentSignalId(signalType, currentIntervalIndex);
-
-                if (signalId) {
-                    playSoundById(signalId);
-                } else {
-                    playSound(type === 'interval' ? 'intervalStart' : 'restStart');
-                }
+                console.log(`Starte Timer, Intervalltyp: ${type}`);
+                playSound(type === 'interval' ? 'intervalStart' : 'restStart');
+            } else if (isTimerPaused) {
+                halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
             }
 
             isTimerRunning = true;
@@ -755,7 +790,7 @@
                 currentIntervalTimeRemaining--;
                 totalTimeRemaining--;
 
-                if (timerIntervalsData[currentIntervalIndex].type === 'interval' &&
+                if (timerIntervalsData[currentIntervalIndex].type === 'interval' && 
                     currentIntervalTimeRemaining === halfwayPoint) {
                     playSound('halfway');
                 }
@@ -794,14 +829,8 @@
                     halfwayPoint = Math.floor(currentIntervalTimeRemaining / 2);
 
                     const type = timerIntervalsData[currentIntervalIndex].type;
-                    const signalType = type === 'interval' ? 'intervalStart' : 'restStart';
-                    const signalId = getCurrentSignalId(signalType, currentIntervalIndex);
-
-                    if (signalId) {
-                        playSoundById(signalId);
-                    } else {
-                        playSound(type === 'interval' ? 'intervalStart' : 'restStart');
-                    }
+                    console.log(`Wechsel zu Intervalltyp: ${type}, Index: ${currentIntervalIndex}`);
+                    playSound(type === 'interval' ? 'intervalStart' : 'restStart');
 
                     updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type);
                     highlightCurrentInterval();
@@ -818,23 +847,6 @@
                     completionDialog.classList.add('active');
                 }
             }, 1000);
-        }
-
-        function playSoundById(signalId) {
-            if (!signalId || signalId === '') {
-                console.log('Kein Sound ausgewählt');
-                return;
-            }
-
-            const signals = loadSignals();
-            const signal = signals.find(s => s.id === signalId);
-
-            if (!signal || !signal.filePath) {
-                console.warn(`Signal nicht gefunden oder kein Dateipfad: ${signalId}`);
-                return;
-            }
-
-            playAudio(signal.filePath, 0);
         }
 
         function pauseTimer() {
@@ -928,7 +940,6 @@
                 return;
             }
 
-            
             const timers = loadTimers();
             const timer = timers.find(t => t.id === timerId);
             if (!timer) {
@@ -994,5 +1005,4 @@
         }
     </script>
 </body>
-
 </html>
