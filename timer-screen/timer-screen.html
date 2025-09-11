@@ -435,7 +435,7 @@
                 console.error('Fehler beim Initialisieren des AudioContext:', error);
             }
 
-           // Sammle alle benötigten Sounds
+            // Sammle alle benötigten Sounds
             const signals = loadSignals();
             const globalSignals = loadGlobalSignals();
             const soundsToLoad = new Map();
@@ -517,14 +517,12 @@
             await Promise.all(audioPromises);
             isAudioInitialized = true;
 
-            // Audio-Pools für threeSecond, intervalStart, restStart, halfway
-            ['threeSecond', 'intervalStart', 'restStart', 'halfway'].forEach(type => {
-                if (audioBuffers[type]) {
-                    audioPlayers[`${type}Pool`] = Array(POOL_SIZE).fill().map(() => ({
-                        source: null,
-                        available: true
-                    }));
-                }
+            // Audio-Pools für häufig verwendete Sounds
+            Object.keys(audioBuffers).forEach(signalId => {
+                audioPlayers[`${signalId}Pool`] = Array(POOL_SIZE).fill().map(() => ({
+                    source: null,
+                    available: true
+                }));
             });
 
             // Resume AudioContext bei Sichtbarkeitsänderungen
@@ -536,7 +534,6 @@
                 }
             });
 
-            // Initiale Resumption bei Benutzerinteraktion
             document.addEventListener('click', resumeAudioContext, { once: true });
         }
 
