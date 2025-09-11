@@ -795,7 +795,7 @@
                     playSound('halfway');
                 }
 
-                // 5-Sekunden-Sound jede Sekunde in den letzten 5 Sekunden
+                // 3-Sekunden-Sound jede Sekunde in den letzten 3 Sekunden
                 if (currentIntervalTimeRemaining <= 3 && currentIntervalTimeRemaining > 0) {
                     playSound('threeSecond');
                     updateBackgroundAndCircleColor(timerIntervalsData[currentIntervalIndex].type, true);
@@ -948,6 +948,9 @@
                 window.location.href = '../home-screen/index.html';
                 return;
             }
+
+            // Setze den aktuellen Timer für die Sound-Auswahl
+            currentTimer = timer;
 
             timerTitle.textContent = timer.name || 'Mein Timer';
             maxRepeats = timer.repeat || 1;
