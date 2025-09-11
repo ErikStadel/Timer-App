@@ -94,6 +94,19 @@ function saveTimers(timers) {
     }
 }
 
+function loadSignals() {
+    try {
+        const storedSignals = localStorage.getItem(SIGNAL_STORAGE_KEY);
+        if (storedSignals) {
+            return JSON.parse(storedSignals);
+        }
+    } catch (e) {
+        console.error("Fehler beim Laden der Signale aus localStorage:", e);
+    }
+    saveSignals(defaultSignals);
+    return defaultSignals;
+}
+
 function saveSignals(signals) {
     try {
         localStorage.setItem(SIGNAL_STORAGE_KEY, JSON.stringify(signals));
