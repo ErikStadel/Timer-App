@@ -350,6 +350,10 @@
                         console.log('Alle Sounds gespeichert für Intervall:', intervalId);
                     }
                 }
+                const verifyTimers = loadTimers();
+                const verifyTimer = verifyTimers.find(t => t.id === timerId);
+                const verifyInterval = verifyTimer?.intervals.find(i => i.id === intervalId);
+                console.log('Verifikation - Gespeicherte Sounds:', verifyInterval?.signals);
 
                 // Zurück zum Intervall-Editor
                 window.location.href = `../interval-editor/interval-editor.html?timerId=${timerId}&intervalId=${intervalId}`;

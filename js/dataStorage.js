@@ -61,8 +61,10 @@ function loadTimers() {
                     name: interval.name,
                     durationInterval: interval.durationInterval || 0,
                     durationRest: interval.durationRest || 0,
-                    // Hinzufügen des signals-Objekts falls nicht vorhanden
-                    signals: interval.signals || {}
+                    // WICHTIG: Alle Eigenschaften übernehmen, nicht nur signals initialisieren
+                    signals: interval.signals || {},
+                    // Backward compatibility
+                    ...(interval.signalId && { signalId: interval.signalId })
                 }))
             }));
         }
@@ -75,23 +77,21 @@ function loadTimers() {
 
 function saveTimers(timers) {
     try {
-        localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(timers));
+        // Stelle sicher dass alle Timer korrekt strukturiert sind
+        const sanitizedTimers = timers.map(timer => ({
+            ...timer,
+            intervals: timer.intervals.map(interval => ({
+                ...interval,
+                // Stelle sicher dass signals immer ein Objekt ist
+                signals: interval.signals && typeof interval.signals === 'object' ? interval.signals : {}
+            }))
+        }));
+        
+        localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(sanitizedTimers));
+        console.log('Timer gespeichert:', sanitizedTimers); // Debug
     } catch (e) {
         console.error("Fehler beim Speichern der Timer in localStorage:", e);
     }
-}
-
-function loadSignals() {
-    try {
-        const storedSignals = localStorage.getItem(SIGNAL_STORAGE_KEY);
-        if (storedSignals) {
-            return JSON.parse(storedSignals);
-        }
-    } catch (e) {
-        console.error("Fehler beim Laden der Signale aus localStorage:", e);
-    }
-    saveSignals(defaultSignals);
-    return defaultSignals;
 }
 
 function saveSignals(signals) {
