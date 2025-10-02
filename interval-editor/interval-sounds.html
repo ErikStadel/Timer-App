@@ -82,7 +82,6 @@
             color: #01161E;
         }
 
-        /* Neue Styles für Select-Boxen */
         .sound-select {
             width: 100%;
             background-color: #124559;
@@ -111,7 +110,6 @@
             font-weight: 600;
         }
 
-        /* Style für die "Global" Option */
         .global-default-option {
             font-style: italic;
             color: #AEC3B0;
@@ -138,7 +136,6 @@
     </div>
 
     <script>
-        // Definiere die verfügbaren Sound-Typen mit lesbaren Namen
         const SOUND_TYPES = [
             { id: 'intervalStart', name: 'Interval Start' },
             { id: 'restStart', name: 'Rest Start' },
@@ -147,7 +144,6 @@
         ];
 
         document.addEventListener('DOMContentLoaded', () => {
-            // URL-Parameter auslesen
             const urlParams = new URLSearchParams(window.location.search);
             const timerId = urlParams.get('timerId');
             const intervalId = urlParams.get('intervalId');
@@ -158,11 +154,9 @@
                 return;
             }
 
-            // Back-Link aktualisieren
             const backButton = document.getElementById('back-button');
             backButton.href = `../interval-editor/interval-editor.html?timerId=${timerId}&intervalId=${intervalId}`;
 
-            // Audio initialisieren
             window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
             window.mainGainNode = window.mainGainNode || window.audioContext.createGain();
             window.mainGainNode.connect(window.audioContext.destination);
@@ -171,9 +165,8 @@
             const gainValue = 0.5 + (volumeBoost - 50) / 125;
             window.mainGainNode.gain.value = Math.max(0, gainValue);
 
-            // Daten laden
             const signals = loadSignals();
-            const globalSignals = loadGlobalSignals(); // Lade die globalen Einstellungen
+            const globalSignals = loadGlobalSignals();
             const noneOption = { id: '', name: 'None' };
             const allSignals = [noneOption, ...signals];
 
@@ -192,22 +185,18 @@
                 return;
             }
 
-            // Stelle sicher, dass interval.signals existiert
             if (!interval.signals) {
                 interval.signals = {};
             }
 
-            // Hilfsfunktion, um den Namen eines Signals anhand seiner ID zu finden
             function getSignalNameById(signalId) {
                 if (!signalId) return 'None';
                 const signal = allSignals.find(s => s.id === signalId);
                 return signal ? signal.name : 'Unknown';
             }
 
-            // Erstelle die Sound-Auswahl-Elemente
             const soundControlsContainer = document.getElementById('sound-controls');
 
-            // Für jeden Sound-Typ eine Select-Box erstellen
             SOUND_TYPES.forEach(soundType => {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'sound-group';
@@ -221,53 +210,47 @@
                 select.className = 'sound-select';
                 select.id = `select-${soundType.id}`;
 
-                // 1. Prüfe auf individuellen Wert
                 const individualSignalId = interval.signals[soundType.id];
 
-                // 2. Bestimme den anzuzeigenden Wert
                 let displayValue;
                 if (individualSignalId !== undefined && individualSignalId !== null) {
-                    // Es gibt einen individuellen Wert -> diesen anzeigen
                     displayValue = individualSignalId;
                 } else {
-                    // Kein individueller Wert -> "Global" anzeigen
                     displayValue = '__GLOBAL__';
                 }
 
-                // 3. Globalen Standard-Sound ermitteln für die "Global" Option
                 const globalSignalId = globalSignals[soundType.id] || '';
                 const globalSignalName = getSignalNameById(globalSignalId);
 
-                // 4. Erstelle eine spezielle "Global" Option
                 const globalOption = document.createElement('option');
                 globalOption.value = '__GLOBAL__';
                 globalOption.textContent = `Global (${globalSignalName})`;
                 globalOption.className = 'global-default-option';
                 if (displayValue === '__GLOBAL__') {
-                    globalOption.selected = true; // Wenn kein individueller Wert gesetzt ist, wähle "Global"
+                    globalOption.selected = true;
                 }
                 select.appendChild(globalOption);
 
-                // 5. Optionen hinzufügen
                 allSignals.forEach(signal => {
                     const option = document.createElement('option');
-                    option.value = signal.id;
+                    option.value = signal.id === '' ? '__NONE__' : signal.id;
                     option.textContent = signal.name;
-                    if (displayValue === signal.id) {
-                        option.selected = true; // Wähle den anzuzeigenden Wert (individuell oder global)
+                    if ((displayValue === '' && signal.id === '') || 
+                        (displayValue === '__NONE__' && signal.id === '') ||
+                        (displayValue === signal.id)) {
+                        option.selected = true;
                     }
                     select.appendChild(option);
                 });
 
-                // Event-Listener für Vorschau
                 select.addEventListener('change', function () {
                     let selectedSignal;
                     if (this.value === '__GLOBAL__') {
-                        // Wenn "Global" ausgewählt ist, spiele den globalen Sound ab
                         const globalId = globalSignals[soundType.id] || '';
                         selectedSignal = allSignals.find(s => s.id === globalId);
+                    } else if (this.value === '__NONE__') {
+                        return;
                     } else {
-                        // Ansonsten spiele den ausgewählten individuellen Sound ab
                         selectedSignal = allSignals.find(s => s.id === this.value);
                     }
 
@@ -287,17 +270,13 @@
                 soundControlsContainer.appendChild(groupDiv);
             });
 
-            // Sound abspielen
             function playSignal(filePath) {
-                // Bestimme die korrekte Basis-URL basierend auf dem aktuellen Pfad
                 const currentPath = window.location.pathname;
                 let basePath;
 
                 if (currentPath.includes('Timer-App')) {
-                    // Wir sind auf GitHub Pages
                     basePath = window.location.origin + '/Timer-App/';
                 } else {
-                    // Lokale Entwicklung - verwende relativen Pfad
                     basePath = '../../';
                 }
 
@@ -315,37 +294,31 @@
                 }
             }
 
-            // Speichern
             document.getElementById('save-button').addEventListener('click', () => {
-                // Timer aktualisieren
-                timers = loadTimers(); // Neu laden für Konsistenz
+                timers = loadTimers();
                 const timerIndex = timers.findIndex(t => t.id === timerId);
                 if (timerIndex !== -1) {
                     const intervalIndex = timers[timerIndex].intervals.findIndex(i => i.id === intervalId);
                     if (intervalIndex !== -1) {
-                        // signals-Objekt initialisieren falls nicht vorhanden
                         if (!timers[timerIndex].intervals[intervalIndex].signals) {
                             timers[timerIndex].intervals[intervalIndex].signals = {};
                         }
 
-                        // Für jeden Sound-Typ den ausgewählten Wert speichern
                         SOUND_TYPES.forEach(soundType => {
                             const selectElement = document.getElementById(`select-${soundType.id}`);
                             const selectedValue = selectElement.value;
 
                             if (selectedValue === '__GLOBAL__') {
-                                // Wenn "Global" ausgewählt ist, lösche den Eintrag
-                                // Dies sorgt dafür, dass der globale Standard verwendet wird
                                 delete timers[timerIndex].intervals[intervalIndex].signals[soundType.id];
+                            } else if (selectedValue === '__NONE__') {
+                                timers[timerIndex].intervals[intervalIndex].signals[soundType.id] = '__NONE__';
                             } else {
-                                // Speichere den individuellen Wert (auch wenn er "None" ist)
                                 timers[timerIndex].intervals[intervalIndex].signals[soundType.id] = selectedValue;
                             }
                             console.log('Speichere Sounds für Intervall:', intervalId);
                             console.log('Aktuelles signals-Objekt:', timers[timerIndex].intervals[intervalIndex].signals);
                         });
 
-                        // Speichern
                         saveTimers(timers);
                         console.log('Alle Sounds gespeichert für Intervall:', intervalId);
                     }
@@ -355,11 +328,9 @@
                 const verifyInterval = verifyTimer?.intervals.find(i => i.id === intervalId);
                 console.log('Verifikation - Gespeicherte Sounds:', verifyInterval?.signals);
 
-                // Zurück zum Intervall-Editor
                 window.location.href = `../interval-editor/interval-editor.html?timerId=${timerId}&intervalId=${intervalId}`;
             });
 
-            // Scroll-Listener für Header
             const header = document.querySelector('header');
             window.addEventListener('scroll', () => {
                 if (window.scrollY > 0) {
