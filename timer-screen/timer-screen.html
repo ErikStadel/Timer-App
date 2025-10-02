@@ -390,29 +390,40 @@
         }
 
         // Hilfsfunktion, um den Sound für ein bestimmtes Intervall und Sound-Typ zu bestimmen
-        function getSoundIdForInterval(timerIntervalIndex, soundType) {
-            if (!currentTimer || !currentTimer.intervals) {
-                return null;
-            }
-            
-            const interval = currentTimer.intervals[timerIntervalIndex];
-            if (!interval) {
-                return null;
-            }
-            
-            // Prüfe, ob es einen intervallspezifischen Sound gibt
-            if (interval.signals && interval.signals[soundType] && interval.signals[soundType] !== '') {
-                console.log(`Custom Sound für Intervall ${timerIntervalIndex}, ${soundType}: ${interval.signals[soundType]}`);
-                return interval.signals[soundType];
-            }
-            
-            // Fallback auf globalen Sound
-            const globalSignals = loadGlobalSignals();
-            const globalSoundId = globalSignals[soundType] || '';
-            console.log(`Global Sound für ${soundType}: ${globalSoundId}`);
-            return globalSoundId;
+function getSoundIdForInterval(timerIntervalIndex, soundType) {
+    if (!currentTimer || !currentTimer.intervals) {
+        return null;
+    }
+    
+    const interval = currentTimer.intervals[timerIntervalIndex];
+    if (!interval) {
+        return null;
+    }
+    
+    // Prüfe, ob es einen intervallspezifischen Sound gibt
+    if (interval.signals && interval.signals[soundType] !== undefined) {
+        const signalValue = interval.signals[soundType];
+        
+        // Wenn explizit "__NONE__" gesetzt ist, gib null zurück (kein Sound)
+        if (signalValue === '__NONE__') {
+            console.log(`Explizit "None" für Intervall ${timerIntervalIndex}, ${soundType}`);
+            return null;
         }
-
+        
+        // Wenn ein anderer Wert gesetzt ist, verwende diesen
+        if (signalValue !== '') {
+            console.log(`Custom Sound für Intervall ${timerIntervalIndex}, ${soundType}: ${signalValue}`);
+            return signalValue;
+        }
+    }
+    
+    // Fallback auf globalen Sound
+    const globalSignals = loadGlobalSignals();
+    const globalSoundId = globalSignals[soundType] || '';
+    console.log(`Global Sound für ${soundType}: ${globalSoundId}`);
+    return globalSoundId;
+}
+        
         // Initialisierung des AudioContext und der Audio-Player
         async function initAudio() {
             if (isAudioInitialized) {
@@ -594,35 +605,41 @@
             }
             
             // Ermittle den korrekten Sound basierend auf dem aktuellen Intervall
-            let signalId;
-            if (type === 'lastRound') {
-                // lastRound ist immer global
-                const globalSignals = loadGlobalSignals();
-                signalId = globalSignals[type] || '';
-            } else {
-                // Für andere Sound-Typen ermittle den intervallspezifischen oder globalen Sound
-                const timerIntervalIndex = Math.floor(currentIntervalIndex / 2);
-                signalId = getSoundIdForInterval(timerIntervalIndex, type);
-            }
-            
-            if (!signalId || signalId === '') {
-                console.log(`Kein Sound ausgewählt für: ${type}`);
-                return;
-            }
-            
-            console.log(`Spiele Sound: type=${type}, intervalIndex=${currentIntervalIndex}, signalId=${signalId}`);
+    let signalId;
+    if (type === 'lastRound') {
+        // lastRound ist immer global
+        const globalSignals = loadGlobalSignals();
+        signalId = globalSignals[type] || '';
+    } else {
+        // Für andere Sound-Typen ermittle den intervallspezifischen oder globalen Sound
+        const timerIntervalIndex = Math.floor(currentIntervalIndex / 2);
+        signalId = getSoundIdForInterval(timerIntervalIndex, type);
+    }
+    
+    // Wenn signalId null ist (explizit "__NONE__" gewählt), spiele keinen Sound
+    if (signalId === null) {
+        console.log(`Kein Sound für ${type} (explizit None gewählt)`);
+        return;
+    }
+    
+    if (!signalId || signalId === '') {
+        console.log(`Kein Sound ausgewählt für: ${type}`);
+        return;
+    }
+    
+    console.log(`Spiele Sound: type=${type}, intervalIndex=${currentIntervalIndex}, signalId=${signalId}`);
 
-            if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
-                playPooledSound(signalId);
-            } else if (immediate) {
-                await playAudio(signalId, 0);
-            } else {
-                soundQueue.push(signalId);
-                if (soundQueue.length === 1) {
-                    playNextSound();
-                }
-            }
+    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
+        playPooledSound(signalId);
+    } else if (immediate) {
+        await playAudio(signalId, 0);
+    } else {
+        soundQueue.push(signalId);
+        if (soundQueue.length === 1) {
+            playNextSound();
         }
+    }
+}
 
         // Funktion zum Abspielen des nächsten Sounds in der Warteschlange
         async function playNextSound(retryCount = 0) {
