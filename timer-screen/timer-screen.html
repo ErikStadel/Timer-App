@@ -395,9 +395,26 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
         return null;
     }
     
-    const interval = currentTimer.intervals[timerIntervalIndex];
+    // Finde das richtige Intervall basierend auf dem aktuellen timerIntervalsData-Index
+    // Zähle nur die 'interval'-Typen, um das richtige Intervall-Objekt zu finden
+    let intervalObjectIndex = 0;
+    let intervalsCountedSoFar = 0;
+    
+    for (let i = 0; i <= timerIntervalIndex; i++) {
+        if (timerIntervalsData[i] && timerIntervalsData[i].type === 'interval') {
+            if (i === timerIntervalIndex) {
+                intervalObjectIndex = intervalsCountedSoFar;
+                break;
+            }
+            intervalsCountedSoFar++;
+        }
+    }
+    
+    const interval = currentTimer.intervals[intervalObjectIndex];
     if (!interval) {
-        return null;
+        console.log(`Kein Intervall gefunden für Index ${intervalObjectIndex}`);
+        const globalSignals = loadGlobalSignals();
+        return globalSignals[soundType] || '';
     }
     
     // Prüfe, ob es einen intervallspezifischen Sound gibt
@@ -406,13 +423,13 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
         
         // Wenn explizit "__NONE__" gesetzt ist, gib null zurück (kein Sound)
         if (signalValue === '__NONE__') {
-            console.log(`Explizit "None" für Intervall ${timerIntervalIndex}, ${soundType}`);
+            console.log(`Explizit "None" für Intervall ${intervalObjectIndex}, ${soundType}`);
             return null;
         }
         
         // Wenn ein anderer Wert gesetzt ist, verwende diesen
         if (signalValue !== '') {
-            console.log(`Custom Sound für Intervall ${timerIntervalIndex}, ${soundType}: ${signalValue}`);
+            console.log(`Custom Sound für Intervall ${intervalObjectIndex}, ${soundType}: ${signalValue}`);
             return signalValue;
         }
     }
