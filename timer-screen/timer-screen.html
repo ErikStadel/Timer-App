@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8" />
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Timer Screen</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,12 +30,10 @@
             },
         };
     </script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-        rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
     <style>
-        html, body {
+        html,
+        body {
             height: 100%;
             overflow: hidden;
             font-family: 'Karla', sans-serif;
@@ -118,9 +114,11 @@
             -ms-overflow-style: none;
             margin-bottom: 1rem;
         }
+
         .interval-list-container::-webkit-scrollbar {
             display: none;
         }
+
         .interval-list-container {
             touch-action: pan-y;
         }
@@ -183,17 +181,40 @@
             color: #EFF6E0;
         }
 
-        .bg-interval { background-color: #fd5c34; }
-        .bg-rest { background-color: #629471; }
-        .bg-warning { background-color: #fc814a; }
-        .bg-initial { background-color: #124559; }
+        .bg-interval {
+            background-color: #fd5c34;
+        }
 
-        .circle-interval { background-color: #fd5c34; }
-        .circle-rest { background-color: #629471; }
-        .circle-warning { background-color: #fc814a; }
-        .circle-initial { background-color: #598392; }
+        .bg-rest {
+            background-color: #629471;
+        }
 
-        .confirmation-dialog-overlay, .completion-dialog-overlay {
+        .bg-warning {
+            background-color: #fc814a;
+        }
+
+        .bg-initial {
+            background-color: #124559;
+        }
+
+        .circle-interval {
+            background-color: #fd5c34;
+        }
+
+        .circle-rest {
+            background-color: #629471;
+        }
+
+        .circle-warning {
+            background-color: #fc814a;
+        }
+
+        .circle-initial {
+            background-color: #598392;
+        }
+
+        .confirmation-dialog-overlay,
+        .completion-dialog-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -210,12 +231,14 @@
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        .confirmation-dialog-overlay.active, .completion-dialog-overlay.active {
+        .confirmation-dialog-overlay.active,
+        .completion-dialog-overlay.active {
             opacity: 1;
             visibility: visible;
         }
 
-        .confirmation-dialog, .completion-dialog {
+        .confirmation-dialog,
+        .completion-dialog {
             background-color: #124559;
             padding: 2rem;
             border-radius: 1rem;
@@ -228,25 +251,28 @@
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        .confirmation-dialog-overlay.active .confirmation-dialog, 
+        .confirmation-dialog-overlay.active .confirmation-dialog,
         .completion-dialog-overlay.active .completion-dialog {
             transform: translateY(0);
             opacity: 1;
         }
 
-        .confirmation-dialog p, .completion-dialog p {
+        .confirmation-dialog p,
+        .completion-dialog p {
             margin-bottom: 1.5rem;
             font-size: 1.1rem;
             font-weight: 600;
         }
 
-        .confirmation-dialog-buttons, .completion-dialog-buttons {
+        .confirmation-dialog-buttons,
+        .completion-dialog-buttons {
             display: flex;
             justify-content: space-around;
             gap: 1rem;
         }
 
-        .confirmation-dialog-buttons button, .completion-dialog-buttons button {
+        .confirmation-dialog-buttons button,
+        .completion-dialog-buttons button {
             flex: 1;
             padding: 0.75rem;
             border-radius: 0.5rem;
@@ -256,12 +282,14 @@
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
 
-        .btn-confirm, .btn-restart {
+        .btn-confirm,
+        .btn-restart {
             background-color: #fc814a;
             color: #01161E;
         }
 
-        .btn-cancel, .btn-end-dialog {
+        .btn-cancel,
+        .btn-end-dialog {
             background-color: #598392;
             color: #EFF6E0;
         }
@@ -360,7 +388,7 @@
                 // Bestimme die korrekte Basis-URL
                 const currentPath = window.location.pathname;
                 let basePath;
-                
+
                 if (currentPath.includes('Timer-App')) {
                     // GitHub Pages
                     basePath = window.location.origin + '/Timer-App/';
@@ -368,7 +396,7 @@
                     // Lokale Entwicklung
                     basePath = '../';
                 }
-                
+
                 const fullPath = `${basePath}${filePath}`;
                 const response = await fetch(fullPath, { cache: 'force-cache' });
                 if (!response.ok) {
@@ -390,57 +418,72 @@
         }
 
         // Hilfsfunktion, um den Sound für ein bestimmtes Intervall und Sound-Typ zu bestimmen
-function getSoundIdForInterval(timerIntervalIndex, soundType) {
-    if (!currentTimer || !currentTimer.intervals) {
-        return null;
-    }
-    
-    // Finde das richtige Intervall basierend auf dem aktuellen timerIntervalsData-Index
-    // Zähle nur die 'interval'-Typen, um das richtige Intervall-Objekt zu finden
-    let intervalObjectIndex = 0;
-    let intervalsCountedSoFar = 0;
-    
-    for (let i = 0; i <= timerIntervalIndex; i++) {
-        if (timerIntervalsData[i] && timerIntervalsData[i].type === 'interval') {
-            if (i === timerIntervalIndex) {
-                intervalObjectIndex = intervalsCountedSoFar;
-                break;
+        function getSoundIdForInterval(currentIntervalIndex, soundType) {
+            if (!currentTimer || !currentTimer.intervals) {
+                console.log('Kein Timer oder keine Intervalle vorhanden');
+                return null;
             }
-            intervalsCountedSoFar++;
+
+            // Berechne, welches Intervall-Objekt basierend auf currentIntervalIndex
+            // currentIntervalIndex durchläuft timerIntervalsData (interval, rest, interval, rest, ...)
+            // Wir müssen herausfinden, zu welchem Intervall-Objekt es gehört
+
+            let intervalObjectIndex = 0;
+            let tempIndex = currentIntervalIndex;
+
+            // Normalisiere den Index innerhalb eines Zyklus
+            const itemsPerCycle = timerIntervalsData.length;
+            tempIndex = tempIndex % itemsPerCycle;
+
+            // Zähle, wie viele 'interval'-Typen vor dem aktuellen Index kommen
+            for (let i = 0; i < tempIndex; i++) {
+                if (timerIntervalsData[i].type === 'interval') {
+                    intervalObjectIndex++;
+                }
+            }
+
+            // Wenn der aktuelle Index selbst kein 'interval' ist (sondern 'rest'),
+            // gehört er zum gleichen Intervall-Objekt wie das vorherige Interval
+            if (timerIntervalsData[tempIndex].type === 'rest') {
+                // Rest gehört zum gleichen Intervall-Objekt wie das vorherige Interval
+                // intervalObjectIndex ist bereits korrekt (zeigt auf das Intervall davor)
+            } else {
+                // Bei 'interval' ist intervalObjectIndex bereits korrekt gesetzt
+            }
+
+            const interval = currentTimer.intervals[intervalObjectIndex];
+            if (!interval) {
+                console.log(`Kein Intervall-Objekt gefunden für intervalObjectIndex ${intervalObjectIndex}`);
+                const globalSignals = loadGlobalSignals();
+                return globalSignals[soundType] || '';
+            }
+
+            console.log(`getSoundIdForInterval: currentIntervalIndex=${currentIntervalIndex}, tempIndex=${tempIndex}, intervalObjectIndex=${intervalObjectIndex}, type=${timerIntervalsData[tempIndex].type}, soundType=${soundType}`);
+
+            // Prüfe, ob es einen intervallspezifischen Sound gibt
+            if (interval.signals && interval.signals[soundType] !== undefined) {
+                const signalValue = interval.signals[soundType];
+
+                // Wenn explizit "__NONE__" gesetzt ist, gib null zurück (kein Sound)
+                if (signalValue === '__NONE__') {
+                    console.log(`Explizit "None" für Intervall-Objekt ${intervalObjectIndex}, ${soundType}`);
+                    return null;
+                }
+
+                // Wenn ein anderer Wert gesetzt ist, verwende diesen
+                if (signalValue !== '' && signalValue !== null) {
+                    console.log(`Custom Sound für Intervall-Objekt ${intervalObjectIndex}, ${soundType}: ${signalValue}`);
+                    return signalValue;
+                }
+            }
+
+            // Fallback auf globalen Sound
+            const globalSignals = loadGlobalSignals();
+            const globalSoundId = globalSignals[soundType] || '';
+            console.log(`Global Sound für ${soundType}: ${globalSoundId}`);
+            return globalSoundId;
         }
-    }
-    
-    const interval = currentTimer.intervals[intervalObjectIndex];
-    if (!interval) {
-        console.log(`Kein Intervall gefunden für Index ${intervalObjectIndex}`);
-        const globalSignals = loadGlobalSignals();
-        return globalSignals[soundType] || '';
-    }
-    
-    // Prüfe, ob es einen intervallspezifischen Sound gibt
-    if (interval.signals && interval.signals[soundType] !== undefined) {
-        const signalValue = interval.signals[soundType];
-        
-        // Wenn explizit "__NONE__" gesetzt ist, gib null zurück (kein Sound)
-        if (signalValue === '__NONE__') {
-            console.log(`Explizit "None" für Intervall ${intervalObjectIndex}, ${soundType}`);
-            return null;
-        }
-        
-        // Wenn ein anderer Wert gesetzt ist, verwende diesen
-        if (signalValue !== '') {
-            console.log(`Custom Sound für Intervall ${intervalObjectIndex}, ${soundType}: ${signalValue}`);
-            return signalValue;
-        }
-    }
-    
-    // Fallback auf globalen Sound
-    const globalSignals = loadGlobalSignals();
-    const globalSoundId = globalSignals[soundType] || '';
-    console.log(`Global Sound für ${soundType}: ${globalSoundId}`);
-    return globalSoundId;
-}
-        
+
         // Initialisierung des AudioContext und der Audio-Player
         async function initAudio() {
             if (isAudioInitialized) {
@@ -448,13 +491,11 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
                 return;
             }
 
-            // Initialisiere AudioContext
             try {
                 window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
                 window.mainGainNode = window.audioContext.createGain();
                 window.mainGainNode.connect(window.audioContext.destination);
 
-                // Lade Volume Boost
                 const volumeBoost = Number(loadVolumeBoost()) || 100;
                 const gainValue = 0.5 + (volumeBoost - 50) / 100;
                 window.mainGainNode.gain.value = Math.max(0, gainValue);
@@ -463,14 +504,12 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
                 console.error('Fehler beim Initialisieren des AudioContext:', error);
             }
 
-            // Sammle alle benötigten Sounds
             const signals = loadSignals();
             const globalSignals = loadGlobalSignals();
             const soundsToLoad = new Map();
-            
+
             const soundTypes = ['intervalStart', 'restStart', 'halfway', 'threeSecond', 'lastRound'];
-            
-            // Globale Sounds sammeln
+
             soundTypes.forEach(type => {
                 const globalSignalId = globalSignals[type];
                 if (globalSignalId && globalSignalId !== '') {
@@ -484,14 +523,13 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
                     }
                 }
             });
-            
-            // Intervallspezifische Sounds sammeln
+
             if (currentTimer && currentTimer.intervals) {
                 currentTimer.intervals.forEach((interval, intervalIndex) => {
                     if (interval.signals) {
                         soundTypes.forEach(type => {
                             const customSignalId = interval.signals[type];
-                            if (customSignalId && customSignalId !== '' && !soundsToLoad.has(customSignalId)) {
+                            if (customSignalId && customSignalId !== '' && customSignalId !== '__NONE__' && !soundsToLoad.has(customSignalId)) {
                                 const customSignal = signals.find(s => s.id === customSignalId);
                                 if (customSignal && customSignal.filePath) {
                                     soundsToLoad.set(customSignalId, {
@@ -515,10 +553,8 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
                     const { audio, arrayBuffer } = result;
                     const signalId = soundInfo.signalId;
                     const type = soundInfo.type;
-                    
-                    // Unterscheide zwischen verschiedenen Sound-Typen für Performance-Optimierung
+
                     if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
-                        // AudioBuffer für häufig verwendete Sounds
                         try {
                             audioBuffers[signalId] = await window.audioContext.decodeAudioData(arrayBuffer);
                             console.log(`AudioBuffer erstellt für ${signalId}: ${soundInfo.filePath}`);
@@ -527,7 +563,6 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
                             audioPlayers[signalId] = audio;
                         }
                     } else {
-                        // HTMLAudioElement für andere Sounds
                         try {
                             const source = window.audioContext.createMediaElementSource(audio);
                             source.connect(window.mainGainNode);
@@ -545,7 +580,6 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
             await Promise.all(audioPromises);
             isAudioInitialized = true;
 
-            // Audio-Pools für häufig verwendete Sounds
             Object.keys(audioBuffers).forEach(signalId => {
                 audioPlayers[`${signalId}Pool`] = Array(POOL_SIZE).fill().map(() => ({
                     source: null,
@@ -553,7 +587,6 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
                 }));
             });
 
-            // Resume AudioContext bei Sichtbarkeitsänderungen
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible' && window.audioContext && window.audioContext.state === 'suspended') {
                     window.audioContext.resume().then(() => {
@@ -565,7 +598,6 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
             document.addEventListener('click', resumeAudioContext, { once: true });
         }
 
-        // Resume AudioContext bei Benutzerinteraktion
         function resumeAudioContext() {
             if (window.audioContext && window.audioContext.state === 'suspended') {
                 window.audioContext.resume().then(() => {
@@ -574,7 +606,6 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
             }
         }
 
-        // Funktion zum Abspielen eines Sounds aus einem Audio-Pool
         function playPooledSound(signalId) {
             if (!audioBuffers[signalId] || !window.audioContext) {
                 console.warn(`AudioBuffer oder AudioContext nicht verfügbar für ${signalId}`);
@@ -589,7 +620,7 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
                 playAudio(signalId, 0);
                 return;
             }
-            
+
             const poolItem = pool.find(item => item.available);
             if (!poolItem) {
                 console.warn(`Kein verfügbarer Audio-Pool für ${signalId}`);
@@ -620,43 +651,43 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
             if (!isAudioInitialized) {
                 await initAudio();
             }
-            
-            // Ermittle den korrekten Sound basierend auf dem aktuellen Intervall
-    let signalId;
-    if (type === 'lastRound') {
-        // lastRound ist immer global
-        const globalSignals = loadGlobalSignals();
-        signalId = globalSignals[type] || '';
-    } else {
-        // Für andere Sound-Typen ermittle den intervallspezifischen oder globalen Sound
-        const timerIntervalIndex = Math.floor(currentIntervalIndex / 2);
-        signalId = getSoundIdForInterval(timerIntervalIndex, type);
-    }
-    
-    // Wenn signalId null ist (explizit "__NONE__" gewählt), spiele keinen Sound
-    if (signalId === null) {
-        console.log(`Kein Sound für ${type} (explizit None gewählt)`);
-        return;
-    }
-    
-    if (!signalId || signalId === '') {
-        console.log(`Kein Sound ausgewählt für: ${type}`);
-        return;
-    }
-    
-    console.log(`Spiele Sound: type=${type}, intervalIndex=${currentIntervalIndex}, signalId=${signalId}`);
 
-    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
-        playPooledSound(signalId);
-    } else if (immediate) {
-        await playAudio(signalId, 0);
-    } else {
-        soundQueue.push(signalId);
-        if (soundQueue.length === 1) {
-            playNextSound();
+            // Ermittle den korrekten Sound basierend auf dem aktuellen Intervall
+            let signalId;
+            if (type === 'lastRound') {
+                // lastRound ist immer global
+                const globalSignals = loadGlobalSignals();
+                signalId = globalSignals[type] || '';
+            } else {
+                // Für andere Sound-Typen ermittle den intervallspezifischen oder globalen Sound
+                const timerIntervalIndex = Math.floor(currentIntervalIndex / 2);
+                signalId = getSoundIdForInterval(timerIntervalIndex, type);
+            }
+
+            // Wenn signalId null ist (explizit "__NONE__" gewählt), spiele keinen Sound
+            if (signalId === null) {
+                console.log(`Kein Sound für ${type} (explizit None gewählt)`);
+                return;
+            }
+
+            if (!signalId || signalId === '') {
+                console.log(`Kein Sound ausgewählt für: ${type}`);
+                return;
+            }
+
+            console.log(`Spiele Sound: type=${type}, intervalIndex=${currentIntervalIndex}, signalId=${signalId}`);
+
+            if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
+                playPooledSound(signalId);
+            } else if (immediate) {
+                await playAudio(signalId, 0);
+            } else {
+                soundQueue.push(signalId);
+                if (soundQueue.length === 1) {
+                    playNextSound();
+                }
+            }
         }
-    }
-}
 
         // Funktion zum Abspielen des nächsten Sounds in der Warteschlange
         async function playNextSound(retryCount = 0) {
@@ -821,7 +852,7 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
                 currentIntervalTimeRemaining--;
                 totalTimeRemaining--;
 
-                if (timerIntervalsData[currentIntervalIndex].type === 'interval' && 
+                if (timerIntervalsData[currentIntervalIndex].type === 'interval' &&
                     currentIntervalTimeRemaining === halfwayPoint) {
                     playSound('halfway');
                 }
@@ -1039,4 +1070,5 @@ function getSoundIdForInterval(timerIntervalIndex, soundType) {
         }
     </script>
 </body>
+
 </html>
