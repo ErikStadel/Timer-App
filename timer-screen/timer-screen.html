@@ -417,72 +417,45 @@
             }
         }
 
-        // Hilfsfunktion, um den Sound für ein bestimmtes Intervall und Sound-Typ zu bestimmen
-        function getSoundIdForInterval(currentIntervalIndex, soundType) {
-            if (!currentTimer || !currentTimer.intervals) {
-                console.log('Kein Timer oder keine Intervalle vorhanden');
-                return null;
-            }
+       function getSoundIdForInterval(currentIntervalIndex, soundType) {
+  if (!currentTimer || !currentTimer.intervals || currentTimer.intervals.length === 0) {
+    console.log('Kein Timer oder keine Intervalle vorhanden');
+    const globalSignals = loadGlobalSignals();
+    return globalSignals[soundType] || '';
+  }
 
-            // Berechne, welches Intervall-Objekt basierend auf currentIntervalIndex
-            // currentIntervalIndex durchläuft timerIntervalsData (interval, rest, interval, rest, ...)
-            // Wir müssen herausfinden, zu welchem Intervall-Objekt es gehört
+  // Zähle ANHALTENDE Intervalle bis zum aktuellen Index (nicht darüber hinaus!)
+  let roundIndex = 0;
+  for (let i = 0; i < currentIntervalIndex; i++) {  // Änderung: < currentIntervalIndex
+    if (timerIntervalsData[i].type === 'interval') {
+      roundIndex++;
+    }
+  }
 
-            let intervalObjectIndex = 0;
-            let tempIndex = currentIntervalIndex;
+  // Wenn wir UNS gerade in einem interval befinden, inkrementiere für diesen
+  if (timerIntervalsData[currentIntervalIndex].type === 'interval') {
+    roundIndex++;
+  }
+  // Bei rest bleibt roundIndex gleich (gehört zum vorherigen interval)
 
-            // Normalisiere den Index innerhalb eines Zyklus
-            const itemsPerCycle = timerIntervalsData.length;
-            tempIndex = tempIndex % itemsPerCycle;
+  // Klammer an verfügbare Runden
+  if (roundIndex >= currentTimer.intervals.length) {
+    roundIndex = currentTimer.intervals.length - 1;
+  }
 
-            // Zähle, wie viele 'interval'-Typen vor dem aktuellen Index kommen
-            for (let i = 0; i < tempIndex; i++) {
-                if (timerIntervalsData[i].type === 'interval') {
-                    intervalObjectIndex++;
-                }
-            }
+  const interval = currentTimer.intervals[roundIndex];
 
-            // Wenn der aktuelle Index selbst kein 'interval' ist (sondern 'rest'),
-            // gehört er zum gleichen Intervall-Objekt wie das vorherige Interval
-            if (timerIntervalsData[tempIndex].type === 'rest') {
-                // Rest gehört zum gleichen Intervall-Objekt wie das vorherige Interval
-                // intervalObjectIndex ist bereits korrekt (zeigt auf das Intervall davor)
-            } else {
-                // Bei 'interval' ist intervalObjectIndex bereits korrekt gesetzt
-            }
+  console.log(`getSoundIdForInterval: currentIntervalIndex=${currentIntervalIndex}, roundIndex=${roundIndex}, type=${timerIntervalsData[currentIntervalIndex]?.type || 'unknown'}, soundType=${soundType}`);
 
-            const interval = currentTimer.intervals[intervalObjectIndex];
-            if (!interval) {
-                console.log(`Kein Intervall-Objekt gefunden für intervalObjectIndex ${intervalObjectIndex}`);
-                const globalSignals = loadGlobalSignals();
-                return globalSignals[soundType] || '';
-            }
+  if (interval.signals && interval.signals[soundType] !== undefined) {
+    const signalValue = interval.signals[soundType];
+    if (signalValue === '__NONE__') return null;
+    if (signalValue !== '' && signalValue !== null) return signalValue;
+  }
 
-            console.log(`getSoundIdForInterval: currentIntervalIndex=${currentIntervalIndex}, tempIndex=${tempIndex}, intervalObjectIndex=${intervalObjectIndex}, type=${timerIntervalsData[tempIndex].type}, soundType=${soundType}`);
-
-            // Prüfe, ob es einen intervallspezifischen Sound gibt
-            if (interval.signals && interval.signals[soundType] !== undefined) {
-                const signalValue = interval.signals[soundType];
-
-                // Wenn explizit "__NONE__" gesetzt ist, gib null zurück (kein Sound)
-                if (signalValue === '__NONE__') {
-                    console.log(`Explizit "None" für Intervall-Objekt ${intervalObjectIndex}, ${soundType}`);
-                    return null;
-                }
-
-                // Wenn ein anderer Wert gesetzt ist, verwende diesen
-                if (signalValue !== '' && signalValue !== null) {
-                    console.log(`Custom Sound für Intervall-Objekt ${intervalObjectIndex}, ${soundType}: ${signalValue}`);
-                    return signalValue;
-                }
-            }
-
-            // Fallback auf globalen Sound
-            const globalSignals = loadGlobalSignals();
-            const globalSoundId = globalSignals[soundType] || '';
-            console.log(`Global Sound für ${soundType}: ${globalSoundId}`);
-            return globalSoundId;
-        }
+  const globalSignals = loadGlobalSignals();
+  return globalSignals[soundType] || '';
+}
 
         // Initialisierung des AudioContext und der Audio-Player
         async function initAudio() {
@@ -661,7 +634,7 @@
             } else {
                 // Für andere Sound-Typen ermittle den intervallspezifischen oder globalen Sound
                 const timerIntervalIndex = Math.floor(currentIntervalIndex / 2);
-                signalId = getSoundIdForInterval(timerIntervalIndex, type);
+                signalId = getSoundIdForInterval(currentIntervalIndex, type);
             }
 
             // Wenn signalId null ist (explizit "__NONE__" gewählt), spiele keinen Sound
