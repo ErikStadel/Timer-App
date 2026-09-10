@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../../js/dataStorage.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#01161E',
+                        background: '#124559',
+                        primary: '#598392',
+                        secondary: '#AEC3B0',
+                        light: '#EFF6E0',
+                        accent: '#83c5be',
+                        rest: '#629471',
+                        interval: '#fd5c34',
+                        warning: '#fc814a',
+                    },
+                    fontFamily: {
+                        karla: ['Karla', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #01161E;
+            font-family: 'Karla', 'sans-serif';
+            overscroll-behavior: none;
+            scroll-padding-top: 4rem;
+            scroll-behavior: smooth;
+        }
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 1rem;
+            background-color: #01161E;
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+        }
+        header::before {
+            content: "";
+            position: absolute;
+            top: -100vh;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background-color: #01161E;
+            z-index: -1;
+        }
+        header.scrolled {
+            background-color: rgba(1, 22, 30, 0.7);
+            backdrop-filter: blur(6px);
+        }
+        .action-button {
+            background-color: #124559;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.75rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #EFF6E0;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            border: none;
+            width: 100%;
+        }
+        .action-button:active {
+            background-color: rgba(18, 69, 89, 0.8);
+            transform: scale(0.99);
+        }
+    </style>
+</head>
+<body class="text-light">
+    <header id="header" class="text-light shadow-md">
+        <div class="w-full flex justify-between items-center">
+            <a href="../options-screen.html" class="text-accent font-semibold hover:underline">Back</a>
+            <h1 class="text-xl font-bold text-accent tracking-wide">Data</h1>
+            <div style="width: 36px;"></div> <!-- placeholder to balance the Back button -->
+        </div>
+    </header>
+
+    <div class="p-4 flex flex-col gap-4">
+        <p class="text-center text-sm text-gray-300 mb-4">
+            Exportiere deine Timer, Signale und Einstellungen als Datei, um sie auf einem anderen Gerät oder einer anderen URL wiederherzustellen.
+        </p>
+
+        <button id="export-btn" class="action-button">
+            Backup Exportieren
+        </button>
+
+        <div class="relative w-full">
+            <input type="file" id="import-file" class="hidden" accept=".json" />
+            <label for="import-file" class="action-button mb-0">
+                Backup Importieren
+            </label>
+        </div>
+        
+        <div id="status-message" class="text-center font-bold mt-4 hidden"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const exportBtn = document.getElementById('export-btn');
+            const importFile = document.getElementById('import-file');
+            const statusMessage = document.getElementById('status-message');
+
+            function showStatus(text, isError = false) {
+                statusMessage.textContent = text;
+                statusMessage.className = `text-center font-bold mt-4 ${isError ? 'text-warning' : 'text-accent'}`;
+                statusMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    statusMessage.classList.add('hidden');
+                }, 3000);
+            }
+
+            exportBtn.addEventListener('click', () => {
+                try {
+                    const data = {
+                        timers: localStorage.getItem(TIMER_STORAGE_KEY),
+                        signals: localStorage.getItem(SIGNAL_STORAGE_KEY),
+                        globalSignals: localStorage.getItem(GLOBAL_SIGNALS_KEY),
+                        volumeBoost: localStorage.getItem(VOLUME_BOOST_KEY)
+                    };
+
+                    const dataStr = JSON.stringify(data);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const date = new Date().toISOString().split('T')[0];
+                    a.download = `timerapp-backup-${date}.json`;
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    showStatus('Backup erfolgreich exportiert!');
+                } catch (e) {
+                    console.error(e);
+                    showStatus('Fehler beim Exportieren!', true);
+                }
+            });
+
+            importFile.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const content = e.target.result;
+                        const data = JSON.parse(content);
+                        
+                        let imported = false;
+                        if (data.timers) { localStorage.setItem(TIMER_STORAGE_KEY, data.timers); imported = true; }
+                        if (data.signals) { localStorage.setItem(SIGNAL_STORAGE_KEY, data.signals); imported = true; }
+                        if (data.globalSignals) { localStorage.setItem(GLOBAL_SIGNALS_KEY, data.globalSignals); imported = true; }
+                        if (data.volumeBoost) { localStorage.setItem(VOLUME_BOOST_KEY, data.volumeBoost); imported = true; }
+                        
+                        if (imported) {
+                            showStatus('Backup erfolgreich importiert!');
+                        } else {
+                            showStatus('Datei enthält keine passenden Daten.', true);
+                        }
+                        
+                        // Reset input
+                        event.target.value = '';
+                    } catch (err) {
+                        console.error(err);
+                        showStatus('Fehler beim Importieren der Datei!', true);
+                    }
+                };
+                reader.readAsText(file);
+            });
+
+            // Scroll-Listener für Header
+            const header = document.querySelector('header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 0) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
