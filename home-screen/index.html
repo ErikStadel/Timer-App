@@ -4,8 +4,8 @@
 
     <!-- PWA: Vollbildmodus aktivieren -->
 <meta name="apple-mobile-web-app-capable" content="yes">
-<!-- Statusleiste anpassen (z. B. schwarzer Hintergrund) -->
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Statusleiste anpassen -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <!-- App-Titel für Home Screen -->
 <meta name="apple-mobile-web-app-title" content="Timer-App">
 <!-- App-Icon (PNG, 180x180px für iPhone) -->
@@ -18,7 +18,7 @@
 <link rel="manifest" href="../manifest.json">
     
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#09090b" />
     <title>Home Screen</title>
     
@@ -35,7 +35,6 @@
         height: 100%;
         margin: 0;
         padding: 0;
-        padding-top: env(safe-area-inset-top);
         background-color: #09090b;
         font-family: 'Inter', sans-serif;
         color: #fafafa;
@@ -44,27 +43,6 @@
         scroll-behavior: smooth;
       }
 
-      header {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        padding: 1rem;
-        background-color: #01161E;
-        transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
-      }
-
-      header::before {
-        content: "";
-        position: absolute;
-        top: -100vh;
-        left: 0;
-        right: 0;
-        height: 100vh;
-        background-color: #01161E;
-        z-index: -1;
-      }
-
-      /* Neue Header-Styles */
       header {
         position: sticky;
         top: 0;
@@ -367,7 +345,7 @@
 
     <!-- Versionsnummer mit Abstand -->
     <div class="mt-8 text-center text-gray-400">
-      Version 3.0
+      Version 3.1
     </div>
 
     <div class="confirmation-overlay" id="deleteConfirmationDialog">

@@ -1,4 +1,4 @@
-// Timer App Service Worker - v3.0 (Offline-Ready & Auto-Updating)
+// Timer App Service Worker - v3.1 (Offline-Ready & Auto-Updating)
 const CACHE_NAME = 'timer-app-v3';
 
 const isGitHubPages = self.location.pathname.includes('/Timer-App');
