@@ -131,6 +131,10 @@
             flex-grow: 1;
         }
 
+        .interval-item.sortable-mode {
+            touch-action: none !important;
+        }
+
         .interval-item.sortable-mode:active {
             transform: none !important;
         }
@@ -140,7 +144,7 @@
         }
 
         .sortable-ghost {
-            opacity: 0.25 !important;
+            opacity: 0.2 !important;
             background-color: #27272a !important;
             border: 1px dashed #52525b !important;
             transform: none !important;
@@ -152,10 +156,14 @@
             border: 1px solid #3f3f46 !important;
             border-radius: 1rem !important;
             box-shadow: 0 25px 35px -5px rgba(0, 0, 0, 0.8), 0 10px 15px -5px rgba(0, 0, 0, 0.6) !important;
-            transform: scale(1.04) !important;
             cursor: grabbing !important;
             pointer-events: none !important;
             z-index: 99999 !important;
+            transition: none !important; /* CRITICAL: Must not transition transform while dragging! */
+        }
+
+        .sortable-fallback > div {
+            transform: scale(1.03);
         }
 
         .sort-icon {
@@ -703,9 +711,7 @@
                     ghostClass: 'sortable-ghost',
                     chosenClass: 'sortable-chosen',
                     dragClass: 'sortable-drag',
-                    delay: 100,
-                    delayOnTouchOnly: true,
-                    touchStartThreshold: 5,
+                    delay: 0,
                     swapThreshold: 0.65,
                     invertSwap: true,
                     handle: '.interval-item > div:first-child',

@@ -196,6 +196,10 @@
       }
 
       /* Sortable Drag & Drop Styling */
+      .timer-item.sortable-mode {
+        touch-action: none !important;
+      }
+
       .timer-item.sortable-mode:active {
         transform: none !important;
       }
@@ -205,7 +209,7 @@
       }
 
       .sortable-ghost {
-        opacity: 0.25 !important;
+        opacity: 0.2 !important;
         background-color: #27272a !important;
         border: 1px dashed #52525b !important;
         transform: none !important;
@@ -217,10 +221,15 @@
         border: 1px solid #3f3f46 !important;
         border-radius: 1rem !important;
         box-shadow: 0 25px 35px -5px rgba(0, 0, 0, 0.8), 0 10px 15px -5px rgba(0, 0, 0, 0.6) !important;
-        transform: scale(1.04) !important;
         cursor: grabbing !important;
         pointer-events: none !important;
         z-index: 99999 !important;
+        transition: none !important; /* CRITICAL: Must not transition transform while dragging! */
+        /* NOTE: Do NOT set transform here! SortableJS sets inline translate3d to move the element! */
+      }
+
+      .sortable-fallback > div {
+        transform: scale(1.03);
       }
 
       .sort-icon {
@@ -358,7 +367,7 @@
 
     <!-- Versionsnummer mit Abstand -->
     <div class="mt-8 text-center text-gray-400">
-      Version 1.1.4
+      Version 1.1.5
     </div>
 
     <div class="confirmation-overlay" id="deleteConfirmationDialog">
@@ -629,9 +638,7 @@
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-drag',
-            delay: 100,
-            delayOnTouchOnly: true,
-            touchStartThreshold: 5,
+            delay: 0,
             swapThreshold: 0.65,
             invertSwap: true,
             onStart: function(evt) {
