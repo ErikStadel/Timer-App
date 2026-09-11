@@ -25,3 +25,19 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
 });
+
+// Globale Service Worker Registrierung für PWA / Offline-Fähigkeit
+if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => {
+        const isGitHubPages = window.location.pathname.includes('/Timer-App');
+        const swPath = isGitHubPages ? '/Timer-App/sw.js' : '/sw.js';
+        const swScope = isGitHubPages ? '/Timer-App/' : '/';
+        navigator.serviceWorker.register(swPath, { scope: swScope })
+            .then(reg => {
+                console.log('[PWA] Service Worker aktiv auf Scope:', reg.scope);
+            })
+            .catch(err => {
+                console.warn('[PWA] Service Worker Registrierungsfehler:', err);
+            });
+    });
+}
