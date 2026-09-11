@@ -1,4 +1,4 @@
-// v1.1.6: Custom Sounds implementiert Bugfix
+// v1.1.7: Custom Sounds implementiert Bugfix
 
 self.addEventListener('install', event => {
     event.waitUntil(

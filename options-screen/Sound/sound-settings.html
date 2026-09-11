@@ -177,28 +177,57 @@
         compressor.connect(postLimiterGain);
         postLimiterGain.connect(window.audioContext.destination);
 
-        // Preview-Sound Puffer
+        // Preview-Sound Puffer (Horn)
         let previewBuffer = null;
+
+        function getHornUrl() {
+            if (window.location.pathname.includes('Timer-App')) {
+                return window.location.origin + '/Timer-App/assets/sounds/horn.mp3';
+            }
+            return '../../assets/sounds/horn.mp3';
+        }
+
         async function loadPreviewSound() {
             try {
-                const response = await fetch('../../assets/sounds/bell.mp3');
+                const response = await fetch(getHornUrl());
                 const arrayBuffer = await response.arrayBuffer();
                 previewBuffer = await window.audioContext.decodeAudioData(arrayBuffer);
+                console.log('Preview Sound (Horn) erfolgreich geladen');
             } catch (e) {
-                console.error('Fehler beim Laden des Preview-Sounds:', e);
+                console.warn('decodeAudioData fehlgeschlagen, nutze Fallback:', e);
             }
         }
 
-        function playPreviewSound() {
-            if (window.audioContext.state === 'suspended') {
-                window.audioContext.resume().then(() => playPreviewSound());
-                return;
+        async function playPreviewSound() {
+            try {
+                if (window.audioContext.state === 'suspended') {
+                    await window.audioContext.resume();
+                }
+
+                if (!previewBuffer) {
+                    await loadPreviewSound();
+                }
+
+                if (previewBuffer) {
+                    const source = window.audioContext.createBufferSource();
+                    source.buffer = previewBuffer;
+                    source.connect(window.mainGainNode);
+                    source.start(0);
+                    console.log('Horn-Preview abgespielt via Web Audio');
+                    return;
+                }
+            } catch (err) {
+                console.error('Fehler bei Web Audio Preview:', err);
             }
-            if (previewBuffer) {
-                const source = window.audioContext.createBufferSource();
-                source.buffer = previewBuffer;
-                source.connect(window.mainGainNode);
-                source.start(0);
+
+            // Fallback: Normales HTML5 Audio
+            try {
+                const audio = new Audio(getHornUrl());
+                audio.volume = Math.min(1.0, (Number(currentVolume) || 100) / 100);
+                audio.play();
+                console.log('Horn-Preview abgespielt via Audio Fallback');
+            } catch (err) {
+                console.error('Audio Fallback fehlgeschlagen:', err);
             }
         }
 
