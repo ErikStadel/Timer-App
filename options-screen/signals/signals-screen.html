@@ -3,51 +3,39 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#09090b" />
     <title>Signals</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
     <script src="../../js/dataStorage.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#629471',
-                        interval: '#fd5c34',
-                        warning: '#fc814a',
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+    <script src="../../js/ui-config.js"></script>
+    
     <style>
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
-            background-color: #01161E;
-            font-family: 'Karla', 'sans-serif';
+            background-color: #09090b;
+            font-family: 'Inter', sans-serif;
+            color: #fafafa;
             overscroll-behavior: none;
             scroll-padding-top: 4rem;
             scroll-behavior: smooth;
         }
+
         header {
             position: sticky;
             top: 0;
             z-index: 50;
             padding: 1rem;
-            background-color: #01161E;
-            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+            background-color: rgba(9, 9, 11, 0.85); /* Zinc 950 */
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #27272a; /* Zinc 800 */
         }
+        
         header::before {
             content: "";
             position: absolute;
@@ -55,54 +43,100 @@
             left: 0;
             right: 0;
             height: 100vh;
-            background-color: #01161E;
+            background-color: #09090b;
             z-index: -1;
         }
-        header.scrolled {
-            background-color: rgba(1, 22, 30, 0.7);
-            backdrop-filter: blur(6px);
+
+        .main-content {
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            overflow-y: auto;
         }
+
         .signal-item {
-            background-color: #124559;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 0.75rem;
+            background-color: #18181b; /* Zinc 900 */
+            border: 1px solid #27272a;
+            border-radius: 1rem;
             display: flex;
             justify-content: space-between;
-            font-size: 1.1rem;
+            align-items: center;
+            padding: 1.25rem 1rem;
+            font-size: 1.125rem;
+            font-weight: 500;
             cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .signal-item:active {
+            transform: scale(0.97);
+            background-color: #27272a;
+        }
+
+        .signal-item .value-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #a1a1aa; /* Zinc 400 */
+            font-size: 1rem;
+        }
+
+        .signal-item i.right-icon {
+            color: #52525b; /* Zinc 500 */
+            width: 20px;
+            height: 20px;
         }
     </style>
 </head>
-<body class="text-light">
-    <header id="header" class="text-light shadow-md">
+<body class="text-textMain">
+    <header id="header" class="text-textMain">
         <div class="w-full flex justify-between items-center">
-            <a href="../options-screen.html" class="text-accent font-semibold hover:underline">Back</a>
-            <h1 class="text-xl font-bold text-accent tracking-wide">Signals</h1>
-            <div></div>
+            <button onclick="triggerHapticFeedback(10); window.location.href='../options-screen.html'" class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors">
+                <i data-lucide="chevron-left" class="w-6 h-6 text-primary"></i>
+            </button>
+            <h1 class="text-xl font-semibold tracking-wide">Signals</h1>
+            <div class="w-10"></div> <!-- placeholder -->
         </div>
     </header>
 
-    <div class="p-4">
-        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=intervalStart'">
+    <div class="main-content">
+        <div class="signal-item" onclick="triggerHapticFeedback(10); window.location.href='signal-select.html?signalType=intervalStart'">
             <span>Interval Start</span>
-            <span id="interval-start-signal">Horn</span>
+            <div class="value-group">
+                <span id="interval-start-signal">Horn</span>
+                <i data-lucide="chevron-right" class="right-icon"></i>
+            </div>
         </div>
-        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=restStart'">
+        <div class="signal-item" onclick="triggerHapticFeedback(10); window.location.href='signal-select.html?signalType=restStart'">
             <span>Rest Start</span>
-            <span id="rest-start-signal">Bell</span>
+            <div class="value-group">
+                <span id="rest-start-signal">Bell</span>
+                <i data-lucide="chevron-right" class="right-icon"></i>
+            </div>
         </div>
-        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=halfway'">
+        <div class="signal-item" onclick="triggerHapticFeedback(10); window.location.href='signal-select.html?signalType=halfway'">
             <span>Halfway Signal</span>
-            <span id="halfway-signal">Gong</span>
+            <div class="value-group">
+                <span id="halfway-signal">Gong</span>
+                <i data-lucide="chevron-right" class="right-icon"></i>
+            </div>
         </div>
-        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=threeSecond'">
+        <div class="signal-item" onclick="triggerHapticFeedback(10); window.location.href='signal-select.html?signalType=threeSecond'">
             <span>3 Second Signal</span>
-            <span id="three-second-signal">Beep</span>
+            <div class="value-group">
+                <span id="three-second-signal">Beep</span>
+                <i data-lucide="chevron-right" class="right-icon"></i>
+            </div>
         </div>
-        <div class="signal-item" onclick="window.location.href='signal-select.html?signalType=lastRound'">
+        <div class="signal-item" onclick="triggerHapticFeedback(10); window.location.href='signal-select.html?signalType=lastRound'">
             <span>Last Round</span>
-            <span id="last-round-signal">Applause</span>
+            <div class="value-group">
+                <span id="last-round-signal">Applause</span>
+                <i data-lucide="chevron-right" class="right-icon"></i>
+            </div>
         </div>
     </div>
 
@@ -123,16 +157,6 @@
                 const signalId = globalSignals[type];
                 const signal = signals.find(s => s.id === signalId);
                 signalElements[type].textContent = signal ? signal.name : 'None';
-            });
-
-            // Scroll-Listener für Header
-            const header = document.querySelector('header');
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 0) {
-                    header.classList.add('scrolled');
-                } else {
-                    header.classList.remove('scrolled');
-                }
             });
         });
     </script>

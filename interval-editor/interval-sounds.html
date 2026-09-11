@@ -4,40 +4,25 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#09090b" />
     <title>Interval Sounds</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
     <script src="../js/dataStorage.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#629471',
-                        interval: '#fd5c34',
-                        warning: '#fc814a',
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+    <script src="../js/ui-config.js"></script>
+    
     <style>
         html,
         body {
             height: 100%;
             margin: 0;
             padding: 0;
-            background-color: #01161E;
-            font-family: 'Karla', sans-serif;
+            background-color: #09090b;
+            font-family: 'Inter', sans-serif;
+            color: #fafafa;
             overscroll-behavior: none;
             scroll-padding-top: 4rem;
             scroll-behavior: smooth;
@@ -48,8 +33,9 @@
             top: 0;
             z-index: 50;
             padding: 1rem;
-            background-color: #01161E;
-            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+            background-color: rgba(9, 9, 11, 0.85); /* Zinc 950 */
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #27272a; /* Zinc 800 */
         }
 
         header::before {
@@ -59,76 +45,65 @@
             left: 0;
             right: 0;
             height: 100vh;
-            background-color: #01161E;
+            background-color: #09090b;
             z-index: -1;
-        }
-
-        header.scrolled {
-            background-color: rgba(1, 22, 30, 0.7);
-            backdrop-filter: blur(6px);
-        }
-
-        .signal-item {
-            background-color: rgba(255, 255, 255, 0.08);
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 0.75rem;
-            font-size: 1.1rem;
-            cursor: pointer;
-        }
-
-        .signal-item.selected {
-            background-color: #83c5be;
-            color: #01161E;
         }
 
         .sound-select {
             width: 100%;
-            background-color: #124559;
-            color: #EFF6E0;
-            border: 1px solid rgba(239, 246, 224, 0.1);
-            border-radius: 0.5rem;
+            background-color: #18181b; /* Zinc 900 */
+            color: #fafafa;
+            border: 1px solid #27272a; /* Zinc 800 */
+            border-radius: 0.75rem;
             padding: 0.75rem 1rem;
-            font-size: 1rem;
+            font-size: 1.125rem;
             margin-bottom: 1.5rem;
+            outline: none;
+            transition: border-color 0.2s;
         }
 
         .sound-select:focus {
-            outline: none;
-            border-color: #83c5be;
-            box-shadow: 0 0 0 2px rgba(131, 197, 190, 0.3);
+            border-color: #f97316; /* Vermillion */
         }
 
         .sound-group {
             margin-bottom: 2rem;
+            background-color: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 1rem;
+            padding: 1.25rem;
         }
 
         .sound-group-label {
             display: block;
-            margin-bottom: 0.5rem;
-            color: #83c5be;
-            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #textMuted;
+            font-weight: 500;
         }
 
         .global-default-option {
             font-style: italic;
-            color: #AEC3B0;
+            color: #a1a1aa; /* Zinc 400 */
         }
     </style>
 </head>
 
-<body class="text-light">
-    <header id="header" class="text-light shadow-md">
+<body class="text-textMain">
+    <header id="header" class="text-textMain">
         <div class="w-full flex justify-between items-center">
             <a href="../interval-editor/interval-editor.html" id="back-button"
-                class="text-accent font-semibold hover:underline">Back</a>
-            <h1 class="text-xl font-bold text-accent tracking-wide">Interval Sounds</h1>
-            <button id="save-button" class="text-accent font-semibold hover:underline">Save</button>
+                class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors" onclick="triggerHapticFeedback(10)">
+                <i data-lucide="chevron-left" class="w-6 h-6 text-primary"></i>
+            </a>
+            <h1 class="text-xl font-semibold tracking-wide">Interval Sounds</h1>
+            <button id="save-button" class="text-primary font-semibold tracking-wide p-2 -mr-2 rounded-full active:bg-surfaceBorder transition-colors" onclick="triggerHapticFeedback(20)">
+                Save
+            </button>
         </div>
     </header>
 
-    <div class="p-4">
-        <h2 class="text-accent font-semibold text-lg mb-6">Customize Sounds for this Interval</h2>
+    <div class="p-4 pt-6 max-w-lg mx-auto">
+        <p class="text-textMuted font-medium mb-6 px-1 text-center">Override global sound settings for this specific interval.</p>
 
         <div id="sound-controls">
             <!-- Sound-Auswahl wird hier per JavaScript eingefügt -->

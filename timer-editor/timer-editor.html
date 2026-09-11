@@ -4,37 +4,15 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#01161E" />
+    <meta name="theme-color" content="#09090b" />
     <title>Timer Editor</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
     <script src="../js/dataStorage.js"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#94d1be',
-                        interval: '#e76f51',
-                        warning: '#fc814a',
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    }
-                }
-            }
-        };
-    </script>
-
-    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+    <script src="../js/ui-config.js"></script>
 
     <style>
         html,
@@ -43,11 +21,11 @@
             margin: 0;
             padding: 0;
             padding-top: env(safe-area-inset-top);
-            background-color: #01161E;
-            font-family: 'Karla', sans-serif;
+            background-color: #09090b;
+            font-family: 'Inter', sans-serif;
+            color: #fafafa;
             overscroll-behavior: none;
             scroll-padding-top: 4rem;
-            color: #EFF6E0;
         }
 
         header {
@@ -55,8 +33,9 @@
             top: 0;
             z-index: 50;
             padding: 1rem;
-            background-color: #01161E;
-            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+            background-color: rgba(9, 9, 11, 0.85); /* Zinc 950 */
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #27272a; /* Zinc 800 */
         }
 
         header::before {
@@ -66,66 +45,62 @@
             left: 0;
             right: 0;
             height: 100vh;
-            background-color: #01161E;
+            background-color: #09090b;
             z-index: -1;
         }
 
-        header.scrolled {
-            background-color: rgba(1, 22, 30, 0.7);
-            backdrop-filter: blur(6px);
-        }
-
         .editor-content {
-            padding-top: 0rem;
-            padding-left: 1rem;
-            padding-right: 1rem;
-            padding-bottom: 1rem;
-            gap: 1rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         .interval-list {
             margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
             gap: 0.75rem;
         }
 
         .interval-item {
-            margin-bottom: 1rem;
             position: relative;
             overflow: hidden;
+            background-color: #18181b; /* Zinc 900 */
+            border: 1px solid #27272a; /* Zinc 800 */
+            border-radius: 1rem;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
+        }
+
+        .interval-item:active {
+            transform: scale(0.97);
+            border-color: #3f3f46;
         }
 
         .interval-item>div:first-child {
-            background-color: #124559;
-            border: 1px solid rgba(239, 246, 224, 0.1);
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
+            padding: 1.25rem 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             transition: opacity 0.3s ease;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
             user-select: none;
         }
 
         .interval-item.options-active>div:first-child {
-            opacity: 0.5;
+            opacity: 0.4;
         }
 
         .interval-item>div.swipe-options-container {
             transform: translateX(100%);
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: absolute;
             top: 0;
             left: 0;
             bottom: 0;
-            background-color: #01161E;
             width: 100%;
             display: flex;
-            align-items: center;
-            justify-content: space-around;
-            padding: 0 1rem;
+            align-items: stretch;
+            background-color: transparent;
         }
 
         .interval-item>div.swipe-options-container.slide-in {
@@ -137,56 +112,98 @@
         }
 
         .interval-item>div.swipe-options-container span {
-            color: #EFF6E0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fafafa;
             cursor: pointer;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.5rem;
-            white-space: nowrap;
+            padding: 0 1.25rem;
+            font-weight: 600;
         }
 
-        .interval-item>div.swipe-options-container span:hover {
-            opacity: 0.8;
+        .edit-action {
+            background-color: #27272a; /* Zinc 800 */
+            flex-grow: 1;
+        }
+        
+        .delete-action {
+            background-color: #eb4639; /* Light Crimson */
+            flex-grow: 1;
         }
 
-        .interval-item>div.swipe-options-container span.delete {
-            color: #fc814a;
+        .sortable-chosen {
+            background-color: #27272a !important;
+            border-color: #3f3f46 !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
         }
 
-        .sortable-chosen>div:first-child {
-            background-color: #AEC3B0 !important;
-        }
-
-        .sort-icon-placeholder {
-            width: 1.5rem;
-            margin-right: 0.5rem;
+        .sort-icon {
+            color: #52525b; /* Zinc 500 */
+            margin-right: 0.75rem;
             opacity: 0;
-            text-align: center;
-            cursor: grab;
             transition: opacity 0.3s ease;
-            flex-shrink: 0;
+            display: flex;
+            align-items: center;
         }
 
-        .interval-item.sortable-mode .sort-icon-placeholder {
+        .interval-item.sortable-mode .sort-icon {
             opacity: 1;
         }
 
-        .interval-item.sortable-mode>div:first-child {
-            cursor: grab;
+        .interval-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
         }
 
-        #addIntervalButton.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background-color: #598392;
+        .interval-times {
+            display: flex;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
         }
 
-        .confirmation-dialog-overlay {
+        .time-badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.5rem;
+        }
+        
+        .time-badge.work {
+            background-color: rgba(249, 115, 22, 0.15); /* Vermillion tinted bg */
+            color: #f97316;
+        }
+        
+        .time-badge.rest {
+            background-color: rgba(34, 197, 94, 0.15); /* Jade tinted bg */
+            color: #22c55e;
+        }
+
+        input[type="text"], input[type="number"] {
+            background-color: #18181b;
+            border: 1px solid #27272a;
+            color: #fafafa;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 1.125rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: #f97316;
+        }
+
+        /* Confirmation Dialog */
+        .confirmation-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -196,24 +213,26 @@
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        .confirmation-dialog-overlay.active {
+        .confirmation-overlay.active {
             opacity: 1;
             visibility: visible;
         }
 
         .confirmation-dialog {
-            background-color: #124559;
-            color: #EFF6E0;
+            background-color: #18181b;
+            color: #fafafa;
             padding: 1.5rem;
-            border-radius: 0.75rem;
+            border-radius: 1.25rem;
+            border: 1px solid #27272a;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             max-width: 80%;
             min-width: 280px;
         }
 
         .confirmation-dialog p {
-            font-size: 1.1rem;
+            font-size: 1.125rem;
+            font-weight: 500;
             margin-bottom: 1.5rem;
         }
 
@@ -223,68 +242,87 @@
             gap: 1rem;
         }
 
-        .btn-cancel,
-        .btn-confirm {
+        .btn-cancel, .btn-confirm {
             padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: bold;
+            border-radius: 0.75rem;
+            font-weight: 600;
             cursor: pointer;
             border: none;
             font-size: 1rem;
             flex-grow: 1;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .btn-cancel:active, .btn-confirm:active {
+            transform: scale(0.95);
         }
 
         .btn-cancel {
-            background-color: #598392;
-            color: #EFF6E0;
-        }
-
-        .btn-cancel:hover {
-            background-color: #AEC3B0;
+            background-color: #27272a;
+            color: #fafafa;
         }
 
         .btn-confirm {
-            background-color: #e76f51;
-            color: #EFF6E0;
+            background-color: #eb4639; /* Light Crimson */
+            color: #ffffff;
         }
-
-        .btn-confirm:hover {
-            background-color: #fc814a;
+        
+        /* Outline Buttons */
+        .outline-button {
+            background-color: transparent;
+            border: 1px solid #f97316;
+            color: #f97316;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        
+        .outline-button:active {
+            transform: scale(0.97);
+            background-color: rgba(249, 115, 22, 0.1);
         }
     </style>
 </head>
 
-<body class="text-light">
-    <header id="header" class="text-light shadow-md">
+<body class="text-textMain">
+    <header id="header" class="text-textMain">
         <div class="w-full flex justify-between items-center">
-            <button class="text-accent font-semibold hover:underline"
-                onclick="window.location.href='../home-screen/index.html';">Back</button>
-            <h1 id="headerTitle" class="text-xl font-bold text-accent tracking-wide">Add Timer</h1>
-            <button id="saveButton" class="text-accent font-semibold hover:underline">Save</button>
+            <button class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors"
+                onclick="triggerHapticFeedback(10); window.location.href='../home-screen/index.html';">
+                <i data-lucide="chevron-left" class="w-6 h-6 text-primary"></i>
+            </button>
+            <h1 id="headerTitle" class="text-xl font-semibold tracking-wide">Add Timer</h1>
+            <button id="saveButton" class="text-primary font-semibold tracking-wide p-2 -mr-2 rounded-full active:bg-surfaceBorder transition-colors">
+                Save
+            </button>
         </div>
     </header>
 
     <div class="editor-content pt-4">
         <div>
-            <label class="block text-accent font-semibold mb-1">Timer Name</label>
-            <input type="text" id="timerNameInput" placeholder="z.B. Boxrunde"
-                class="w-full px-4 py-2 rounded-xl bg-light text-dark placeholder:text-dark/50 focus:outline-none focus:ring-2 focus:ring-accent" />
+            <label class="block text-textMuted font-medium mb-2 pl-1">Timer Name</label>
+            <input type="text" id="timerNameInput" placeholder="z.B. Boxrunde" />
         </div>
 
-        <div class="mt-6">
-            <label class="block text-accent font-semibold mb-1">Repeat</label>
-            <input type="number" id="repeatInput" min="1" value="1"
-                class="w-full px-4 py-2 rounded-xl bg-light text-dark focus:outline-none focus:ring-2 focus:ring-accent" />
+        <div class="mt-2">
+            <label class="block text-textMuted font-medium mb-2 pl-1">Repeat</label>
+            <input type="number" id="repeatInput" min="1" value="1" />
         </div>
 
-        <div class="interval-list mt-6">
-            <h2 class="text-accent font-semibold text-lg">Intervals</h2>
-            <div id="intervalContainer"></div>
+        <div class="interval-list mt-2">
+            <h2 class="text-textMuted font-medium pl-1 mb-1">Intervals</h2>
+            <div id="intervalContainer" class="flex flex-col gap-3"></div>
         </div>
 
         <button id="addIntervalButton"
-            class="w-full bg-secondary text-dark rounded-xl py-2 font-semibold hover:bg-secondary/80 transition-all mt-6">
-            + Add Interval
+            class="outline-button mt-4" onclick="triggerHapticFeedback(10)">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            Add Interval
         </button>
     </div>
 
@@ -357,17 +395,19 @@
             let optionsElement = listItem.querySelector('.swipe-options-container');
             if (!optionsElement) {
                 optionsElement = document.createElement('div');
-                optionsElement.classList.add('swipe-options-container', 'bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute', 'transform', 'translate-x-full', 'transition-transform', 'duration-300');
+                optionsElement.classList.add('swipe-options-container');
                 optionsElement.innerHTML = `
-                  <span class="text-light cursor-pointer clone-button">Clone</span>
-                  <span class="text-warning cursor-pointer delete-button ml-4">Delete</span>
+                  <span class="edit-action clone-button"><i data-lucide="copy" class="w-5 h-5 mr-1"></i>Clone</span>
+                  <span class="delete-action delete-button"><i data-lucide="trash-2" class="w-5 h-5 mr-1"></i>Delete</span>
               `;
                 listItem.appendChild(optionsElement);
+                lucide.createIcons({ root: optionsElement });
 
                 const cloneButton = optionsElement.querySelector('.clone-button');
                 const deleteButton = optionsElement.querySelector('.delete-button');
 
                 cloneButton.addEventListener('click', (e) => {
+                    triggerHapticFeedback(10);
                     e.stopPropagation();
                     const itemId = listItem.dataset.intervalId;
                     cloneInterval(itemId);
@@ -375,6 +415,7 @@
                 });
 
                 deleteButton.addEventListener('click', (e) => {
+                    triggerHapticFeedback(20);
                     e.stopPropagation();
                     const itemId = listItem.dataset.intervalId;
                     showDeleteConfirmation(itemId);
@@ -382,7 +423,6 @@
             }
 
             setTimeout(() => {
-                optionsElement.classList.remove('translate-x-full');
                 optionsElement.classList.add('slide-in');
                 listItem.classList.add('options-active');
             }, 0);
@@ -453,13 +493,30 @@
             renderIntervalList();
         }
 
+        function formatTimeForEditor(interval) {
+            const iDur = interval.durationInterval || 0;
+            const rDur = interval.durationRest || 0;
+            
+            const formatSecs = (secs) => {
+                const m = Math.floor(secs / 60);
+                const s = secs % 60;
+                return m > 0 ? `${m}m ${s}s` : `${s}s`;
+            };
+
+            let html = '';
+            if (iDur > 0) html += `<span class="time-badge work">Work: ${formatSecs(iDur)}</span>`;
+            if (rDur > 0) html += `<span class="time-badge rest">Rest: ${formatSecs(rDur)}</span>`;
+            
+            return html || '<span class="time-badge">0s</span>';
+        }
+
         // --- Render Interval List ---
         function renderIntervalList() {
             intervalContainer.innerHTML = '';
             if (intervals.length === 0) {
                 const noIntervalsMessage = document.createElement('div');
-                noIntervalsMessage.classList.add('text-center', 'text-secondary', 'mt-4', 'p-4', 'rounded-xl', 'bg-background');
-                noIntervalsMessage.textContent = 'No intervals yet. Tap "+ Add Interval" to create one.';
+                noIntervalsMessage.classList.add('text-center', 'text-textMuted', 'mt-4', 'p-4', 'rounded-xl', 'bg-surfaceBorder', 'font-medium');
+                noIntervalsMessage.textContent = 'No intervals yet. Tap "Add Interval" to create one.';
                 intervalContainer.appendChild(noIntervalsMessage);
                 return;
             }
@@ -474,10 +531,12 @@
                 }
 
                 listItem.innerHTML = `
-                  <div class="bg-background border border-light/10 rounded-xl px-4 py-3 flex justify-between items-center transition-opacity duration-300">
-                      <span class="sort-icon-placeholder"></span>
-                      <span class="interval-name-display">${interval.name}</span>
-                      <span class="text-sm text-accent">${formatTimeForEditor(interval)}</span>
+                  <div>
+                      <span class="sort-icon"><i data-lucide="grip-vertical"></i></span>
+                      <div class="interval-details flex-grow ml-2 items-start">
+                          <span class="interval-name text-textMain font-semibold">${interval.name}</span>
+                          <div class="interval-times">${formatTimeForEditor(interval)}</div>
+                      </div>
                   </div>
               `;
 
@@ -581,6 +640,8 @@
                 sortableInstance.destroy();
                 sortableInstance = null;
             }
+            
+            lucide.createIcons();
         }
 
         function enableSortableMode() {

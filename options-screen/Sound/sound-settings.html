@@ -2,112 +2,53 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8" />
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#09090b" />
     <title>Sound Settings</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
     <script src="../../js/dataStorage.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#629471',
-                        interval: '#fd5c34',
-                        warning: '#fc814a',
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-        rel="stylesheet"
-    />
+    <script src="../../js/ui-config.js"></script>
+    
     <style>
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
-            background-color: #01161E;
-            font-family: 'Karla', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            background-color: #09090b;
+            font-family: 'Inter', sans-serif;
+            color: #fafafa;
             overscroll-behavior: none;
             scroll-padding-top: 4rem;
             scroll-behavior: smooth;
-            color: #EFF6E0;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
         }
 
-        .sticky-header {
+        header {
             position: sticky;
             top: 0;
             width: 100%;
-            background-color: #01161E;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             z-index: 50;
-            flex-shrink: 0;
-            position: absolute;
-            top: 0;
+            padding: 1rem;
+            background-color: rgba(9, 9, 11, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #27272a;
         }
         
-        .sticky-header::before {
+        header::before {
             content: "";
             position: absolute;
             top: -100vh;
             left: 0;
             right: 0;
             height: 100vh;
-            background-color: #01161E;
+            background-color: #09090b;
             z-index: -1;
-        }
-
-        .header-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #83c5be;
-            text-align: center;
-            letter-spacing: 0.025em;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .header-link {
-            color: #83c5be;
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.2s;
-            padding: 0.5rem 0.75rem;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        }
-
-        .header-link:hover {
-            text-decoration: underline;
-        }
-
-        .header-placeholder {
-            width: 90px;
         }
 
         .volume-dial-container {
@@ -115,16 +56,22 @@
             width: 280px;
             height: 280px;
             border-radius: 50%;
-            border: 4px solid #EFF6E0;
+            border: 4px solid #27272a;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
             margin-top: 4rem;
-            background-color: #01161E;
+            background-color: #18181b;
             cursor: grab;
             user-select: none;
             touch-action: none;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s;
+        }
+
+        .volume-dial-container:active {
+            transform: scale(0.98);
         }
 
         .volume-fill {
@@ -135,23 +82,38 @@
             height: 0%;
             transition: height 0.05s ease-out, background-color 0.1s ease-out;
             transform-origin: bottom;
+            opacity: 0.8;
         }
         
         .volume-value {
             position: relative;
             z-index: 10;
-            font-size: 4.5rem;
-            font-weight: bold;
-            color: #EFF6E0;
+            font-size: 5rem;
+            font-weight: 700;
+            color: #fafafa;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .instruction {
+            margin-top: 2rem;
+            color: #a1a1aa;
+            font-size: 0.9rem;
+            text-align: center;
+            font-weight: 500;
         }
     </style>
 </head>
 
-<body>
-    <header class="sticky-header" id="sound-header">
-        <a href="../options-screen.html" class="header-link" id="back-button">Back</a>
-        <h1 class="header-title">Sound</h1>
-        <div class="header-placeholder"></div>
+<body class="text-textMain">
+    <header id="header" class="text-textMain">
+        <div class="w-full flex justify-between items-center">
+            <button onclick="triggerHapticFeedback(10); window.location.href='../options-screen.html'" class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors">
+                <i data-lucide="chevron-left" class="w-6 h-6 text-primary"></i>
+            </button>
+            <h1 class="text-xl font-semibold tracking-wide">Sound</h1>
+            <div class="w-10"></div> <!-- placeholder -->
+        </div>
     </header>
 
     <div class="volume-dial-container" id="volumeDial">
@@ -159,28 +121,25 @@
         <span class="volume-value" id="volumeValue">100</span>
     </div>
 
-    <script>
-        // Debugging: Prüfe, ob dataStorage.js geladen ist
-        if (typeof loadVolumeBoost === 'undefined' || typeof saveVolumeBoost === 'undefined') {
-            console.error('dataStorage.js nicht geladen oder loadVolumeBoost/saveVolumeBoost nicht definiert');
-        } else {
-            console.log('dataStorage.js erfolgreich geladen');
-        }
+    <p class="instruction">
+        Streiche nach oben oder unten, um die Lautstärke anzupassen.
+    </p>
 
+    <script>
         const volumeDial = document.getElementById('volumeDial');
         const volumeFill = document.getElementById('volumeFill');
         const volumeValueDisplay = document.getElementById('volumeValue');
-        const backButton = document.getElementById('back-button');
 
         let isDragging = false;
         let currentVolume = 100;
         let initialMouseY;
         let initialVolume;
+        let lastHapticVolume = 100;
 
         const colors = {
-            low: { r: 98, g: 148, b: 113 },
-            mid: { r: 252, g: 129, b: 74 },
-            high: { r: 253, g: 92, b: 52 }
+            low: { r: 34, g: 197, b: 94 },    // Soft Jade
+            mid: { r: 249, g: 115, b: 22 },   // Light Vermillion
+            high: { r: 235, g: 70, b: 57 }    // Light Crimson
         };
 
         function interpolateColor(color1, color2, factor) {
@@ -196,13 +155,14 @@
         window.mainGainNode.connect(window.audioContext.destination);
 
         function mapVolumeToGain(volume) {
-            const gainValue = 0.5 + (volume - 50) / 125; // Skaliere 50–300% auf 0.5–3.0
+            const gainValue = 0.5 + (volume - 50) / 125;
             return Math.max(0, gainValue);
         }
 
         function updateVolumeDisplay() {
-            volumeValueDisplay.textContent = Math.round(currentVolume);
-            const fillPercentage = ((currentVolume - 50) / 250) * 100; // Skaliere 50–300% auf 0–100%
+            const displayVol = Math.round(currentVolume);
+            volumeValueDisplay.textContent = displayVol;
+            const fillPercentage = ((currentVolume - 50) / 250) * 100;
             volumeFill.style.height = `${Math.max(0, Math.min(100, fillPercentage))}%`;
 
             let displayColor;
@@ -210,21 +170,22 @@
                 const factor = (currentVolume - 50) / (100 - 50);
                 displayColor = interpolateColor(colors.low, colors.mid, factor);
             } else {
-                const factor = (currentVolume - 100) / (300 - 100); // Anpassung für 100–300%
+                const factor = (currentVolume - 100) / (300 - 100);
                 displayColor = interpolateColor(colors.mid, colors.high, factor);
             }
             volumeFill.style.backgroundColor = displayColor;
-
             window.mainGainNode.gain.value = mapVolumeToGain(currentVolume);
-            console.log(`Lautstärke auf ${currentVolume}% (${window.mainGainNode.gain.value.toFixed(2)} Gain) gesetzt.`);
+
+            // Haptic Feedback tick every 10% change
+            if (Math.abs(displayVol - lastHapticVolume) >= 10) {
+                triggerHapticFeedback(10);
+                lastHapticVolume = displayVol;
+            }
         }
 
         function saveAndUpdateVolume() {
             if (typeof saveVolumeBoost !== 'undefined') {
                 saveVolumeBoost(currentVolume);
-                console.log("Lautstärke gespeichert:", currentVolume);
-            } else {
-                console.error('saveVolumeBoost nicht verfügbar');
             }
             updateVolumeDisplay();
         }
@@ -233,7 +194,9 @@
             isDragging = true;
             initialMouseY = e.clientY;
             initialVolume = currentVolume;
+            lastHapticVolume = Math.round(currentVolume);
             volumeDial.style.cursor = 'grabbing';
+            triggerHapticFeedback([10, 30, 10]);
             if (window.audioContext.state === 'suspended') {
                 window.audioContext.resume();
             }
@@ -244,7 +207,7 @@
             const deltaY = initialMouseY - e.clientY;
             const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
-            currentVolume = Math.max(50, Math.min(300, currentVolume)); // Max 300%
+            currentVolume = Math.max(50, Math.min(300, currentVolume));
             saveAndUpdateVolume();
         });
 
@@ -253,6 +216,7 @@
                 isDragging = false;
                 volumeDial.style.cursor = 'grab';
                 saveAndUpdateVolume();
+                triggerHapticFeedback(10);
             }
         });
 
@@ -260,8 +224,10 @@
             isDragging = true;
             initialMouseY = e.touches[0].clientY;
             initialVolume = currentVolume;
+            lastHapticVolume = Math.round(currentVolume);
             volumeDial.style.cursor = 'grabbing';
             e.preventDefault();
+            triggerHapticFeedback([10, 30, 10]);
             if (window.audioContext.state === 'suspended') {
                 window.audioContext.resume();
             }
@@ -272,7 +238,7 @@
             const deltaY = initialMouseY - e.touches[0].clientY;
             const sensitivity = 0.7;
             currentVolume = initialVolume + deltaY * sensitivity;
-            currentVolume = Math.max(50, Math.min(300, currentVolume)); // Max 300%
+            currentVolume = Math.max(50, Math.min(300, currentVolume));
             saveAndUpdateVolume();
             e.preventDefault();
         }, { passive: false });
@@ -282,24 +248,18 @@
                 isDragging = false;
                 volumeDial.style.cursor = 'grab';
                 saveAndUpdateVolume();
+                triggerHapticFeedback(10);
             }
-        });
-
-        backButton.addEventListener('click', (e) => {
-            saveAndUpdateVolume();
-            console.log('Back-Button: Lautstärke gespeichert vor Navigation');
-            window.location.href = '../options-screen.html';
         });
 
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof loadVolumeBoost !== 'undefined') {
                 const savedVolume = loadVolumeBoost();
-                currentVolume = Number(savedVolume) || 100; // Standard 100%
-                console.log('Geladene Lautstärke:', currentVolume);
+                currentVolume = Number(savedVolume) || 100;
             } else {
-                console.error('loadVolumeBoost nicht verfügbar, Standardwert 100');
                 currentVolume = 100;
             }
+            lastHapticVolume = Math.round(currentVolume);
             updateVolumeDisplay();
             if (window.audioContext.state === 'suspended') {
                 window.audioContext.resume();

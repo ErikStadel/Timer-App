@@ -3,51 +3,39 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#09090b" />
     <title>Signal Select</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
     <script src="../../js/dataStorage.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#629471',
-                        interval: '#fd5c34',
-                        warning: '#fc814a',
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+    <script src="../../js/ui-config.js"></script>
+    
     <style>
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
-            background-color: #01161E;
-            font-family: 'Karla', sans-serif;
+            background-color: #09090b;
+            font-family: 'Inter', sans-serif;
+            color: #fafafa;
             overscroll-behavior: none;
             scroll-padding-top: 4rem;
             scroll-behavior: smooth;
         }
+
         header {
             position: sticky;
             top: 0;
             z-index: 50;
             padding: 1rem;
-            background-color: #01161E;
-            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+            background-color: rgba(9, 9, 11, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #27272a;
         }
+        
         header::before {
             content: "";
             position: absolute;
@@ -55,150 +43,161 @@
             left: 0;
             right: 0;
             height: 100vh;
-            background-color: #01161E;
+            background-color: #09090b;
             z-index: -1;
         }
-        header.scrolled {
-            background-color: rgba(1, 22, 30, 0.7);
-            backdrop-filter: blur(6px);
+
+        .main-content {
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            overflow-y: auto;
         }
+
         .signal-item {
-            background-color: rgba(255, 255, 255, 0.08);
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 0.75rem;
-            font-size: 1.1rem;
+            background-color: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1rem;
+            font-size: 1.125rem;
+            font-weight: 500;
             cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, border-color 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
+
+        .signal-item:active {
+            transform: scale(0.97);
+        }
+
         .signal-item.selected {
-            background-color: #83c5be;
-            color: #01161E;
+            background-color: rgba(34, 197, 94, 0.1); /* Soft Jade tint */
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+
+        .signal-item i {
+            display: none;
+            color: #22c55e;
+        }
+        
+        .signal-item.selected i {
+            display: block;
         }
     </style>
 </head>
-<body class="text-light">
-    <header id="header" class="text-light shadow-md">
+<body class="text-textMain">
+    <header id="header" class="text-textMain">
         <div class="w-full flex justify-between items-center">
-            <a href="signals-screen.html" class="text-accent font-semibold hover:underline">Back</a>
-            <h1 class="text-xl font-bold text-accent tracking-wide">Signal</h1>
-            <button id="save-button" class="text-accent font-semibold hover:underline">Save</button>
+            <button onclick="triggerHapticFeedback(10); window.location.href='signals-screen.html'" class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors">
+                <i data-lucide="chevron-left" class="w-6 h-6 text-primary"></i>
+            </button>
+            <h1 class="text-xl font-semibold tracking-wide">Signal</h1>
+            <button id="save-button" class="text-primary font-semibold tracking-wide p-2 -mr-2 rounded-full active:bg-surfaceBorder transition-colors">
+                Save
+            </button>
         </div>
     </header>
 
-    <div id="signal-list" class="p-4"></div>
+    <div id="signal-list" class="main-content"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Debugging: Prüfe dataStorage.js
-            if (typeof loadVolumeBoost === 'undefined' || typeof saveGlobalSignals === 'undefined') {
-                console.error('dataStorage.js nicht geladen oder Funktionen fehlen');
-            } else {
-                console.log('dataStorage.js erfolgreich geladen');
-            }
-
             const urlParams = new URLSearchParams(window.location.search);
             const signalType = urlParams.get('signalType');
             if (!signalType) {
-                console.error('Kein signalType in der URL');
                 window.location.href = 'signals-screen.html';
                 return;
             }
-            console.log('Signal Type:', signalType);
 
-            // Initialisiere AudioContext und mainGainNode
+            // AudioContext setup
             window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
             window.mainGainNode = window.mainGainNode || window.audioContext.createGain();
             window.mainGainNode.connect(window.audioContext.destination);
 
-            // Lade volumeBoost
             const volumeBoost = Number(loadVolumeBoost()) || 100;
-            const gainValue = 0.5 + (volumeBoost - 50) / 125; // Map 50–300% to 0.5–3.0
+            const gainValue = 0.5 + (volumeBoost - 50) / 125;
             window.mainGainNode.gain.value = Math.max(0, gainValue);
-            console.log(`AudioContext: ${window.audioContext.state}, Gain: ${gainValue}`);
 
             let signals = loadSignals();
-            console.log('Geladene Signale:', signals);
             if (signals.length !== defaultSignals.length) {
-                console.warn('Signale unvollständig, setze Standard zurück');
                 signals = defaultSignals;
                 saveSignals(signals);
             }
 
-            // Füge "None"-Option hinzu
             const noneOption = { id: '', name: 'None', filePath: '' };
             signals = [noneOption, ...signals];
 
             let globalSignals = loadGlobalSignals();
-            console.log('Globale Signale:', globalSignals);
             if (!globalSignals[signalType]) {
                 globalSignals = { ...defaultGlobalSignals, ...globalSignals };
                 saveGlobalSignals(globalSignals);
             }
 
             let selectedSignalId = globalSignals[signalType] || '';
-
             const signalList = document.getElementById('signal-list');
-            signalList.innerHTML = '';
 
-            signals.forEach(signal => {
-                const div = document.createElement('div');
-                div.classList.add('signal-item');
-                if (signal.id === selectedSignalId) {
-                    div.classList.add('selected');
-                }
-                div.textContent = signal.name;
-                div.dataset.signalId = signal.id;
-                div.addEventListener('click', () => {
-                    signalList.querySelectorAll('.signal-item').forEach(item => item.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedSignalId = signal.id;
-                    console.log('Ausgewählter Signal:', signal.id);
-                    if (signal.filePath) {
-                        if (window.audioContext.state === 'suspended') {
-                            window.audioContext.resume().then(() => {
-                                console.log('AudioContext resumed');
-                                playSignal(signal.filePath);
-                            }).catch(e => console.error('Fehler beim Resumen:', e));
-                        } else {
+            function renderSignals() {
+                signalList.innerHTML = '';
+                signals.forEach(signal => {
+                    const div = document.createElement('div');
+                    div.classList.add('signal-item');
+                    if (signal.id === selectedSignalId) {
+                        div.classList.add('selected');
+                    }
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = signal.name;
+                    
+                    const checkIcon = document.createElement('i');
+                    checkIcon.setAttribute('data-lucide', 'check');
+
+                    div.appendChild(nameSpan);
+                    div.appendChild(checkIcon);
+
+                    div.addEventListener('click', () => {
+                        triggerHapticFeedback(10);
+                        selectedSignalId = signal.id;
+                        renderSignals();
+                        lucide.createIcons();
+                        
+                        if (signal.filePath) {
+                            if (window.audioContext.state === 'suspended') {
+                                window.audioContext.resume();
+                            }
                             playSignal(signal.filePath);
                         }
-                    }
+                    });
+
+                    signalList.appendChild(div);
                 });
-                signalList.appendChild(div);
-            });
+                lucide.createIcons();
+            }
 
             function playSignal(filePath) {
                 const audio = new Audio(`../../${filePath}`);
                 try {
                     const source = window.audioContext.createMediaElementSource(audio);
                     source.connect(window.mainGainNode);
-                    audio.play().then(() => {
-                        console.log(`Spiele Signal: ${filePath}`);
-                    }).catch(e => console.error('Fehler beim Abspielen:', e));
+                    audio.play().catch(e => console.error('Fehler beim Abspielen:', e));
                 } catch (e) {
-                    console.error('Fehler bei createMediaElementSource:', e);
-                    // Fallback: Spiele ohne mainGainNode
                     audio.volume = Math.min(1.0, (Number(loadVolumeBoost()) || 100) / 100);
                     audio.play().catch(e => console.error('Fallback-Fehler:', e));
                 }
             }
 
-            document.getElementById('save-button').addEventListener('click', () => {
-                console.log('Speichert:', { signalType, selectedSignalId });
-                const newGlobalSignals = { ...globalSignals, [signalType]: selectedSignalId };
-                saveGlobalSignals(newGlobalSignals);
-                console.log('Gespeicherte Signale:', newGlobalSignals);
-                window.location.href = 'signals-screen.html';
-            });
+            renderSignals();
 
-            // Scroll-Listener
-            const header = document.querySelector('header');
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 0) {
-                    header.classList.add('scrolled');
-                } else {
-                    header.classList.remove('scrolled');
-                }
+            document.getElementById('save-button').addEventListener('click', () => {
+                triggerHapticFeedback(30);
+                globalSignals[signalType] = selectedSignalId;
+                saveGlobalSignals(globalSignals);
+                window.location.href = 'signals-screen.html';
             });
         });
     </script>

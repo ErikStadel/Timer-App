@@ -4,58 +4,93 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#09090b" />
   <title>Intervall Editor</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  
   <script src="../js/dataStorage.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            dark: '#01161E',
-            background: '#124559',
-            primary: '#598392',
-            secondary: '#AEC3B0',
-            light: '#EFF6E0',
-            accent: '#83c5be',
-            rest: '#94d1be',
-            interval: '#e76f51',
-            warning: '#fc814a',
-          },
-          fontFamily: {
-            karla: ['Karla', 'sans-serif'],
-          },
-        },
-      },
-    };
-  </script>
-  <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="../js/ui-config.js"></script>
+  
   <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #09090b;
+      font-family: 'Inter', sans-serif;
+      color: #fafafa;
+      overscroll-behavior: none;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1rem;
+      background-color: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #27272a;
+    }
+    
+    header::before {
+      content: "";
+      position: absolute;
+      top: -100vh;
+      left: 0;
+      right: 0;
+      height: 100vh;
+      background-color: #09090b;
+      z-index: -1;
+    }
+
+    .main-container {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .card-container {
+      background-color: #18181b; /* Zinc 900 */
+      border: 1px solid #27272a;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      width: 100%;
+      max-width: 28rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
     .tab-btn {
       cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.2s ease;
+      transition: background-color 0.3s ease, transform 0.2s ease, color 0.2s;
       flex: 1;
       text-align: center;
-      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-    }
-
-    .tab-btn.active {
-      background-color: #83c5be;
-      color: #124559;
-      font-weight: 700;
-      transform: scale(1.1);
-    }
-
-    .tab-btn.inactive {
-      background-color: #01161E;
-      border: 2px solid #83c5be;
-      color: #83c5be;
+      padding: 0.75rem;
+      -webkit-tap-highlight-color: transparent;
+      border-radius: 1rem;
       font-weight: 600;
     }
 
-    .tab-btn.inactive:hover {
-      background-color: rgba(131, 197, 190, 0.15);
+    .tab-btn.active {
+      background-color: #27272a; /* Zinc 800 */
+      color: #fafafa;
+      transform: scale(1.05);
+    }
+
+    .tab-btn.inactive {
+      background-color: transparent;
+      border: 1px solid #27272a;
+      color: #a1a1aa;
+    }
+
+    .tab-btn.inactive:active {
+      background-color: #27272a;
     }
 
     .wheel-container {
@@ -68,17 +103,17 @@
     }
 
     .wheel {
-      height: 120px;
+      height: 140px;
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
       scroll-snap-type: y mandatory;
-      scroll-padding: 40px 0;
+      scroll-padding: 50px 0;
       scrollbar-width: none;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 0;
+      padding: 50px 0;
       overscroll-behavior-x: none;
       touch-action: pan-y;
       width: 100%;
@@ -94,12 +129,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
+      font-weight: 600;
       font-size: 1.25rem;
       user-select: none;
       transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s;
-      color: #83c5be;
-      -webkit-touch-callout: none;
+      color: #a1a1aa; /* Zinc 400 */
       opacity: 0.6;
       transform: scale(0.9);
       min-width: 60px;
@@ -108,7 +142,7 @@
     }
 
     .wheel-item.selected {
-      color: #EFF6E0;
+      color: #fafafa;
       opacity: 1;
       transform: scale(1.1);
       font-size: 1.5rem;
@@ -122,46 +156,75 @@
       display: block;
     }
 
-    body {
-      overflow: hidden;
+    input[type="text"] {
+        background-color: #09090b;
+        border: 1px solid #27272a;
+        color: #fafafa;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        font-size: 1.125rem;
+        outline: none;
+        transition: border-color 0.2s;
+        width: 100%;
+        text-align: center;
+        font-weight: 600;
     }
 
-    .overlay {
-      z-index: 10;
+    input[type="text"]:focus {
+        border-color: #f97316;
     }
 
-    .popup {
-      z-index: 20;
+    /* Outline Buttons */
+    .outline-button {
+        background-color: transparent;
+        border: 1px solid #f97316;
+        color: #f97316;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        transition: transform 0.2s, background-color 0.2s;
+    }
+    
+    .outline-button:active {
+        transform: scale(0.97);
+        background-color: rgba(249, 115, 22, 0.1);
     }
   </style>
 </head>
 
-<body class="bg-dark text-light font-karla p-4 flex items-center justify-center min-h-screen">
-  <header id="header" class="text-light shadow-md w-full fixed top-0 left-0">
-    <div class="w-full flex justify-between items-center p-4 bg-dark">
-      <button class="text-accent font-semibold hover:underline back">Back</button>
-      <h1 class="text-xl font-bold text-accent tracking-wide">Interval Editor</h1>
-      <button id="saveIntervalButton" class="text-accent font-semibold hover:underline">Save</button>
+<body class="text-textMain">
+  <header id="header" class="text-textMain">
+    <div class="w-full flex justify-between items-center">
+      <button class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors back" onclick="triggerHapticFeedback(10)">
+          <i data-lucide="chevron-left" class="w-6 h-6 text-primary"></i>
+      </button>
+      <h1 class="text-xl font-semibold tracking-wide">Interval Editor</h1>
+      <button id="saveIntervalButton" class="text-primary font-semibold tracking-wide p-2 -mr-2 rounded-full active:bg-surfaceBorder transition-colors" onclick="triggerHapticFeedback(20)">
+          Save
+      </button>
     </div>
   </header>
 
-  <div class="relative bg-background rounded-3xl p-8 w-full max-w-md shadow-2xl shadow-black/40 mt-16">
-    <div class="flex justify-center items-center mb-6">
-      <input type="text" id="intervalNameInput"
-        class="bg-transparent text-2xl font-bold text-accent border-b border-accent focus:outline-none text-center w-full"
-        placeholder="Intervall" onclick="this.select()" />
-    </div>
+  <div class="main-container">
+    <div class="card-container">
+      <div class="flex justify-center items-center mb-6">
+        <input type="text" id="intervalNameInput" placeholder="Intervall" onclick="this.select()" />
+      </div>
 
-    <div class="flex justify-center space-x-4 mb-6">
-      <button id="tab-interval" class="tab-btn active px-5 py-2 rounded-full">
-        Interval
-      </button>
-      <button id="tab-rest" class="tab-btn inactive px-5 py-2 rounded-full">
-        Rest
-      </button>
-    </div>
+      <div class="flex justify-center gap-4 mb-6">
+        <button id="tab-interval" class="tab-btn active" onclick="triggerHapticFeedback(10)">
+          Interval
+        </button>
+        <button id="tab-rest" class="tab-btn inactive" onclick="triggerHapticFeedback(10)">
+          Rest
+        </button>
+      </div>
 
-    <div id="content-interval" class="tab-content active">
+      <div id="content-interval" class="tab-content active">
       <div class="flex justify-between space-x-4 mb-8">
         <div class="flex flex-col items-center flex-1">
           <span class="text-sm text-accent mb-1">Min</span>
@@ -287,10 +350,12 @@
       </div>
     </div>
     <button id="editSoundsButton"
-      class="w-full bg-primary text-light rounded-xl py-2 font-semibold hover:bg-primary/80 transition-all mt-4">
+      class="outline-button w-full mt-6" onclick="triggerHapticFeedback(10)">
+      <i data-lucide="music" class="w-5 h-5 mr-1"></i>
       Edit Sounds
     </button>
   </div>
+</div>
 
 
 
@@ -603,8 +668,9 @@
         // Zurück zu timer-editor.html
         window.location.href = `../timer-editor/timer-editor.html?timerId=${timerId}`;
       });
+
+      lucide.createIcons();
     });
   </script>
 </body>
-
 </html>

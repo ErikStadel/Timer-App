@@ -4,55 +4,41 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#09090b" />
     <title>Timer Screen</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="../js/dataStorage.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#629471',
-                        interval: '#fd5c34',
-                        warning: '#fc814a',
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+    <script src="../js/ui-config.js"></script>
+    
     <style>
         html,
         body {
             height: 100%;
             overflow: hidden;
-            font-family: 'Karla', sans-serif;
+            font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            background-color: #09090b; /* Zinc 950 default */
+            transition: background-color 0.5s ease;
+            color: #fafafa;
         }
 
         body {
             display: flex;
             flex-direction: column;
-            background-color: var(--current-bg-color, #124559);
-            transition: background-color 0.5s ease;
-            color: #EFF6E0;
+            background-color: var(--current-bg-color, #09090b);
         }
 
         header {
             flex-shrink: 0;
-            padding: 0.75rem;
+            padding: 1rem;
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .main-content {
@@ -72,38 +58,45 @@
             flex-shrink: 0;
             padding-bottom: 2rem;
             padding-top: 2rem;
+            transition: all 0.3s ease;
         }
 
         .start-circle {
-            width: 270px;
-            height: 270px;
+            width: 280px;
+            height: 280px;
             border-radius: 50%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-size: 4rem;
-            font-weight: bold;
-            color: #EFF6E0;
+            font-weight: 700;
+            color: #fafafa;
             user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            -webkit-tap-highlight-color: transparent;
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            background-color: var(--current-circle-color, #e76f51);
+            transition: background-color 0.3s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+            background-color: var(--current-circle-color, #27272a);
+            border: 2px solid rgba(255,255,255,0.05);
         }
 
         .start-circle:active {
-            transform: scale(0.95);
+            transform: scale(0.96);
         }
 
         .start-circle .countdown-time {
-            font-size: 5rem;
+            font-size: 5.5rem;
+            line-height: 1;
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
         }
 
         .start-circle .countdown-label {
-            font-size: 1.2rem;
-            font-weight: normal;
+            font-size: 1.25rem;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-top: 0.5rem;
         }
 
         .interval-list-container {
@@ -113,34 +106,34 @@
             scrollbar-width: none;
             -ms-overflow-style: none;
             margin-bottom: 1rem;
+            padding: 0 0.5rem;
         }
 
         .interval-list-container::-webkit-scrollbar {
             display: none;
         }
 
-        .interval-list-container {
-            touch-action: pan-y;
-        }
-
         .interval-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 0.75rem;
-            background-color: rgba(255, 255, 255, 0.08);
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            font-size: 1.1rem;
-            opacity: 0.6;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            border-radius: 1rem;
+            background-color: #18181b; /* Zinc 900 */
+            border: 1px solid #27272a;
+            transition: all 0.3s ease;
+            font-size: 1.125rem;
+            color: #a1a1aa; /* textMuted */
         }
 
         .interval-item.active {
-            background-color: rgba(255, 255, 255, 0.2);
-            font-weight: bold;
+            background-color: #27272a; /* Zinc 800 */
+            border-color: #3f3f46; /* Zinc 700 */
+            color: #fafafa;
+            font-weight: 600;
             transform: scale(1.02);
-            opacity: 1;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
         .interval-item-name {
@@ -151,68 +144,64 @@
         .interval-item-time {
             flex-shrink: 0;
             text-align: right;
-            font-weight: bold;
+            font-weight: 600;
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
         }
 
         footer {
             flex-shrink: 0;
             padding: 1rem;
             display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
+            justify-content: center;
+            gap: 1.5rem;
+            padding-bottom: env(safe-area-inset-bottom, 1.5rem);
         }
 
         footer button {
-            padding: 0.75rem 1.5rem;
+            padding: 1rem;
             border-radius: 9999px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            font-weight: 600;
+            font-size: 1.125rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 4rem;
+            height: 4rem;
         }
 
         footer button:active {
-            transform: scale(0.98);
+            transform: scale(0.92);
         }
 
         .btn-end {
-            background-color: #598392;
-            color: #EFF6E0;
+            background-color: #27272a;
+            color: #fafafa;
         }
 
-        .bg-interval {
-            background-color: #fd5c34;
+        .btn-pause {
+            background-color: #f97316; /* Vermillion */
+            color: #fafafa;
+            box-shadow: 0 4px 14px 0 rgba(249, 115, 22, 0.39);
         }
 
-        .bg-rest {
-            background-color: #629471;
-        }
+        /* Color States */
+        /* Darker tinted backgrounds instead of bright colors */
+        .bg-interval { background-color: #1a0806; } /* Very dark crimson tint */
+        .bg-rest { background-color: #051409; } /* Very dark jade tint */
+        .bg-warning { background-color: #1a0c02; } /* Very dark vermillion tint */
+        .bg-initial { background-color: #09090b; } /* Zinc 950 */
 
-        .bg-warning {
-            background-color: #fc814a;
-        }
+        /* Vibrant circle colors */
+        .circle-interval { background-color: #eb4639; box-shadow: 0 0 40px rgba(235, 70, 57, 0.4); } /* Light Crimson */
+        .circle-rest { background-color: #22c55e; box-shadow: 0 0 40px rgba(34, 197, 94, 0.4); } /* Soft Jade */
+        .circle-warning { background-color: #f97316; box-shadow: 0 0 40px rgba(249, 115, 22, 0.4); } /* Light Vermillion */
+        .circle-initial { background-color: #27272a; } /* Zinc 800 */
 
-        .bg-initial {
-            background-color: #124559;
-        }
-
-        .circle-interval {
-            background-color: #fd5c34;
-        }
-
-        .circle-rest {
-            background-color: #629471;
-        }
-
-        .circle-warning {
-            background-color: #fc814a;
-        }
-
-        .circle-initial {
-            background-color: #598392;
-        }
-
+        /* Dialogs */
         .confirmation-dialog-overlay,
         .completion-dialog-overlay {
             position: fixed;
@@ -220,7 +209,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
@@ -239,16 +228,17 @@
 
         .confirmation-dialog,
         .completion-dialog {
-            background-color: #124559;
+            background-color: #18181b; /* Zinc 900 */
             padding: 2rem;
-            border-radius: 1rem;
+            border-radius: 1.5rem;
+            border: 1px solid #27272a;
             text-align: center;
             max-width: 90%;
-            width: 300px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            width: 320px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             transform: translateY(20px);
             opacity: 0;
-            transition: transform 0.3s ease, opacity 0.3s ease;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
         }
 
         .confirmation-dialog-overlay.active .confirmation-dialog,
@@ -257,61 +247,112 @@
             opacity: 1;
         }
 
-        .confirmation-dialog p,
-        .completion-dialog p {
-            margin-bottom: 1.5rem;
-            font-size: 1.1rem;
-            font-weight: 600;
+        .dialog-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #fafafa;
         }
 
-        .confirmation-dialog-buttons,
-        .completion-dialog-buttons {
+        .dialog-message {
+            font-size: 1.125rem;
+            color: #a1a1aa;
+            margin-bottom: 2rem;
+        }
+
+        .dialog-buttons {
             display: flex;
-            justify-content: space-around;
-            gap: 1rem;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
-        .confirmation-dialog-buttons button,
-        .completion-dialog-buttons button {
-            flex: 1;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-            user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        .dialog-btn {
+            padding: 1rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            width: 100%;
         }
 
-        .btn-confirm,
-        .btn-restart {
-            background-color: #fc814a;
-            color: #01161E;
+        .dialog-btn:active {
+            transform: scale(0.97);
         }
 
-        .btn-cancel,
-        .btn-end-dialog {
-            background-color: #598392;
-            color: #EFF6E0;
+        .btn-confirm {
+            background-color: #eb4639;
+            color: #ffffff;
+        }
+
+        .btn-cancel {
+            background-color: transparent;
+            color: #fafafa;
+            border: 1px solid #27272a;
+        }
+
+        .btn-finish {
+            background-color: #22c55e;
+            color: #ffffff;
+        }
+
+        /* Landscape adjustments */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .main-content {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-evenly;
+                padding: 1rem;
+            }
+
+            .upper-half {
+                padding: 0;
+                flex: 1;
+            }
+
+            .interval-list-container {
+                display: none; /* Hide interval list in landscape for fullscreen timer */
+            }
+
+            .start-circle {
+                width: 80vmin;
+                height: 80vmin;
+                max-width: 320px;
+                max-height: 320px;
+            }
+
+            header {
+                padding: 0.5rem;
+            }
+            
+            #headerTitle {
+                display: none;
+            }
         }
     </style>
 </head>
 
 <body class="bg-initial">
-    <header>
-        <h1 class="text-2xl font-bold text-light" id="timer-title">Mein Timer</h1>
+    <header id="app-header">
+        <button class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors" onclick="triggerHapticFeedback(10); window.history.back();">
+            <i data-lucide="chevron-left" class="w-6 h-6 text-primary"></i>
+        </button>
+        <h1 class="text-xl font-semibold tracking-wide" id="timer-title">Mein Timer</h1>
+        <div class="w-10"></div> <!-- Placeholder for centering -->
     </header>
 
     <div class="main-content">
         <div class="upper-half" id="timer-display-area">
-            <div class="start-circle" id="main-circle">
+            <div class="start-circle" id="main-circle" onclick="triggerHapticFeedback(10)">
                 <span id="circle-text">START</span>
                 <span id="circle-countdown" class="countdown-time hidden">00:00</span>
-                <span id="circle-total-countdown" class="countdown-label hidden">Gesamt: 00:00</span>
+                <span id="circle-total-countdown" class="countdown-label hidden">Total: 00:00</span>
             </div>
 
-            <div class="flex justify-between w-full max-w-xs text-xl mt-4">
-                <span id="current-interval-number">00</span>
-                <span id="total-countdown-below-circle">Gesamt: 00:00</span>
+            <div class="flex justify-between items-center w-full max-w-xs mt-6 px-4">
+                <span id="current-interval-number" class="text-xl font-semibold text-primary">00/00</span>
+                <span id="total-countdown-below-circle" class="text-lg font-medium text-textMuted">Total: 00:00</span>
             </div>
         </div>
 
@@ -319,25 +360,31 @@
     </div>
 
     <footer>
-        <button class="btn-end" id="end-button">End</button>
+        <button class="btn-end" id="end-button" onclick="triggerHapticFeedback(20)">
+            <i data-lucide="square" class="w-6 h-6"></i>
+        </button>
     </footer>
 
+    <!-- End Confirmation Dialog -->
     <div class="confirmation-dialog-overlay" id="end-confirmation-dialog">
         <div class="confirmation-dialog">
-            <p>Timer beenden?</p>
-            <div class="confirmation-dialog-buttons">
-                <button class="btn-cancel" id="cancel-end">Cancel</button>
-                <button class="btn-confirm" id="confirm-end">Beenden</button>
+            <h3 class="dialog-title">End Timer?</h3>
+            <p class="dialog-message">Are you sure you want to stop the current workout?</p>
+            <div class="dialog-buttons">
+                <button class="dialog-btn btn-confirm" id="confirm-end" onclick="triggerHapticFeedback([10, 30])">End Workout</button>
+                <button class="dialog-btn btn-cancel" id="cancel-end" onclick="triggerHapticFeedback(10)">Resume</button>
             </div>
         </div>
     </div>
 
+    <!-- Completion Dialog -->
     <div class="completion-dialog-overlay" id="completion-dialog">
         <div class="completion-dialog">
-            <p>You are Awesome!</p>
-            <div class="completion-dialog-buttons">
-                <button class="btn-restart" id="restart-timer">Restart</button>
-                <button class="btn-end-dialog" id="end-timer">End</button>
+            <h3 class="dialog-title">Workout Complete!</h3>
+            <p class="dialog-message">You are Awesome!</p>
+            <div class="dialog-buttons">
+                <button class="dialog-btn btn-finish" id="restart-timer" onclick="triggerHapticFeedback(20)">Restart Timer</button>
+                <button class="dialog-btn btn-cancel" id="end-timer" onclick="triggerHapticFeedback(10)">Close</button>
             </div>
         </div>
     </div>
@@ -784,14 +831,16 @@
 
         function updateSecondaryDisplays() {
             const intervalsPerCycle = timerIntervalsData.filter(item => item.type === 'interval').length;
+            const totalIntervals = intervalsPerCycle * maxRepeats;
+            
             let intervalCount = (currentRepeat - 1) * intervalsPerCycle;
             for (let i = 0; i <= currentIntervalIndex; i++) {
                 if (timerIntervalsData[i].type === 'interval') {
                     intervalCount++;
                 }
             }
-            currentIntervalNumberDisplay.textContent = intervalCount.toString().padStart(2, '0');
-            totalCountdownBelowCircle.textContent = `Gesamt: ${formatTime(totalTimeRemaining)}`;
+            currentIntervalNumberDisplay.textContent = `${intervalCount.toString().padStart(2, '0')} / ${totalIntervals.toString().padStart(2, '0')}`;
+            totalCountdownBelowCircle.textContent = `Total: ${formatTime(totalTimeRemaining)}`;
         }
 
         // --- Timer-Logik ---
@@ -1033,6 +1082,8 @@
 
             // Vorab-Laden der Audiodateien
             initAudio();
+            
+            lucide.createIcons();
         });
 
         // Service Worker Registrierung
