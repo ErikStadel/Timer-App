@@ -3,16 +3,18 @@
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open('timer-audio-cache-v2').then(cache => {
+            const isGitHubPages = self.location.pathname.includes('/Timer-App');
+            const prefix = isGitHubPages ? '/Timer-App' : '';
             const filesToCache = [
-                '/Timer-App/assets/sounds/bell.mp3',
-                '/Timer-App/assets/sounds/horn.mp3',
-                '/Timer-App/assets/sounds/beep.mp3',
-                '/Timer-App/assets/sounds/applause.mp3',
-                '/Timer-App/assets/sounds/chime.mp3',
-                '/Timer-App/assets/sounds/gong.mp3',
-                '/Timer-App/assets/sounds/whoosh.mp3',
-                '/Timer-App/assets/sounds/longbeep.mp3',
-                '/Timer-App/timer-screen/timer-screen.html'
+                `${prefix}/assets/sounds/bell.mp3`,
+                `${prefix}/assets/sounds/horn.mp3`,
+                `${prefix}/assets/sounds/beep.mp3`,
+                `${prefix}/assets/sounds/applause.mp3`,
+                `${prefix}/assets/sounds/chime.mp3`,
+                `${prefix}/assets/sounds/gong.mp3`,
+                `${prefix}/assets/sounds/whoosh.mp3`,
+                `${prefix}/assets/sounds/longbeep.mp3`,
+                `${prefix}/timer-screen/timer-screen.html`
             ];
             return Promise.all(
                 filesToCache.map(file => 
