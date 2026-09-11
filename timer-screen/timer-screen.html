@@ -534,12 +534,37 @@
             try {
                 window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
                 window.mainGainNode = window.audioContext.createGain();
-                window.mainGainNode.connect(window.audioContext.destination);
 
+                // Limiter-Konfiguration:
+                // Lässt Pegel bis 1.5 (Gain) unbeeinflusst durch.
+                // Bei Werten darüber greift die Kompression, um extremes Clipping zu verhindern.
+                // Zur Not kann LIMITER_CEILING auf 1.0 gesetzt werden, falls absolute Verzerrungsfreiheit gewünscht ist.
+                const LIMITER_CEILING = 1.5;
+
+                const preLimiterGain = window.audioContext.createGain();
+                preLimiterGain.gain.value = 1 / LIMITER_CEILING;
+
+                const compressor = window.audioContext.createDynamicsCompressor();
+                compressor.threshold.setValueAtTime(0, window.audioContext.currentTime); // 0 dB
+                compressor.knee.setValueAtTime(6, window.audioContext.currentTime);
+                compressor.ratio.setValueAtTime(20, window.audioContext.currentTime);
+                compressor.attack.setValueAtTime(0.002, window.audioContext.currentTime);
+                compressor.release.setValueAtTime(0.1, window.audioContext.currentTime);
+
+                const postLimiterGain = window.audioContext.createGain();
+                postLimiterGain.gain.value = LIMITER_CEILING;
+
+                // Signal-Kette: mainGainNode -> preLimiterGain -> compressor -> postLimiterGain -> destination
+                window.mainGainNode.connect(preLimiterGain);
+                preLimiterGain.connect(compressor);
+                compressor.connect(postLimiterGain);
+                postLimiterGain.connect(window.audioContext.destination);
+
+                // Einheitliche Formel: 50% = 0.5, 100% = 1.0, 200% = 2.0, 300% = 3.0
                 const volumeBoost = Number(loadVolumeBoost()) || 100;
-                const gainValue = 0.5 + (volumeBoost - 50) / 100;
+                const gainValue = volumeBoost / 100;
                 window.mainGainNode.gain.value = Math.max(0, gainValue);
-                console.log(`AudioContext initialisiert: ${window.audioContext.state}, Gain: ${gainValue}`);
+                console.log(`AudioContext initialisiert: ${window.audioContext.state}, Gain: ${gainValue}, Limiter Ceiling: ${LIMITER_CEILING}`);
             } catch (error) {
                 console.error('Fehler beim Initialisieren des AudioContext:', error);
             }
@@ -586,33 +611,19 @@
 
             console.log(`Lade ${soundsToLoad.size} einzigartige Sounds...`);
 
-            // Lade alle gesammelten Sounds
+            // Lade alle gesammelten Sounds in AudioBuffers (inklusive lastRound)
             const audioPromises = Array.from(soundsToLoad.values()).map(async (soundInfo) => {
                 const result = await loadAudioFile(soundInfo.filePath);
                 if (result) {
                     const { audio, arrayBuffer } = result;
                     const signalId = soundInfo.signalId;
-                    const type = soundInfo.type;
 
-                    if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
-                        try {
-                            audioBuffers[signalId] = await window.audioContext.decodeAudioData(arrayBuffer);
-                            console.log(`AudioBuffer erstellt für ${signalId}: ${soundInfo.filePath}`);
-                        } catch (error) {
-                            console.error(`Fehler beim Dekodieren von ${signalId}:`, error);
-                            audioPlayers[signalId] = audio;
-                        }
-                    } else {
-                        try {
-                            const source = window.audioContext.createMediaElementSource(audio);
-                            source.connect(window.mainGainNode);
-                            audioPlayers[signalId] = audio;
-                            console.log(`Audio-Player erstellt für ${signalId}: ${soundInfo.filePath}`);
-                        } catch (error) {
-                            console.error(`Fehler bei createMediaElementSource für ${signalId}:`, error);
-                            audio.volume = volumeBoost / 100;
-                            audioPlayers[signalId] = audio;
-                        }
+                    try {
+                        audioBuffers[signalId] = await window.audioContext.decodeAudioData(arrayBuffer);
+                        console.log(`AudioBuffer erstellt für ${signalId}: ${soundInfo.filePath}`);
+                    } catch (error) {
+                        console.error(`Fehler beim Dekodieren von ${signalId}:`, error);
+                        audioPlayers[signalId] = audio;
                     }
                 }
             });
@@ -717,7 +728,7 @@
 
             console.log(`Spiele Sound: type=${type}, intervalIndex=${currentIntervalIndex}, signalId=${signalId}`);
 
-            if (type === 'threeSecond' || type === 'intervalStart' || type === 'restStart' || type === 'halfway') {
+            if (audioBuffers[signalId]) {
                 playPooledSound(signalId);
             } else if (immediate) {
                 await playAudio(signalId, 0);
@@ -989,8 +1000,10 @@
         }
 
         // --- Event Listener ---
+        mainCircle.addEventListener('touchstart', resumeAudioContext, { passive: true });
 
         mainCircle.addEventListener('click', () => {
+            resumeAudioContext();
             if (isTimerRunning && !isTimerPaused) {
                 pauseTimer();
             } else {

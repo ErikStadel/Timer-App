@@ -151,12 +151,60 @@
         }
 
         window.audioContext = window.audioContext || new (window.AudioContext || window.webkitAudioContext)();
-        window.mainGainNode = window.mainGainNode || window.audioContext.createGain();
-        window.mainGainNode.connect(window.audioContext.destination);
+        window.mainGainNode = window.audioContext.createGain();
 
+        // Limiter-Konfiguration:
+        // Lässt Pegel bis 1.5 (Gain) unbeeinflusst durch.
+        // Bei Werten darüber greift die Kompression, um extremes Clipping zu verhindern.
+        // Zur Not kann LIMITER_CEILING auf 1.0 gesetzt werden, falls absolute Verzerrungsfreiheit gewünscht ist.
+        const LIMITER_CEILING = 1.5;
+
+        const preLimiterGain = window.audioContext.createGain();
+        preLimiterGain.gain.value = 1 / LIMITER_CEILING;
+
+        const compressor = window.audioContext.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(0, window.audioContext.currentTime); // 0 dB
+        compressor.knee.setValueAtTime(6, window.audioContext.currentTime);
+        compressor.ratio.setValueAtTime(20, window.audioContext.currentTime);
+        compressor.attack.setValueAtTime(0.002, window.audioContext.currentTime);
+        compressor.release.setValueAtTime(0.1, window.audioContext.currentTime);
+
+        const postLimiterGain = window.audioContext.createGain();
+        postLimiterGain.gain.value = LIMITER_CEILING;
+
+        window.mainGainNode.connect(preLimiterGain);
+        preLimiterGain.connect(compressor);
+        compressor.connect(postLimiterGain);
+        postLimiterGain.connect(window.audioContext.destination);
+
+        // Preview-Sound Puffer
+        let previewBuffer = null;
+        async function loadPreviewSound() {
+            try {
+                const response = await fetch('../../assets/sounds/bell.mp3');
+                const arrayBuffer = await response.arrayBuffer();
+                previewBuffer = await window.audioContext.decodeAudioData(arrayBuffer);
+            } catch (e) {
+                console.error('Fehler beim Laden des Preview-Sounds:', e);
+            }
+        }
+
+        function playPreviewSound() {
+            if (window.audioContext.state === 'suspended') {
+                window.audioContext.resume().then(() => playPreviewSound());
+                return;
+            }
+            if (previewBuffer) {
+                const source = window.audioContext.createBufferSource();
+                source.buffer = previewBuffer;
+                source.connect(window.mainGainNode);
+                source.start(0);
+            }
+        }
+
+        // Einheitliche Formel: 50% = 0.5, 100% = 1.0, 200% = 2.0, 300% = 3.0
         function mapVolumeToGain(volume) {
-            const gainValue = 0.5 + (volume - 50) / 125;
-            return Math.max(0, gainValue);
+            return Math.max(0, volume / 100);
         }
 
         function updateVolumeDisplay() {
@@ -217,6 +265,7 @@
                 volumeDial.style.cursor = 'grab';
                 saveAndUpdateVolume();
                 triggerHapticFeedback(10);
+                playPreviewSound();
             }
         });
 
@@ -249,6 +298,7 @@
                 volumeDial.style.cursor = 'grab';
                 saveAndUpdateVolume();
                 triggerHapticFeedback(10);
+                playPreviewSound();
             }
         });
 
@@ -261,6 +311,7 @@
             }
             lastHapticVolume = Math.round(currentVolume);
             updateVolumeDisplay();
+            loadPreviewSound();
             if (window.audioContext.state === 'suspended') {
                 window.audioContext.resume();
             }
