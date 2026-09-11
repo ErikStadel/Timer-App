@@ -119,30 +119,61 @@
       }
 
       /* Slide-In Options (Edit/Delete) */
-      .timer-item > div.absolute {
-        transform: translateX(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        top: 0;
-        left: 0;
-        bottom: 0;
-        display: flex;
-        align-items: stretch;
-      }
+        .timer-item>div:first-child {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            transition: opacity 0.3s ease;
+        }
 
-      .timer-item > div.absolute.slide-in {
-        transform: translateX(0%);
-      }
+        .timer-item.options-active>div:first-child {
+            opacity: 0.4;
+        }
 
-      .timer-item > div.absolute.slide-out {
-        transform: translateX(100%);
-      }
+        .timer-item>div.swipe-options-container {
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            align-items: stretch;
+            background-color: transparent;
+            z-index: 10;
+        }
 
-      .timer-item > div.absolute span {
-        padding: 0 1.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+        .timer-item>div.swipe-options-container.slide-in {
+            transform: translateX(0%);
+        }
+
+        .timer-item>div.swipe-options-container.slide-out {
+            transform: translateX(100%);
+        }
+
+        .timer-item>div.swipe-options-container span {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fafafa;
+            cursor: pointer;
+            padding: 0 0.5rem;
+            font-weight: 500;
+            font-size: 0.75rem;
+            flex-grow: 1;
+        }
+        
+        .timer-item>div.swipe-options-container span i {
+            margin-bottom: 0.25rem;
+        }
+
+        .review-action { background-color: #3f3f46; } /* Zinc 700 */
+        .edit-action { background-color: #27272a; } /* Zinc 800 */
+        .clone-action { background-color: #22c55e; } /* Soft Jade */
+        .delete-action { background-color: #eb4639; } /* Light Crimson */
 
       .timer-item.options-active .timer-name,
       .timer-item.options-active .timer-duration {
@@ -305,7 +336,7 @@
 
     <!-- Versionsnummer mit Abstand -->
     <div class="mt-8 text-center text-gray-400">
-      Version 1.1.2
+      Version 1.1.3
     </div>
 
     <div class="confirmation-overlay" id="deleteConfirmationDialog">
@@ -329,7 +360,7 @@
       let activeOptionsItem = null;
       let sortable = null;
       let longPressTimer = null;
-      let longPressThreshold = 1000;
+      let longPressThreshold = 600;
       let isSortableMode = false;
 
       let timers = loadTimers();
@@ -370,37 +401,43 @@
         }
         activeOptionsItem = listItem;
 
-        const optionsElement = document.createElement('div');
-        optionsElement.classList.add('bg-dark', 'w-full', 'h-full', 'flex', 'items-center', 'justify-around', 'absolute');
-        optionsElement.style.padding = '1rem';
+        let optionsElement = listItem.querySelector('.swipe-options-container');
+        if (!optionsElement) {
+            optionsElement = document.createElement('div');
+            optionsElement.classList.add('swipe-options-container');
+            
+            optionsElement.innerHTML = `
+              <span class="review-action" data-action="Review"><i data-lucide="eye" class="w-5 h-5"></i>Review</span>
+              <span class="edit-action" data-action="Modify"><i data-lucide="edit-3" class="w-5 h-5"></i>Modify</span>
+              <span class="clone-action" data-action="Clone"><i data-lucide="copy" class="w-5 h-5"></i>Clone</span>
+              <span class="delete-action" data-action="Delete"><i data-lucide="trash-2" class="w-5 h-5"></i>Delete</span>
+            `;
+            
+            optionsElement.querySelectorAll('span').forEach(span => {
+                span.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeOptions(listItem);
+                    triggerHapticFeedback(10);
+                    
+                    const action = span.dataset.action;
+                    const timerIndex = Array.from(timerList.children).indexOf(listItem);
+                    const timer = timers[timerIndex];
 
-        const options = ['Review', 'Modify', 'Clone', 'Delete'];
-        options.forEach(optionText => {
-          const optionSpan = document.createElement('span');
-          optionSpan.classList.add('text-light', 'cursor-pointer');
-          optionSpan.textContent = optionText;
-          optionSpan.addEventListener('click', (e) => {
-            e.stopPropagation(); // Verhindert, dass der Klick zum Timer-Item propagiert
-            closeOptions(listItem);
-
-            const timerIndex = Array.from(timerList.children).indexOf(listItem);
-            const timer = timers[timerIndex];
-
-            if (optionText === 'Review') {
-              window.location.href = `../home-screen/timer-review/timer-review.html?timerId=${timer.id}`;
-            } else if (optionText === 'Modify') {
-              window.location.href = `../timer-editor/timer-editor.html?timerId=${timer.id}`;
-            } else if (optionText === 'Clone') {
-              cloneTimer(timerIndex);
-            } else if (optionText === 'Delete') {
-              showDeleteConfirmation(timer.id);
-            }
-          });
-          optionsElement.appendChild(optionSpan);
-        });
-
-        listItem.style.position = 'relative';
-        listItem.appendChild(optionsElement);
+                    if (action === 'Review') {
+                      window.location.href = `../home-screen/timer-review/timer-review.html?timerId=${timer.id}`;
+                    } else if (action === 'Modify') {
+                      window.location.href = `../timer-editor/timer-editor.html?timerId=${timer.id}`;
+                    } else if (action === 'Clone') {
+                      cloneTimer(timerIndex);
+                    } else if (action === 'Delete') {
+                      showDeleteConfirmation(timer.id);
+                    }
+                });
+            });
+            
+            listItem.appendChild(optionsElement);
+            lucide.createIcons({ root: optionsElement });
+        }
 
         setTimeout(() => {
           optionsElement.classList.add('slide-in');
@@ -409,13 +446,12 @@
       }
 
       function closeOptions(listItem) {
-        const existingOptions = listItem.querySelector('.bg-dark.absolute');
+        const existingOptions = listItem.querySelector('.swipe-options-container');
         if (existingOptions) {
           existingOptions.classList.add('slide-out');
           existingOptions.classList.remove('slide-in');
           listItem.classList.remove('options-active');
           setTimeout(() => {
-            listItem.style.position = '';
             existingOptions.remove();
             activeOptionsItem = null;
           }, 300);
@@ -425,6 +461,7 @@
       function showDeleteConfirmation(timerId) {
         timerToDeleteId = timerId;
         deleteConfirmationDialog.classList.add('active');
+        triggerHapticFeedback([10, 30]);
       }
 
       function hideDeleteConfirmation() {
@@ -433,6 +470,7 @@
         if (activeOptionsItem) {
           closeOptions(activeOptionsItem);
         }
+        triggerHapticFeedback(10);
       }
 
       function cloneTimer(indexToClone) {
@@ -444,6 +482,7 @@
         timers.splice(indexToClone + 1, 0, timerToClone);
         saveTimers(timers);
         renderTimerList();
+        triggerHapticFeedback(20);
       }
 
       function deleteTimerConfirmed() {
@@ -463,13 +502,17 @@
         timers.forEach(timer => {
           const li = document.createElement('li');
           li.classList.add('timer-item');
+          li.dataset.id = timer.id;
+          
           if (isSortableMode) {
             li.classList.add('sortable-mode');
           }
+          
+          const contentDiv = document.createElement('div');
 
           const sortIcon = document.createElement('span');
           sortIcon.classList.add('sort-icon');
-          sortIcon.textContent = '=';
+          sortIcon.innerHTML = '<i data-lucide="menu" class="w-5 h-5"></i>';
 
           const nameSpan = document.createElement('span');
           nameSpan.classList.add('timer-name');
@@ -479,9 +522,10 @@
           durationSpan.classList.add('timer-duration');
           durationSpan.textContent = formatDuration(calculateTimerDuration(timer));
 
-          li.appendChild(sortIcon);
-          li.appendChild(nameSpan);
-          li.appendChild(durationSpan);
+          contentDiv.appendChild(sortIcon);
+          contentDiv.appendChild(nameSpan);
+          contentDiv.appendChild(durationSpan);
+          li.appendChild(contentDiv);
 
           let touchStartX = 0;
           let touchEndX = 0;
@@ -523,6 +567,8 @@
 
           timerList.appendChild(li);
         });
+        
+        lucide.createIcons();
 
         if (isSortableMode) {
           enableSortable();
@@ -552,7 +598,10 @@
       function enableSortable() {
         if (!sortable) {
           sortable = new Sortable(timerList, {
-            animation: 150,
+            animation: 250,
+            delay: 400,
+            delayOnTouchOnly: true,
+            touchStartThreshold: 10,
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-drag',

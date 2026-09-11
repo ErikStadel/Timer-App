@@ -196,7 +196,7 @@
         }
 
         /* Confirmation Dialog */
-        .confirmation-overlay {
+        .confirmation-dialog-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -213,7 +213,7 @@
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        .confirmation-overlay.active {
+        .confirmation-dialog-overlay.active {
             opacity: 1;
             visibility: visible;
         }
@@ -531,12 +531,10 @@
                 }
 
                 listItem.innerHTML = `
-                  <div>
+                  <div class="select-none">
                       <span class="sort-icon"><i data-lucide="grip-vertical"></i></span>
-                      <div class="interval-details flex-grow ml-2 items-start">
-                          <span class="interval-name text-textMain font-semibold">${interval.name}</span>
-                          <div class="interval-times">${formatTimeForEditor(interval)}</div>
-                      </div>
+                      <span class="interval-name text-textMain font-semibold ml-2 overflow-hidden text-ellipsis whitespace-nowrap">${interval.name}</span>
+                      <div class="interval-times ml-auto flex-shrink-0">${formatTimeForEditor(interval)}</div>
                   </div>
               `;
 
@@ -572,6 +570,7 @@
                             if (!isSwipingOrScrolling) {
                                 e.preventDefault();
                                 isLongPress = true;
+                                triggerHapticFeedback(10);
                                 enableSortableMode();
                             }
                         }, longPressThreshold);

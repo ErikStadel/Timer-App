@@ -142,10 +142,9 @@
     }
 
     .wheel-item.selected {
-      color: #fafafa;
+      color: #f97316; /* Vermillion */
       opacity: 1;
-      transform: scale(1.1);
-      font-size: 1.5rem;
+      font-size: 1.5rem; /* Slightly larger text instead of transform scale */
     }
 
     .tab-content {
@@ -375,41 +374,39 @@
     // --- Wheel-Funktionalität ---
     wheels.forEach((wheel) => {
       setTimeout(() => updateWheel(wheel), 10);
-      wheel.addEventListener('scroll', () => updateWheel(wheel));
+      wheel.addEventListener('scroll', () => {
+        if (!wheel.isUpdating) {
+          wheel.isUpdating = true;
+          requestAnimationFrame(() => {
+            updateWheel(wheel);
+            wheel.isUpdating = false;
+          });
+        }
+      });
     });
 
     function updateWheel(wheel) {
       const items = wheel.getElementsByClassName('wheel-item');
-      clearTimeout(wheel.scrollTimeout);
+      const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
+      let closestItem = null;
+      let minDistance = Infinity;
 
-      wheel.scrollTimeout = setTimeout(() => {
-        const wheelCenter = wheel.offsetHeight / 2 + wheel.getBoundingClientRect().top;
-        let closestItem = null;
-        let minDistance = Infinity;
+      Array.from(items).forEach((item) => {
+        const rect = item.getBoundingClientRect();
+        const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
 
-        Array.from(items).forEach((item) => {
-          const rect = item.getBoundingClientRect();
-          const distance = Math.abs(rect.top + rect.height / 2 - wheelCenter);
-
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestItem = item;
-          }
-          item.classList.remove('selected');
-        });
-
-        if (closestItem) {
-          closestItem.classList.add('selected');
-          const currentScrollTop = wheel.scrollTop;
-          const targetScrollTop = closestItem.offsetTop - wheel.offsetHeight / 2 + closestItem.offsetHeight / 2;
-          if (Math.abs(currentScrollTop - targetScrollTop) > 1) {
-            wheel.scrollTo({
-              top: targetScrollTop,
-              behavior: 'smooth'
-            });
-          }
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestItem = item;
         }
-      }, 50);
+        item.classList.remove('selected');
+      });
+
+      if (closestItem) {
+        closestItem.classList.add('selected');
+        // Das Browser-eigene Scroll-Snapping (scroll-snap-type) reicht völlig aus!
+        // Wir entfernen das programmatische scrollTo, um Stottern zu verhindern.
+      }
     }
 
     function setWheelValue(wheelId, value) {

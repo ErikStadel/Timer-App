@@ -3,54 +3,39 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#09090b" />
     <title>Timer Review</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
     <script src="../../js/dataStorage.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#629471',
-                        interval: '#fd5c34',
-                        warning: '#fc814a',
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-        rel="stylesheet"
-    />
+    <script src="../../js/ui-config.js"></script>
+    
     <style>
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
-            background-color: #01161E;
-            font-family: 'Karla', sans-serif;
+            background-color: #09090b; /* Zinc 950 */
+            font-family: 'Inter', sans-serif;
+            color: #fafafa;
             overscroll-behavior: none;
             scroll-padding-top: 4rem;
             scroll-behavior: smooth;
         }
+
         header {
             position: sticky;
             top: 0;
             z-index: 50;
             padding: 1rem;
-            background-color: #01161E;
-            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+            background-color: rgba(9, 9, 11, 0.85); /* Zinc 950 with transparency */
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #27272a; /* Zinc 800 */
         }
+
         header::before {
             content: "";
             position: absolute;
@@ -58,72 +43,113 @@
             left: 0;
             right: 0;
             height: 100vh;
-            background-color: #01161E;
+            background-color: #09090b;
             z-index: -1;
         }
-        header.scrolled {
-            background-color: rgba(1, 22, 30, 0.7);
-            backdrop-filter: blur(6px);
-        }
+
         .interval-list {
             list-style: none;
-            padding: 0;
+            padding: 1rem;
             margin: 0;
-            overflow-y: auto;
-            scroll-behavior: smooth;
+            padding-bottom: 6rem; /* Make room for the FAB */
         }
+
         .interval-item {
-            background-color: rgba(255, 255, 255, 0.08);
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 0.75rem;
+            background-color: #18181b; /* Zinc 900 */
+            border: 1px solid #27272a; /* Zinc 800 */
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            border-radius: 1rem;
             display: flex;
             justify-content: space-between;
-            font-size: 1.1rem;
+            align-items: center;
+            font-size: 1.125rem;
+            color: #a1a1aa; /* Zinc 400 */
         }
+
         .section-title {
-            padding: 0.75rem 1rem;
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #EFF6E0;
+            padding: 0.5rem 0.25rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #fafafa;
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
         }
-        footer {
-            position: sticky;
-            bottom: 0;
-            z-index: 50;
-            padding: 1rem;
-            background-color: #01161E;
-            text-align: center;
+        
+        .time-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 1rem;
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .time-badge.work {
+            background-color: rgba(249, 115, 22, 0.15); /* Vermillion tinted */
+            color: #f97316;
+        }
+        
+        .time-badge.rest {
+            background-color: rgba(34, 197, 94, 0.15); /* Jade tinted */
+            color: #22c55e;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #22c55e; /* Soft Jade */
+            color: #ffffff;
+            width: 4rem;
+            height: 4rem;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px -5px rgba(34, 197, 94, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+            z-index: 100;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .fab:active {
+            transform: translateX(-50%) scale(0.92);
+            box-shadow: 0 5px 15px -3px rgba(34, 197, 94, 0.4);
         }
     </style>
 </head>
-<body class="text-light">
-    <header id="header" class="text-light shadow-md">
+<body class="text-textMain">
+    <header id="header">
         <div class="w-full flex justify-between items-center">
-            <a href="../index.html" class="text-accent font-semibold hover:underline">Back</a>
-            <h1 id="timer-name" class="text-xl font-bold text-accent tracking-wide">Timer Name</h1>
-            <div></div>
+            <a href="../index.html" class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors" onclick="triggerHapticFeedback(10)">
+                <i data-lucide="chevron-left" class="w-6 h-6 text-primary"></i>
+            </a>
+            <h1 id="timer-name" class="text-xl font-semibold tracking-wide">Timer Name</h1>
+            <div class="w-10"></div>
         </div>
     </header>
 
     <ul id="interval-list" class="interval-list">
         <li class="section-title">Repeat</li>
         <li class="interval-item">
-            <span>Repeat</span>
-            <span id="repeat-count">1</span>
+            <span class="text-textMain font-semibold">Repeat</span>
+            <span id="repeat-count" class="font-semibold">1</span>
         </li>
         <li class="section-title">Sequence</li>
     </ul>
 
-    <footer>
-        <a href="../../timer-screen/timer-screen.html?timerId=" id="start-timer" class="bg-accent text-dark px-4 py-2 rounded-full font-bold hover:bg-secondary transition">Start Timer</a>
-    </footer>
+    <a href="../../timer-screen/timer-screen.html?timerId=" id="start-timer" class="fab" onclick="triggerHapticFeedback(20)">
+        <i data-lucide="play" class="w-8 h-8 ml-1"></i>
+    </a>
 
     <script>
         function formatTime(seconds) {
             const m = Math.floor(seconds / 60);
             const s = seconds % 60;
-            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            return m > 0 ? `${m}m ${s}s` : `${s}s`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -150,32 +176,36 @@
             document.getElementById('timer-name').textContent = timer.name || 'Mein Timer';
             document.getElementById('repeat-count').textContent = timer.repeat || 1;
 
-            // Start Timer Link
-            document.getElementById('start-timer').href = `../../timer-screen/timer-screen.html?timerId=${timerId}`;
+            // Start Timer Link aktualisieren
+            document.getElementById('start-timer').href = `../../timer-screen/timer-screen.html?timerId=${timer.id}`;
 
-            // Intervalle anzeigen
-            const intervalList = document.getElementById('interval-list');
-            timer.intervals.forEach(interval => {
-                // Intervall
-                const intervalLi = document.createElement('li');
-                intervalLi.classList.add('interval-item');
-                intervalLi.innerHTML = `
-                    <span>${interval.name || 'Intervall'}</span>
-                    <span>${formatTime(interval.durationInterval)}</span>
-                `;
-                intervalList.appendChild(intervalLi);
+            const list = document.getElementById('interval-list');
+            let sequenceNumber = 1;
 
-                // Rest (falls vorhanden)
-                if (interval.durationRest > 0) {
-                    const restLi = document.createElement('li');
-                    restLi.classList.add('interval-item');
-                    restLi.innerHTML = `
-                        <span>Rest</span>
-                        <span>${formatTime(interval.durationRest)}</span>
+            timer.intervals.forEach((interval) => {
+                if (interval.durationInterval > 0) {
+                    const li = document.createElement('li');
+                    li.className = 'interval-item';
+                    li.innerHTML = `
+                        <span class="text-textMain font-semibold overflow-hidden text-ellipsis whitespace-nowrap mr-2">${sequenceNumber}. ${interval.name || 'Intervall'}</span>
+                        <span class="time-badge work flex-shrink-0">Work: ${formatTime(interval.durationInterval)}</span>
                     `;
-                    intervalList.appendChild(restLi);
+                    list.appendChild(li);
+                    sequenceNumber++;
+                }
+                
+                if (interval.durationRest > 0) {
+                    const li = document.createElement('li');
+                    li.className = 'interval-item';
+                    li.innerHTML = `
+                        <span class="text-textMuted font-semibold ml-4">Rest</span>
+                        <span class="time-badge rest flex-shrink-0">Rest: ${formatTime(interval.durationRest)}</span>
+                    `;
+                    list.appendChild(li);
                 }
             });
+            
+            lucide.createIcons();
 
             // Scroll-Listener für Header
             const header = document.querySelector('header');
