@@ -3,51 +3,39 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#09090b" />
     <title>Data</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
     <script src="../../js/dataStorage.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#01161E',
-                        background: '#124559',
-                        primary: '#598392',
-                        secondary: '#AEC3B0',
-                        light: '#EFF6E0',
-                        accent: '#83c5be',
-                        rest: '#629471',
-                        interval: '#fd5c34',
-                        warning: '#fc814a',
-                    },
-                    fontFamily: {
-                        karla: ['Karla', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet" />
+    <script src="../../js/ui-config.js"></script>
+    
     <style>
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
-            background-color: #01161E;
-            font-family: 'Karla', 'sans-serif';
+            background-color: #09090b;
+            font-family: 'Inter', sans-serif;
+            color: #fafafa;
             overscroll-behavior: none;
             scroll-padding-top: 4rem;
             scroll-behavior: smooth;
         }
+
         header {
             position: sticky;
             top: 0;
             z-index: 50;
             padding: 1rem;
-            background-color: #01161E;
-            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+            background-color: rgba(9, 9, 11, 0.85); /* Zinc 950 */
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #27272a; /* Zinc 800 */
         }
+        
         header::before {
             content: "";
             position: absolute;
@@ -55,63 +43,70 @@
             left: 0;
             right: 0;
             height: 100vh;
-            background-color: #01161E;
+            background-color: #09090b;
             z-index: -1;
         }
-        header.scrolled {
-            background-color: rgba(1, 22, 30, 0.7);
-            backdrop-filter: blur(6px);
-        }
+
         .action-button {
-            background-color: #124559;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: 0.75rem;
+            background-color: #18181b; /* Zinc 900 */
+            border: 1px solid #27272a;
+            border-radius: 1rem;
+            padding: 1.25rem 1rem;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #EFF6E0;
+            gap: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: #fafafa;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
             user-select: none;
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-            border: none;
+            -webkit-tap-highlight-color: transparent;
             width: 100%;
         }
+
         .action-button:active {
-            background-color: rgba(18, 69, 89, 0.8);
-            transform: scale(0.99);
+            transform: scale(0.97);
+            background-color: #27272a;
         }
+
+        .action-button i {
+            color: #22c55e; /* Soft Jade */
+        }
+
     </style>
 </head>
-<body class="text-light">
-    <header id="header" class="text-light shadow-md">
+<body class="text-textMain">
+    <header id="header" class="text-textMain">
         <div class="w-full flex justify-between items-center">
-            <a href="../options-screen.html" class="text-accent font-semibold hover:underline">Back</a>
-            <h1 class="text-xl font-bold text-accent tracking-wide">Data</h1>
-            <div style="width: 36px;"></div> <!-- placeholder to balance the Back button -->
+            <button onclick="triggerHapticFeedback(10); window.location.href='../options-screen.html'" class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors">
+                <i data-lucide="chevron-left" class="w-6 h-6 text-primary"></i>
+            </button>
+            <h1 class="text-xl font-semibold tracking-wide">Data</h1>
+            <div class="w-10"></div> <!-- placeholder to balance the Back button -->
         </div>
     </header>
 
     <div class="p-4 flex flex-col gap-4">
-        <p class="text-center text-sm text-gray-300 mb-4">
+        <p class="text-center text-sm text-textMuted mb-4">
             Exportiere deine Timer, Signale und Einstellungen als Datei, um sie auf einem anderen Gerät oder einer anderen URL wiederherzustellen.
         </p>
 
         <button id="export-btn" class="action-button">
-            Backup Exportieren
+            <i data-lucide="download"></i>
+            <span>Backup Exportieren</span>
         </button>
 
         <div class="relative w-full">
             <input type="file" id="import-file" class="hidden" accept=".json" />
             <label for="import-file" class="action-button mb-0">
-                Backup Importieren
+                <i data-lucide="upload"></i>
+                <span>Backup Importieren</span>
             </label>
         </div>
         
-        <div id="status-message" class="text-center font-bold mt-4 hidden"></div>
+        <div id="status-message" class="text-center font-semibold mt-4 hidden"></div>
     </div>
 
     <script>
@@ -122,7 +117,7 @@
 
             function showStatus(text, isError = false) {
                 statusMessage.textContent = text;
-                statusMessage.className = `text-center font-bold mt-4 ${isError ? 'text-warning' : 'text-accent'}`;
+                statusMessage.className = `text-center font-semibold mt-4 ${isError ? 'text-negative' : 'text-primary'}`;
                 statusMessage.classList.remove('hidden');
                 setTimeout(() => {
                     statusMessage.classList.add('hidden');
@@ -130,6 +125,7 @@
             }
 
             exportBtn.addEventListener('click', () => {
+                triggerHapticFeedback(10);
                 try {
                     const data = {
                         timers: localStorage.getItem(TIMER_STORAGE_KEY),
@@ -153,9 +149,11 @@
                     URL.revokeObjectURL(url);
                     
                     showStatus('Backup erfolgreich exportiert!');
+                    triggerHapticFeedback(30);
                 } catch (e) {
                     console.error(e);
                     showStatus('Fehler beim Exportieren!', true);
+                    triggerHapticFeedback([10, 50, 10]);
                 }
             });
 
@@ -177,8 +175,10 @@
                         
                         if (imported) {
                             showStatus('Backup erfolgreich importiert!');
+                            triggerHapticFeedback(30);
                         } else {
                             showStatus('Datei enthält keine passenden Daten.', true);
+                            triggerHapticFeedback([10, 50, 10]);
                         }
                         
                         // Reset input
@@ -186,19 +186,10 @@
                     } catch (err) {
                         console.error(err);
                         showStatus('Fehler beim Importieren der Datei!', true);
+                        triggerHapticFeedback([10, 50, 10]);
                     }
                 };
                 reader.readAsText(file);
-            });
-
-            // Scroll-Listener für Header
-            const header = document.querySelector('header');
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 0) {
-                    header.classList.add('scrolled');
-                } else {
-                    header.classList.remove('scrolled');
-                }
             });
         });
     </script>

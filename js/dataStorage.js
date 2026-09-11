@@ -157,3 +157,11 @@ function saveVolumeBoost(volumeBoost) {
         console.error("Fehler beim Speichern des Volume-Boosts:", e);
     }
 }
+
+// Haptic Feedback Helper
+function triggerHapticFeedback(pattern) {
+    if (navigator.vibrate) {
+        // pattern kann eine Zahl (Dauer in ms) oder ein Array (Muster) sein
+        navigator.vibrate(pattern);
+    }
+}

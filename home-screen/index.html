@@ -19,37 +19,16 @@
     
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#01161E" />
+    <meta name="theme-color" content="#09090b" />
     <title>Home Screen</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
     <script src="../js/dataStorage.js"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              dark: '#01161E',
-              background: '#124559',
-              primary: '#598392',
-              secondary: '#AEC3B0',
-              light: '#EFF6E0',
-              accent: '#83c5be',
-              rest: '#94d1be',
-              interval: '#e76f51',
-              warning: '#fc814a',
-            },
-            fontFamily: {
-              karla: ['Karla', 'sans-serif'],
-            }
-          },
-        },
-      };
-    </script>
+    <script src="../js/ui-config.js"></script>
+    
     <style>
       html,
       body {
@@ -57,8 +36,9 @@
         margin: 0;
         padding: 0;
         padding-top: env(safe-area-inset-top);
-        background-color: #01161E;
-        font-family: 'Karla', sans-serif;
+        background-color: #09090b;
+        font-family: 'Inter', sans-serif;
+        color: #fafafa;
         overscroll-behavior: none;
         scroll-padding-top: 4rem;
         scroll-behavior: smooth;
@@ -84,41 +64,69 @@
         z-index: -1;
       }
 
-      header.scrolled {
-        background-color: rgba(1, 22, 30, 0.7);
-        backdrop-filter: blur(6px);
+      /* Neue Header-Styles */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        padding: 1rem;
+        background-color: rgba(9, 9, 11, 0.85); /* Zinc 950 */
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #27272a; /* Zinc 800 */
+        transition: background-color 0.3s ease;
       }
 
+      header::before {
+        content: "";
+        position: absolute;
+        top: -100vh;
+        left: 0;
+        right: 0;
+        height: 100vh;
+        background-color: #09090b;
+        z-index: -1;
+      }
+
+      /* Listen & Cards */
       .timer-list {
         list-style: none;
-        padding: 0;
+        padding: 1rem;
         margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
         overflow-y: auto;
-        scroll-behavior: smooth;
       }
 
       .timer-item {
-        background-color: #124559;
-        border-bottom: 1px solid #EFF6E0;
+        background-color: #18181b; /* Zinc 900 */
+        border: 1px solid #27272a; /* Zinc 800 */
+        border-radius: 1rem;
         display: flex;
         align-items: center;
-        padding: 1rem;
+        padding: 1.25rem 1rem;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
         position: relative;
         overflow: hidden;
         user-select: none;
         -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
       }
 
+      .timer-item:active {
+        transform: scale(0.97);
+        background-color: #27272a;
+      }
+
+      /* Slide-In Options (Edit/Delete) */
       .timer-item > div.absolute {
         transform: translateX(100%);
-        transition: transform 0.3s ease-in-out;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         top: 0;
         left: 0;
         bottom: 0;
+        display: flex;
+        align-items: stretch;
       }
 
       .timer-item > div.absolute.slide-in {
@@ -130,7 +138,10 @@
       }
 
       .timer-item > div.absolute span {
-        padding: 0.5rem 0.75rem;
+        padding: 0 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .timer-item.options-active .timer-name,
@@ -140,23 +151,28 @@
       }
 
       .timer-name {
-        font-size: 1.1rem;
-        color: #edede9;
+        font-size: 1.125rem;
+        font-weight: 500;
+        color: #fafafa;
         margin-left: 0.5rem;
         flex-grow: 1;
       }
 
       .timer-duration {
-        font-size: 0.9rem;
-        color: #83c5be
+        font-size: 0.875rem;
+        color: #a1a1aa; /* Zinc 400 */
+        font-variant-numeric: tabular-nums;
       }
 
       .sortable-chosen {
-        background-color: #AEC3B0 !important;
+        background-color: #27272a !important;
+        border-color: #3f3f46 !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
       }
 
       .sort-icon {
         margin-right: 0.5rem;
+        color: #52525b; /* Zinc 500 */
         opacity: 0;
         transition: opacity 0.3s ease;
       }
@@ -172,7 +188,8 @@
           left: 0;
           width: 100%;
           height: 100%;
-          background-color: rgba(0, 0, 0, 0.6);
+          background-color: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(4px);
           display: flex;
           justify-content: center;
           align-items: center;
@@ -180,7 +197,7 @@
           opacity: 0;
           visibility: hidden;
           transition: opacity 0.3s ease, visibility 0.3s ease;
-}
+      }
 
       .confirmation-overlay.active {
           opacity: 1;
@@ -188,19 +205,22 @@
       }
 
       .confirmation-dialog {
-          background-color: #124559;
-          color: #EFF6E0;
+          background-color: #18181b;
+          color: #fafafa;
           padding: 1.5rem;
-          border-radius: 0.75rem;
+          border-radius: 1.25rem;
+          border: 1px solid #27272a;
           text-align: center;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
           max-width: 80%;
           min-width: 280px;
       }
 
       .confirmation-dialog p {
           font-size: 1.1rem;
-          margin-bottom: 1.5rem }
+          font-weight: 500;
+          margin-bottom: 1.5rem;
+      }
 
       .confirmation-dialog-buttons {
           display: flex;
@@ -210,60 +230,82 @@
 
       .btn-cancel, .btn-confirm {
           padding: 0.75rem 1.5rem;
-          border-radius: 0.5rem;
-          font-weight: bold;
+          border-radius: 0.75rem;
+          font-weight: 600;
           cursor: pointer;
           border: none;
           font-size: 1rem;
           flex-grow: 1;
+          transition: transform 0.1s, opacity 0.2s;
+      }
+
+      .btn-cancel:active, .btn-confirm:active {
+          transform: scale(0.95);
       }
 
       .btn-cancel {
-          background-color: #598392;
-          color: #EFF6E0;
-      }
-
-      .btn-cancel:hover {
-          background-color: #AEC3B0;
+          background-color: #27272a;
+          color: #fafafa;
       }
 
       .btn-confirm {
-          background-color: #e76f51;
-          color: #EFF6E0;
+          background-color: #eb4639; /* Light Crimson */
+          color: #ffffff;
       }
 
-      .btn-confirm:hover {
-          background-color: #fc814a;
+      /* FAB */
+      .fab-button {
+          position: fixed;
+          bottom: 2rem;
+          right: 2rem;
+          width: 3.5rem;
+          height: 3.5rem;
+          background-color: #22c55e; /* Soft Jade */
+          color: white;
+          border-radius: 50%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.4);
+          z-index: 40;
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          border: none;
+      }
+      .fab-button:active {
+          transform: scale(0.9);
       }
     </style>
   </head>
-  <body class="text-light">
-    <header id="header" class="text-light shadow-md">
+  <body class="text-textMain">
+    <header id="header" class="text-textMain">
       <div class="w-full flex justify-between items-center">
-        <button onclick="window.location.href='../options-screen/options-screen.html'" class="text-accent font-semibold hover:underline">
-          Options
+        <button onclick="triggerHapticFeedback(10); window.location.href='../options-screen/options-screen.html'" class="p-2 -ml-2 rounded-full active:bg-surfaceBorder transition-colors">
+          <i data-lucide="settings" class="w-6 h-6 text-textMuted"></i>
         </button>
-        <h1 class="text-xl font-bold text-accent tracking-wide">Timer</h1>
+        <h1 class="text-xl font-semibold tracking-wide">Timer</h1>
         <button
           id="saveButton"
-          class="text-accent font-semibold hover:underline"
+          class="text-primary font-semibold tracking-wide"
           style="display: none;"
+          onclick="triggerHapticFeedback(20)"
         >
-          Save Order
+          Fertig
         </button>
-        <button
-          id="addButton"
-          class="text-accent font-bold text-2xl leading-none hover:scale-110 transition-transform duration-150"
-        >
-          +
-        </button>
+        <div id="header-placeholder" class="w-10"></div>
       </div>
     </header>
+    
     <ul class="timer-list"></ul>
+
+    <!-- Floating Action Button -->
+    <button id="addButton" class="fab-button" onclick="triggerHapticFeedback(10)">
+        <i data-lucide="plus" class="w-8 h-8"></i>
+    </button>
 
     <!-- Versionsnummer mit Abstand -->
     <div class="mt-8 text-center text-gray-400">
-      Version 1.1.1
+      Version 1.1.2
     </div>
 
     <div class="confirmation-overlay" id="deleteConfirmationDialog">
@@ -491,13 +533,15 @@
         isSortableMode = true;
         addButton.style.display = 'none';
         saveButton.style.display = 'block';
+        document.getElementById('header-placeholder').style.display = 'none';
         renderTimerList();
       }
 
       function disableSortableMode() {
         isSortableMode = false;
-        addButton.style.display = 'block';
+        addButton.style.display = 'flex';
         saveButton.style.display = 'none';
+        document.getElementById('header-placeholder').style.display = 'block';
         if (sortable) {
           sortable.option("disabled", true);
           sortable = null;
@@ -509,16 +553,22 @@
         if (!sortable) {
           sortable = new Sortable(timerList, {
             animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            onStart: function(evt) {
+              triggerHapticFeedback([10, 30, 10]); // Rumble effect
+            },
             onEnd: function (evt) {
-              const newTimers = Array.from(timerList.children).map((item, index) => {
-                return timers[index];
-              });
-              const oldIndex = evt.oldIndex;
-              const newIndex = evt.newIndex;
-              const movedItem = newTimers[oldIndex];
-              newTimers.splice(oldIndex, 1);
-              newTimers.splice(newIndex, 0, movedItem);
+              triggerHapticFeedback(10); // Plop
+              const reorderedIds = Array.from(timerList.children).map(
+                (li) => li.dataset.id
+              );
+              const newTimers = reorderedIds.map((id) =>
+                timers.find((t) => t.id === id)
+              );
               timers = newTimers;
+              saveTimers(timers);
             }
           });
         }
